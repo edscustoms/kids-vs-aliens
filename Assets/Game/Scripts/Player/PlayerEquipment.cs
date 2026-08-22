@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class PlayerEquipment : MonoBehaviour
@@ -11,12 +12,14 @@ public class PlayerEquipment : MonoBehaviour
     private GameObject equippedWeaponObject;
     private WeaponItemData equippedWeapon;
 
+    public WeaponItemData EquippedWeapon => equippedWeapon;
+
+    public event Action<WeaponItemData> EquippedWeaponChanged;
+
     private void Start()
     {
         if (startingWeapon != null)
-        {
             EquipWeapon(startingWeapon);
-        }
     }
 
     public bool IsEquipped(ItemData item)
@@ -29,7 +32,7 @@ public class PlayerEquipment : MonoBehaviour
         if (weapon == null)
             return;
 
-        UnequipWeapon();
+        ClearEquippedWeapon();
 
         equippedWeapon = weapon;
 
@@ -50,6 +53,8 @@ public class PlayerEquipment : MonoBehaviour
                 $"Weapon {weapon.itemName} has no Muzzle!"
             );
 
+            ClearEquippedWeapon();
+            EquippedWeaponChanged?.Invoke(null);
             return;
         }
 
@@ -57,16 +62,25 @@ public class PlayerEquipment : MonoBehaviour
             weapon,
             muzzle
         );
+
+        // This is what the animation system will listen to.
+        EquippedWeaponChanged?.Invoke(equippedWeapon);
     }
 
     public void UnequipWeapon()
     {
+        ClearEquippedWeapon();
+
+        // null = unarmed
+        EquippedWeaponChanged?.Invoke(null);
+    }
+
+    private void ClearEquippedWeapon()
+    {
         playerShooter.UnequipWeapon();
 
         if (equippedWeaponObject != null)
-        {
             Destroy(equippedWeaponObject);
-        }
 
         equippedWeaponObject = null;
         equippedWeapon = null;

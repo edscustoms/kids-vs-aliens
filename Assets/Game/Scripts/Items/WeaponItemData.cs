@@ -23,4 +23,7 @@ public class WeaponItemData : ItemData
 
     [Header("Fire Mode")]
     public WeaponFireMode fireMode = WeaponFireMode.SemiAuto;
+
+    [Header("Animation")]
+    public WeaponAnimationStyle animationStyle;
 }

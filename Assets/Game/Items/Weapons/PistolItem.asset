@@ -20,3 +20,7 @@ MonoBehaviour:
   damage: 10
   range: 15
   fireRate: 4
+  magazineSize: 8
+  reloadTime: 1.2
+  fireMode: 0
+  animationStyle: 1
