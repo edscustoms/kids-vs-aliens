@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b556c58fed134c347bdec1c67d466f8e, type: 3}
+  m_Name: PistolItem
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
+  itemName: Pistol
+  itemType: 0
+  icon: {fileID: 0}
+  worldPrefab: {fileID: 1271489694148206445, guid: ea01177c3a80efe409e8455c5264eb45, type: 3}
+  equippedPrefab: {fileID: 1271489694148206445, guid: ace35bd6b01036a479141509d7b153ce, type: 3}
+  damage: 10
+  range: 15
+  fireRate: 4
