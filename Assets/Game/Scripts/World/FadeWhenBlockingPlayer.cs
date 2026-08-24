@@ -1,13 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public class CameraWallFade : MonoBehaviour
+public class FadeWhenBlockingPlayer : MonoBehaviour
 {
     [SerializeField]
     private Transform player;
 
+    [FormerlySerializedAs("wallLayer")]
     [SerializeField]
-    private LayerMask wallLayer;
+    private LayerMask fadeWhenBlockingPlayerLayer;
 
     [Header("Occlusion")]
     [SerializeField]
@@ -24,12 +26,31 @@ public class CameraWallFade : MonoBehaviour
     [SerializeField]
     private float fadeSpeed = 8f;
 
+    private static readonly int FadeId = Shader.PropertyToID("_Fade");
+
     private Renderer[] fadeWalls;
     private readonly HashSet<Renderer> obstructingWalls = new();
+    private readonly Dictionary<Renderer, float> currentFade = new();
+
+    private MaterialPropertyBlock propertyBlock;
 
     private void Start()
     {
         fadeWalls = FindObjectsByType<Renderer>();
+
+        propertyBlock = new MaterialPropertyBlock();
+
+        foreach (Renderer wall in fadeWalls)
+        {
+            if (wall == null)
+                continue;
+
+            if (((1 << wall.gameObject.layer) & fadeWhenBlockingPlayerLayer.value) == 0)
+                continue;
+
+            currentFade[wall] = 1f;
+            SetFade(wall, 1f);
+        }
     }
 
     private void Update()
@@ -46,7 +67,7 @@ public class CameraWallFade : MonoBehaviour
             sphereRadius,
             direction.normalized,
             distance,
-            wallLayer,
+            fadeWhenBlockingPlayerLayer,
             QueryTriggerInteraction.Ignore
         );
 
@@ -55,14 +76,10 @@ public class CameraWallFade : MonoBehaviour
             Renderer wall = hit.collider.GetComponent<Renderer>();
 
             if (wall == null)
-            {
                 wall = hit.collider.GetComponentInParent<Renderer>();
-            }
 
             if (wall != null)
-            {
                 obstructingWalls.Add(wall);
-            }
         }
 
         foreach (Renderer wall in fadeWalls)
@@ -70,16 +87,29 @@ public class CameraWallFade : MonoBehaviour
             if (wall == null)
                 continue;
 
-            if (((1 << wall.gameObject.layer) & wallLayer.value) == 0)
+            if (!currentFade.ContainsKey(wall))
                 continue;
 
-            float targetAlpha = obstructingWalls.Contains(wall) ? fadedAlpha : 1f;
+            float targetFade = obstructingWalls.Contains(wall) ? fadedAlpha : 1f;
 
-            Color color = wall.material.GetColor("_BaseColor");
+            float fade = Mathf.MoveTowards(
+                currentFade[wall],
+                targetFade,
+                fadeSpeed * Time.deltaTime
+            );
 
-            color.a = Mathf.MoveTowards(color.a, targetAlpha, fadeSpeed * Time.deltaTime);
+            currentFade[wall] = fade;
 
-            wall.material.SetColor("_BaseColor", color);
+            SetFade(wall, fade);
         }
+    }
+
+    private void SetFade(Renderer renderer, float fade)
+    {
+        propertyBlock.Clear();
+
+        renderer.GetPropertyBlock(propertyBlock);
+        propertyBlock.SetFloat(FadeId, fade);
+        renderer.SetPropertyBlock(propertyBlock);
     }
 }
