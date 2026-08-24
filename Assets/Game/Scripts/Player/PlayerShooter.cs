@@ -13,12 +13,12 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlayerAim playerAim;
 
-    [Header("Bullet Visual")]
     [SerializeField]
-    private float tracerDuration = 0.05f;
+    private PlayerCharacter playerCharacter;
 
+    [Header("Shot VFX")]
     [SerializeField]
-    private float tracerWidth = 0.02f;
+    private PlasmaBoltVFX plasmaBoltPrefab;
 
     private float nextFireTime;
     private int currentAmmo;
@@ -29,8 +29,12 @@ public class PlayerShooter : MonoBehaviour
     private void Awake()
     {
         shootMask = ~LayerMask.GetMask("Player");
+
         if (playerAim == null)
             playerAim = GetComponent<PlayerAim>();
+
+        if (playerCharacter == null)
+            playerCharacter = GetComponent<PlayerCharacter>();
     }
 
     private void Update()
@@ -76,6 +80,7 @@ public class PlayerShooter : MonoBehaviour
         nextFireTime = Time.time + 1f / equippedWeapon.fireRate;
 
         Vector3 direction = (playerAim.AimPoint - muzzle.position).normalized;
+
         Vector3 endPoint = muzzle.position + direction * equippedWeapon.range;
 
         if (
@@ -93,46 +98,30 @@ public class PlayerShooter : MonoBehaviour
             EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
 
             if (enemy != null)
-            {
                 enemy.TakeDamage(equippedWeapon.damage);
-            }
-
-            Debug.Log(
-                $"{equippedWeapon.itemName} hit {hit.collider.name} | Ammo: {currentAmmo}/{equippedWeapon.magazineSize}"
-            );
-        }
-        else
-        {
-            Debug.Log(
-                $"{equippedWeapon.itemName} fired | Ammo: {currentAmmo}/{equippedWeapon.magazineSize}"
-            );
         }
 
-        StartCoroutine(ShowTracer(muzzle.position, endPoint));
+        SpawnShotVFX(muzzle.position, endPoint);
 
-        // Automatic reload after the final shot
         if (currentAmmo <= 0)
             StartCoroutine(Reload());
     }
 
-    private IEnumerator ShowTracer(Vector3 start, Vector3 end)
+    private void SpawnShotVFX(Vector3 start, Vector3 end)
     {
-        GameObject tracerObject = new GameObject("BulletTracer");
+        if (plasmaBoltPrefab == null)
+            return;
 
-        LineRenderer line = tracerObject.AddComponent<LineRenderer>();
+        PlasmaBoltVFX bolt = Instantiate(plasmaBoltPrefab);
 
-        line.positionCount = 2;
-        line.SetPosition(0, start);
-        line.SetPosition(1, end);
+        Color? auraColor = null;
 
-        line.startWidth = tracerWidth;
-        line.endWidth = tracerWidth;
+        if (playerCharacter != null && playerCharacter.ActiveVisual != null)
+        {
+            auraColor = playerCharacter.ActiveVisual.AuraColor;
+        }
 
-        line.material = new Material(Shader.Find("Sprites/Default"));
-
-        yield return new WaitForSeconds(tracerDuration);
-
-        Destroy(tracerObject);
+        bolt.Initialize(start, end, auraColor);
     }
 
     private IEnumerator Reload()
@@ -147,10 +136,11 @@ public class PlayerShooter : MonoBehaviour
         yield return new WaitForSeconds(equippedWeapon.reloadTime);
 
         currentAmmo = equippedWeapon.magazineSize;
+
         isReloading = false;
 
         Debug.Log(
-            $"Reloaded {equippedWeapon.itemName}: {currentAmmo}/{equippedWeapon.magazineSize}"
+            $"Reloaded {equippedWeapon.itemName}: " + $"{currentAmmo}/{equippedWeapon.magazineSize}"
         );
     }
 
