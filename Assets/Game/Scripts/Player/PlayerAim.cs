@@ -25,6 +25,7 @@ public class PlayerAim : MonoBehaviour
     public bool HasAimPoint { get; private set; }
 
     private Plane groundPlane;
+    private int aimMask;
 
     private void Awake()
     {
@@ -33,6 +34,7 @@ public class PlayerAim : MonoBehaviour
 
         // Our current floor is at Y = 0
         groundPlane = new Plane(Vector3.up, Vector3.zero);
+        aimMask = ~LayerMask.GetMask("Player");
     }
 
     private void LateUpdate()
@@ -54,16 +56,29 @@ public class PlayerAim : MonoBehaviour
 
         Ray ray = mainCamera.ScreenPointToRay(mousePosition);
 
-        if (!groundPlane.Raycast(ray, out float distance))
+        // First try actual world geometry / enemies
+        if (
+            Physics.Raycast(ray, out RaycastHit hit, 1000f, aimMask, QueryTriggerInteraction.Ignore)
+        )
         {
-            HasAimPoint = false;
+            AimPoint = hit.point;
+            HasAimPoint = true;
+
+            RotateTowards(AimPoint);
             return;
         }
 
-        AimPoint = ray.GetPoint(distance);
-        HasAimPoint = true;
+        // Fallback in case the cursor ray hits nothing
+        if (groundPlane.Raycast(ray, out float distance))
+        {
+            AimPoint = ray.GetPoint(distance);
+            HasAimPoint = true;
 
-        RotateTowards(AimPoint);
+            RotateTowards(AimPoint);
+            return;
+        }
+
+        HasAimPoint = false;
     }
 
     private void AutoAim()
