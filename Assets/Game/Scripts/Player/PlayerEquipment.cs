@@ -3,11 +3,15 @@ using UnityEngine;
 
 public class PlayerEquipment : MonoBehaviour
 {
-    [SerializeField] private Transform weaponHolder;
-    [SerializeField] private PlayerShooter playerShooter;
+    [SerializeField]
+    private PlayerCharacter playerCharacter;
+
+    [SerializeField]
+    private PlayerShooter playerShooter;
 
     // Temporary: only for testing dynamic equip
-    [SerializeField] private WeaponItemData startingWeapon;
+    [SerializeField]
+    private WeaponItemData startingWeapon;
 
     private GameObject equippedWeaponObject;
     private WeaponItemData equippedWeapon;
@@ -15,6 +19,12 @@ public class PlayerEquipment : MonoBehaviour
     public WeaponItemData EquippedWeapon => equippedWeapon;
 
     public event Action<WeaponItemData> EquippedWeaponChanged;
+
+    private void Awake()
+    {
+        if (playerCharacter == null)
+            playerCharacter = GetComponent<PlayerCharacter>();
+    }
 
     private void Start()
     {
@@ -32,38 +42,50 @@ public class PlayerEquipment : MonoBehaviour
         if (weapon == null)
             return;
 
+        if (
+            playerCharacter == null
+            || playerCharacter.ActiveVisual == null
+            || !playerCharacter.ActiveVisual.HasWeaponSocket
+        )
+        {
+            Debug.LogError("Active character has no WeaponSocket!");
+            return;
+        }
+
         ClearEquippedWeapon();
 
         equippedWeapon = weapon;
 
-        equippedWeaponObject = Instantiate(
-            weapon.equippedPrefab,
-            weaponHolder,
-            false
-        );
+        equippedWeaponObject = Instantiate(weapon.equippedPrefab);
 
-        Transform muzzle = FindChildByName(
-            equippedWeaponObject.transform,
-            "Muzzle"
-        );
+        Transform gripPoint = FindChildByName(equippedWeaponObject.transform, "GripPoint");
 
-        if (muzzle == null)
+        if (gripPoint == null)
         {
-            Debug.LogError(
-                $"Weapon {weapon.itemName} has no Muzzle!"
-            );
+            Debug.LogError($"Weapon {weapon.itemName} has no GripPoint!");
 
             ClearEquippedWeapon();
             EquippedWeaponChanged?.Invoke(null);
             return;
         }
 
-        playerShooter.EquipWeapon(
-            weapon,
-            muzzle
-        );
+        Transform weaponSocket = playerCharacter.ActiveVisual.WeaponSocket;
 
-        // This is what the animation system will listen to.
+        AlignGripToSocket(equippedWeaponObject.transform, gripPoint, weaponSocket);
+
+        Transform muzzle = FindChildByName(equippedWeaponObject.transform, "Muzzle");
+
+        if (muzzle == null)
+        {
+            Debug.LogError($"Weapon {weapon.itemName} has no Muzzle!");
+
+            ClearEquippedWeapon();
+            EquippedWeaponChanged?.Invoke(null);
+            return;
+        }
+
+        playerShooter.EquipWeapon(weapon, muzzle);
+
         EquippedWeaponChanged?.Invoke(equippedWeapon);
     }
 
@@ -71,7 +93,6 @@ public class PlayerEquipment : MonoBehaviour
     {
         ClearEquippedWeapon();
 
-        // null = unarmed
         EquippedWeaponChanged?.Invoke(null);
     }
 
@@ -86,17 +107,27 @@ public class PlayerEquipment : MonoBehaviour
         equippedWeapon = null;
     }
 
-    private Transform FindChildByName(
-        Transform parent,
-        string childName)
+    private void AlignGripToSocket(Transform weapon, Transform gripPoint, Transform weaponSocket)
+    {
+        Quaternion rotationDelta = weaponSocket.rotation * Quaternion.Inverse(gripPoint.rotation);
+
+        weapon.rotation = rotationDelta * weapon.rotation;
+
+        Vector3 positionDelta = weaponSocket.position - gripPoint.position;
+
+        weapon.position += positionDelta;
+
+        weapon.SetParent(weaponSocket, true);
+    }
+
+    private Transform FindChildByName(Transform parent, string childName)
     {
         foreach (Transform child in parent)
         {
             if (child.name == childName)
                 return child;
 
-            Transform result =
-                FindChildByName(child, childName);
+            Transform result = FindChildByName(child, childName);
 
             if (result != null)
                 return result;

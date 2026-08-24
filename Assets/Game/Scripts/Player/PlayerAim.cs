@@ -4,15 +4,25 @@ using UnityEngine.InputSystem;
 public class PlayerAim : MonoBehaviour
 {
     [Header("General")]
-    [SerializeField] private Camera mainCamera;
-    [SerializeField] private float rotationSpeed = 20f;
+    [SerializeField]
+    private Camera mainCamera;
+
+    [SerializeField]
+    private float rotationSpeed = 20f;
 
     [Header("Mobile Auto Aim")]
-    [SerializeField] private LayerMask enemyLayer;
-    [SerializeField] private float autoAimRange = 20f;
+    [SerializeField]
+    private LayerMask enemyLayer;
+
+    [SerializeField]
+    private float autoAimRange = 20f;
 
     // Handy later for testing mobile behaviour inside Unity Editor
-    [SerializeField] private bool forceMobileAimInEditor = false;
+    [SerializeField]
+    private bool forceMobileAimInEditor = false;
+
+    public Vector3 AimPoint { get; private set; }
+    public bool HasAimPoint { get; private set; }
 
     private Plane groundPlane;
 
@@ -27,8 +37,7 @@ public class PlayerAim : MonoBehaviour
 
     private void LateUpdate()
     {
-        bool useMobileAim =
-            Application.isMobilePlatform || forceMobileAimInEditor;
+        bool useMobileAim = Application.isMobilePlatform || forceMobileAimInEditor;
 
         if (useMobileAim)
             AutoAim();
@@ -46,31 +55,33 @@ public class PlayerAim : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(mousePosition);
 
         if (!groundPlane.Raycast(ray, out float distance))
+        {
+            HasAimPoint = false;
             return;
+        }
 
-        Vector3 targetPosition = ray.GetPoint(distance);
+        AimPoint = ray.GetPoint(distance);
+        HasAimPoint = true;
 
-        RotateTowards(targetPosition);
+        RotateTowards(AimPoint);
     }
 
     private void AutoAim()
     {
-        Collider[] enemies = Physics.OverlapSphere(
-            transform.position,
-            autoAimRange,
-            enemyLayer
-        );
+        Collider[] enemies = Physics.OverlapSphere(transform.position, autoAimRange, enemyLayer);
 
         if (enemies.Length == 0)
+        {
+            HasAimPoint = false;
             return;
+        }
 
         Transform closestEnemy = null;
         float closestDistance = Mathf.Infinity;
 
         foreach (Collider enemy in enemies)
         {
-            float distance =
-                (enemy.transform.position - transform.position).sqrMagnitude;
+            float distance = (enemy.transform.position - transform.position).sqrMagnitude;
 
             if (distance < closestDistance)
             {
@@ -80,7 +91,12 @@ public class PlayerAim : MonoBehaviour
         }
 
         if (closestEnemy != null)
-            RotateTowards(closestEnemy.position);
+        {
+            AimPoint = closestEnemy.position;
+            HasAimPoint = true;
+
+            RotateTowards(AimPoint);
+        }
     }
 
     private void RotateTowards(Vector3 targetPosition)
@@ -91,8 +107,7 @@ public class PlayerAim : MonoBehaviour
         if (direction.sqrMagnitude < 0.01f)
             return;
 
-        Quaternion targetRotation =
-            Quaternion.LookRotation(direction);
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
 
         transform.rotation = Quaternion.Slerp(
             transform.rotation,

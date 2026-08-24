@@ -4,12 +4,21 @@ using UnityEngine.InputSystem;
 
 public class PlayerShooter : MonoBehaviour
 {
-    [SerializeField] private WeaponItemData equippedWeapon;
-    [SerializeField] private Transform muzzle;
+    [SerializeField]
+    private WeaponItemData equippedWeapon;
+
+    [SerializeField]
+    private Transform muzzle;
+
+    [SerializeField]
+    private PlayerAim playerAim;
 
     [Header("Bullet Visual")]
-    [SerializeField] private float tracerDuration = 0.05f;
-    [SerializeField] private float tracerWidth = 0.02f;
+    [SerializeField]
+    private float tracerDuration = 0.05f;
+
+    [SerializeField]
+    private float tracerWidth = 0.02f;
 
     private float nextFireTime;
     private int currentAmmo;
@@ -20,6 +29,8 @@ public class PlayerShooter : MonoBehaviour
     private void Awake()
     {
         shootMask = ~LayerMask.GetMask("Player");
+        if (playerAim == null)
+            playerAim = GetComponent<PlayerAim>();
     }
 
     private void Update()
@@ -57,19 +68,25 @@ public class PlayerShooter : MonoBehaviour
 
     private void Shoot()
     {
+        if (playerAim == null || !playerAim.HasAimPoint)
+            return;
+
         currentAmmo--;
 
         nextFireTime = Time.time + 1f / equippedWeapon.fireRate;
 
-        Vector3 direction = transform.forward;
+        Vector3 direction = (playerAim.AimPoint - muzzle.position).normalized;
         Vector3 endPoint = muzzle.position + direction * equippedWeapon.range;
 
-        if (Physics.Raycast(
-            muzzle.position,
-            direction,
-            out RaycastHit hit,
-            equippedWeapon.range,
-            shootMask))
+        if (
+            Physics.Raycast(
+                muzzle.position,
+                direction,
+                out RaycastHit hit,
+                equippedWeapon.range,
+                shootMask
+            )
+        )
         {
             endPoint = hit.point;
 
@@ -137,9 +154,7 @@ public class PlayerShooter : MonoBehaviour
         );
     }
 
-    public void EquipWeapon(
-        WeaponItemData weapon,
-        Transform weaponMuzzle)
+    public void EquipWeapon(WeaponItemData weapon, Transform weaponMuzzle)
     {
         StopAllCoroutines();
 

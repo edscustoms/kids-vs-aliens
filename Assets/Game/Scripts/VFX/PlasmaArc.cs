@@ -36,6 +36,27 @@ public class PlasmaArc : MonoBehaviour
         }
     }
 
+    public void Configure(
+        int newSegments,
+        float newMaxLength,
+        float newJitter,
+        float newRefreshRate,
+        float newWidth
+    )
+    {
+        segments = newSegments;
+        maxLength = newMaxLength;
+        jitter = newJitter;
+        refreshRate = newRefreshRate;
+
+        if (line == null)
+            line = GetComponent<LineRenderer>();
+
+        line.positionCount = segments;
+        line.startWidth = newWidth;
+        line.endWidth = newWidth;
+    }
+
     private void GenerateArc()
     {
         Vector3 start = Vector3.zero;
