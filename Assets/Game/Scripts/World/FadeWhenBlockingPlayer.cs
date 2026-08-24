@@ -104,6 +104,11 @@ public class FadeWhenBlockingPlayer : MonoBehaviour
         }
     }
 
+    public bool IsBlockingPlayer(Renderer renderer)
+    {
+        return renderer != null && obstructingWalls.Contains(renderer);
+    }
+
     private void SetFade(Renderer renderer, float fade)
     {
         propertyBlock.Clear();

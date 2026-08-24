@@ -21,6 +21,11 @@ public class PlayerAim : MonoBehaviour
     [SerializeField]
     private bool forceMobileAimInEditor = false;
 
+    [SerializeField]
+    private FadeWhenBlockingPlayer fadeWhenBlockingPlayer;
+
+    private readonly RaycastHit[] aimHits = new RaycastHit[32];
+
     public Vector3 AimPoint { get; private set; }
     public bool HasAimPoint { get; private set; }
 
@@ -31,6 +36,11 @@ public class PlayerAim : MonoBehaviour
     {
         if (mainCamera == null)
             mainCamera = Camera.main;
+
+        if (fadeWhenBlockingPlayer == null && mainCamera != null)
+        {
+            fadeWhenBlockingPlayer = mainCamera.GetComponent<FadeWhenBlockingPlayer>();
+        }
 
         // Our current floor is at Y = 0
         groundPlane = new Plane(Vector3.up, Vector3.zero);
@@ -53,15 +63,50 @@ public class PlayerAim : MonoBehaviour
             return;
 
         Vector2 mousePosition = Mouse.current.position.ReadValue();
-
         Ray ray = mainCamera.ScreenPointToRay(mousePosition);
 
-        // First try actual world geometry / enemies
-        if (
-            Physics.Raycast(ray, out RaycastHit hit, 1000f, aimMask, QueryTriggerInteraction.Collide)
-        )
+        int hitCount = Physics.RaycastNonAlloc(
+            ray,
+            aimHits,
+            1000f,
+            aimMask,
+            QueryTriggerInteraction.Collide
+        );
+
+        bool foundHit = false;
+        RaycastHit closestHit = default;
+        float closestDistance = Mathf.Infinity;
+
+        for (int i = 0; i < hitCount; i++)
         {
-            AimPoint = hit.point;
+            RaycastHit hit = aimHits[i];
+
+            Renderer renderer = hit.collider.GetComponent<Renderer>();
+
+            if (renderer == null)
+                renderer = hit.collider.GetComponentInParent<Renderer>();
+
+            // Skip walls currently faded because they block the player's view
+            if (
+                renderer != null
+                && fadeWhenBlockingPlayer != null
+                && fadeWhenBlockingPlayer.IsBlockingPlayer(renderer)
+            )
+            {
+                continue;
+            }
+
+            if (hit.distance < closestDistance)
+            {
+                closestDistance = hit.distance;
+                closestHit = hit;
+                foundHit = true;
+            }
+        }
+
+        if (foundHit)
+        {
+            AimPoint = closestHit.point;
             HasAimPoint = true;
 
             RotateTowards(AimPoint);
