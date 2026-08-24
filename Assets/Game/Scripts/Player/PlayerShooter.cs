@@ -23,6 +23,9 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlasmaMuzzleVFX plasmaMuzzlePrefab;
 
+    [SerializeField]
+    private PlasmaImpactVFX plasmaImpactPrefab;
+
     private float nextFireTime;
     private int currentAmmo;
     private bool isReloading;
@@ -86,6 +89,12 @@ public class PlayerShooter : MonoBehaviour
 
         Vector3 endPoint = muzzle.position + direction * equippedWeapon.range;
 
+        Color? auraColor = GetAuraColor();
+
+        bool didHit = false;
+        Vector3 hitPoint = Vector3.zero;
+        Vector3 hitNormal = Vector3.zero;
+
         if (
             Physics.Raycast(
                 muzzle.position,
@@ -96,32 +105,40 @@ public class PlayerShooter : MonoBehaviour
             )
         )
         {
-            endPoint = hit.point;
+            didHit = true;
 
+            endPoint = hit.point;
+            hitPoint = hit.point;
+            hitNormal = hit.normal;
+
+            // Gameplay damage stays INSTANT
             EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
 
             if (enemy != null)
                 enemy.TakeDamage(equippedWeapon.damage);
         }
 
-        Color? auraColor = GetAuraColor();
-
         SpawnMuzzleVFX(muzzle.position, direction, auraColor);
 
-        SpawnShotVFX(muzzle.position, endPoint, auraColor);
+        SpawnShotVFX(
+            muzzle.position,
+            endPoint,
+            auraColor,
+            didHit ? () => SpawnImpactVFX(hitPoint, hitNormal, auraColor) : null
+        );
 
         if (currentAmmo <= 0)
             StartCoroutine(Reload());
     }
 
-    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor)
+    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor, System.Action onArrive)
     {
         if (plasmaBoltPrefab == null)
             return;
 
         PlasmaBoltVFX bolt = Instantiate(plasmaBoltPrefab);
 
-        bolt.Initialize(start, end, auraColor);
+        bolt.Initialize(start, end, auraColor, onArrive);
     }
 
     private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
@@ -136,6 +153,20 @@ public class PlayerShooter : MonoBehaviour
         );
 
         muzzleVfx.Play(auraColor);
+    }
+
+    private void SpawnImpactVFX(Vector3 position, Vector3 normal, Color? auraColor)
+    {
+        if (plasmaImpactPrefab == null)
+            return;
+
+        PlasmaImpactVFX impact = Instantiate(
+            plasmaImpactPrefab,
+            position + normal * 0.01f,
+            Quaternion.LookRotation(normal)
+        );
+
+        impact.Play(auraColor);
     }
 
     private Color? GetAuraColor()

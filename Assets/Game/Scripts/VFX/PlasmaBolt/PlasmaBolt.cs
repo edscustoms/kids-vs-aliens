@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -21,6 +22,8 @@ public class PlasmaBoltVFX : MonoBehaviour
     private float totalDistance;
     private float travelled;
 
+    private Action onArrive;
+
     private void Awake()
     {
         line = GetComponent<LineRenderer>();
@@ -28,7 +31,12 @@ public class PlasmaBoltVFX : MonoBehaviour
         line.useWorldSpace = true;
     }
 
-    public void Initialize(Vector3 start, Vector3 end, Color? auraColor = null)
+    public void Initialize(
+        Vector3 start,
+        Vector3 end,
+        Color? auraColor = null,
+        Action onArrive = null
+    )
     {
         direction = (end - start).normalized;
         target = end;
@@ -37,6 +45,8 @@ public class PlasmaBoltVFX : MonoBehaviour
         travelled = 0f;
 
         transform.position = start;
+
+        this.onArrive = onArrive;
 
         SetColor(auraColor ?? defaultColor);
         UpdateLine();
@@ -50,6 +60,11 @@ public class PlasmaBoltVFX : MonoBehaviour
 
         if (travelled >= totalDistance)
         {
+            transform.position = target;
+            UpdateLine();
+
+            onArrive?.Invoke();
+
             Destroy(gameObject);
             return;
         }
