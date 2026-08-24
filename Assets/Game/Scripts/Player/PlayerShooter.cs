@@ -20,6 +20,9 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlasmaBoltVFX plasmaBoltPrefab;
 
+    [SerializeField]
+    private PlasmaMuzzleVFX plasmaMuzzlePrefab;
+
     private float nextFireTime;
     private int currentAmmo;
     private bool isReloading;
@@ -101,27 +104,48 @@ public class PlayerShooter : MonoBehaviour
                 enemy.TakeDamage(equippedWeapon.damage);
         }
 
-        SpawnShotVFX(muzzle.position, endPoint);
+        Color? auraColor = GetAuraColor();
+
+        SpawnMuzzleVFX(muzzle.position, direction, auraColor);
+
+        SpawnShotVFX(muzzle.position, endPoint, auraColor);
 
         if (currentAmmo <= 0)
             StartCoroutine(Reload());
     }
 
-    private void SpawnShotVFX(Vector3 start, Vector3 end)
+    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor)
     {
         if (plasmaBoltPrefab == null)
             return;
 
         PlasmaBoltVFX bolt = Instantiate(plasmaBoltPrefab);
 
-        Color? auraColor = null;
+        bolt.Initialize(start, end, auraColor);
+    }
 
+    private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
+    {
+        if (plasmaMuzzlePrefab == null)
+            return;
+
+        PlasmaMuzzleVFX muzzleVfx = Instantiate(
+            plasmaMuzzlePrefab,
+            position,
+            Quaternion.LookRotation(direction)
+        );
+
+        muzzleVfx.Play(auraColor);
+    }
+
+    private Color? GetAuraColor()
+    {
         if (playerCharacter != null && playerCharacter.ActiveVisual != null)
         {
-            auraColor = playerCharacter.ActiveVisual.AuraColor;
+            return playerCharacter.ActiveVisual.AuraColor;
         }
 
-        bolt.Initialize(start, end, auraColor);
+        return null;
     }
 
     private IEnumerator Reload()

@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Pistol
   itemType: 0
   icon: {fileID: 0}
-  worldPrefab: {fileID: 1271489694148206445, guid: ea01177c3a80efe409e8455c5264eb45, type: 3}
+  worldPrefab: {fileID: 1481942915625970157, guid: 43840967887f2114b9e93f016d3174dd, type: 3}
   equippedPrefab: {fileID: 1481942915625970157, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
   damage: 10
   range: 15

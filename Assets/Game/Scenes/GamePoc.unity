@@ -269,7 +269,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e22a14764f1102f4d8812614d16ae40d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemSpawner
-  itemPrefab: {fileID: 1271489694148206445, guid: ea01177c3a80efe409e8455c5264eb45, type: 3}
+  weapon: {fileID: 11400000, guid: 3765c3b1e078cf14487dc137ccde2ce1, type: 2}
   spawnDelay: 1
   roomHalfSize: 10
   wallPadding: 1
@@ -3616,37 +3616,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1718334219}
   m_SourcePrefab: {fileID: 100100000, guid: a1a802ecaf6775746bb2a929fb554ad8, type: 3}
---- !u!1 &1526412805
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1526412806}
-  m_Layer: 0
-  m_Name: PlasmaBolt
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1526412806
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526412805}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1538629013
 GameObject:
   m_ObjectHideFlags: 0
@@ -4844,8 +4813,9 @@ MonoBehaviour:
   equippedWeapon: {fileID: 0}
   muzzle: {fileID: 0}
   playerAim: {fileID: 0}
-  tracerDuration: 0.03
-  tracerWidth: 0.01
+  playerCharacter: {fileID: 0}
+  plasmaBoltPrefab: {fileID: 3143334613468970144, guid: b7b3f0c0087ae644e84d2793bc81ca55, type: 3}
+  plasmaMuzzlePrefab: {fileID: 8290874841259341917, guid: 2bc1c6464cd413b4ebda933744bb0161, type: 3}
 --- !u!114 &1809920725
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5609,63 +5579,6 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!1001 &3591339446096976783
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1481942915625970157, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_Name
-      value: PlasmaPistol_Body_V2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.49999994
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0.86602545
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 120
-      objectReference: {fileID: 0}
-    - target: {fileID: 2295493952620114775, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
 --- !u!1001 &8345070700268369567
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5844,5 +5757,3 @@ SceneRoots:
   - {fileID: 569662404}
   - {fileID: 828890722}
   - {fileID: 484425698}
-  - {fileID: 3591339446096976783}
-  - {fileID: 1526412806}
