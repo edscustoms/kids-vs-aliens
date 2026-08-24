@@ -58,7 +58,7 @@ public class PlayerAim : MonoBehaviour
 
         // First try actual world geometry / enemies
         if (
-            Physics.Raycast(ray, out RaycastHit hit, 1000f, aimMask, QueryTriggerInteraction.Ignore)
+            Physics.Raycast(ray, out RaycastHit hit, 1000f, aimMask, QueryTriggerInteraction.Collide)
         )
         {
             AimPoint = hit.point;
