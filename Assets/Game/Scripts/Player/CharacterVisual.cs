@@ -2,11 +2,19 @@ using UnityEngine;
 
 public class CharacterVisual : MonoBehaviour
 {
-    [SerializeField] private Animator animator;
-    [SerializeField] private Transform weaponSocket;
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private Transform weaponSocket;
+
+    [Header("Aura")]
+    [SerializeField]
+    private Color auraColor = Color.magenta;
 
     public Animator Animator => animator;
     public Transform WeaponSocket => weaponSocket;
+    public Color AuraColor => auraColor;
     public bool HasWeaponSocket => weaponSocket != null;
 
     private void Awake()

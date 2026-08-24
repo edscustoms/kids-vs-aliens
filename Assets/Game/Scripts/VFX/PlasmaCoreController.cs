@@ -18,10 +18,12 @@ public class PlasmaCoreController : MonoBehaviour
 
     public void Configure(PlasmaCoreConfig config, Color? auraColor = null)
     {
+        Color color = auraColor ?? defaultAuraColor;
+
         if (visualRoot != null)
             visualRoot.localScale = config.size;
 
-        SetAuraColor(auraColor ?? defaultAuraColor);
+        SetAuraColor(color);
 
         if (arcController != null)
         {
@@ -32,7 +34,8 @@ public class PlasmaCoreController : MonoBehaviour
                 config.arcLength,
                 config.jitter,
                 config.refreshRate,
-                config.arcWidth
+                config.arcWidth,
+                color
             );
         }
     }

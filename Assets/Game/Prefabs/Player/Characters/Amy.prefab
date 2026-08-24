@@ -78,6 +78,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterVisual
   animator: {fileID: 3010428651667635385}
   weaponSocket: {fileID: 6155522154160799689}
+  auraColor: {r: 1, g: 0, b: 1, a: 1}
 --- !u!1001 &8695788155716895016
 PrefabInstance:
   m_ObjectHideFlags: 0

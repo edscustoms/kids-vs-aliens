@@ -58,6 +58,14 @@ public class PlayerEquipment : MonoBehaviour
 
         equippedWeaponObject = Instantiate(weapon.equippedPrefab);
 
+        PlasmaCoreSetup plasmaSetup =
+            equippedWeaponObject.GetComponentInChildren<PlasmaCoreSetup>();
+
+        if (plasmaSetup != null)
+        {
+            plasmaSetup.Configure(playerCharacter.ActiveVisual.AuraColor);
+        }
+
         Transform gripPoint = FindChildByName(equippedWeaponObject.transform, "GripPoint");
 
         if (gripPoint == null)

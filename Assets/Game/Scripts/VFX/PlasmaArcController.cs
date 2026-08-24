@@ -32,6 +32,7 @@ public class PlasmaArcController : MonoBehaviour
 
     [SerializeField]
     private float arcWidth = 0.006f;
+    private Color auraColor = Color.magenta;
 
     private readonly List<GameObject> arcPool = new();
 
@@ -64,7 +65,8 @@ public class PlasmaArcController : MonoBehaviour
         float newArcLength,
         float newJitter,
         float newRefreshRate,
-        float newArcWidth
+        float newArcWidth,
+        Color newAuraColor
     )
     {
         minActiveArcs = newMinArcs;
@@ -75,6 +77,8 @@ public class PlasmaArcController : MonoBehaviour
         jitter = newJitter;
         refreshRate = newRefreshRate;
         arcWidth = newArcWidth;
+
+        auraColor = newAuraColor;
 
         if (started)
         {
@@ -102,7 +106,7 @@ public class PlasmaArcController : MonoBehaviour
 
             if (plasmaArc != null)
             {
-                plasmaArc.Configure(segments, arcLength, jitter, refreshRate, arcWidth);
+                plasmaArc.Configure(segments, arcLength, jitter, refreshRate, arcWidth, auraColor);
             }
 
             arc.SetActive(false);

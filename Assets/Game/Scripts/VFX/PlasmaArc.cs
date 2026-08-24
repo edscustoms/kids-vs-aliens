@@ -41,7 +41,8 @@ public class PlasmaArc : MonoBehaviour
         float newMaxLength,
         float newJitter,
         float newRefreshRate,
-        float newWidth
+        float newWidth,
+        Color auraColor
     )
     {
         segments = newSegments;
@@ -55,6 +56,14 @@ public class PlasmaArc : MonoBehaviour
         line.positionCount = segments;
         line.startWidth = newWidth;
         line.endWidth = newWidth;
+
+        MaterialPropertyBlock block = new();
+        line.GetPropertyBlock(block);
+
+        block.SetColor("_BaseColor", auraColor);
+        block.SetColor("_EmissionColor", auraColor * 8f);
+
+        line.SetPropertyBlock(block);
     }
 
     private void GenerateArc()
