@@ -45,9 +45,12 @@ public class BreakableTarget : MonoBehaviour
     private BreakableTargetPiece[] pieces;
 
     private int brokenPieceCount;
+    public int BrokenPieceCount => brokenPieceCount;
 
     private bool hasCollapsed;
+    public bool IsCollapsed => hasCollapsed;
     private bool isReassembling;
+    public bool IsReassembling => isReassembling;
 
     private float lastHitTime;
 
@@ -59,30 +62,20 @@ public class BreakableTarget : MonoBehaviour
 
     private void Update()
     {
-        if (
-            brokenPieceCount <= 0 ||
-            hasCollapsed ||
-            isReassembling
-        )
+        if (brokenPieceCount <= 0 || hasCollapsed || isReassembling)
         {
             return;
         }
 
-        if (
-            Time.time - lastHitTime >=
-            inactiveResetDelay
-        )
+        if (Time.time - lastHitTime >= inactiveResetDelay)
         {
-            StartCoroutine(
-                ReassembleTarget()
-            );
+            StartCoroutine(ReassembleTarget());
         }
     }
 
     private void FindPiecesRoot()
     {
-        Transform[] children =
-            GetComponentsInChildren<Transform>(true);
+        Transform[] children = GetComponentsInChildren<Transform>(true);
 
         foreach (Transform child in children)
         {
@@ -93,10 +86,7 @@ public class BreakableTarget : MonoBehaviour
             }
         }
 
-        Debug.LogError(
-            $"{name}: Could not find a child named " +
-            $"'BreakablePieces'."
-        );
+        Debug.LogError($"{name}: Could not find a child named " + $"'BreakablePieces'.");
     }
 
     private void SetupPieces()
@@ -104,72 +94,40 @@ public class BreakableTarget : MonoBehaviour
         if (piecesRoot == null)
             return;
 
-        pieces =
-            new BreakableTargetPiece[
-                piecesRoot.childCount
-            ];
+        pieces = new BreakableTargetPiece[piecesRoot.childCount];
 
-        for (
-            int i = 0;
-            i < piecesRoot.childCount;
-            i++
-        )
+        for (int i = 0; i < piecesRoot.childCount; i++)
         {
-            Transform pieceTransform =
-                piecesRoot.GetChild(i);
+            Transform pieceTransform = piecesRoot.GetChild(i);
 
-            BreakableTargetPiece piece =
-                pieceTransform
-                    .GetComponent<
-                        BreakableTargetPiece
-                    >();
+            BreakableTargetPiece piece = pieceTransform.GetComponent<BreakableTargetPiece>();
 
             if (piece == null)
             {
-                piece =
-                    pieceTransform.gameObject
-                        .AddComponent<
-                            BreakableTargetPiece
-                        >();
+                piece = pieceTransform.gameObject.AddComponent<BreakableTargetPiece>();
             }
 
-            MeshFilter meshFilter =
-                pieceTransform
-                    .GetComponent<MeshFilter>();
+            MeshFilter meshFilter = pieceTransform.GetComponent<MeshFilter>();
 
-            MeshCollider collider =
-                pieceTransform
-                    .GetComponent<MeshCollider>();
+            MeshCollider collider = pieceTransform.GetComponent<MeshCollider>();
 
             if (collider == null)
             {
-                collider =
-                    pieceTransform.gameObject
-                        .AddComponent<
-                            MeshCollider
-                        >();
+                collider = pieceTransform.gameObject.AddComponent<MeshCollider>();
             }
 
-            if (
-                collider.sharedMesh == null &&
-                meshFilter != null
-            )
+            if (collider.sharedMesh == null && meshFilter != null)
             {
-                collider.sharedMesh =
-                    meshFilter.sharedMesh;
+                collider.sharedMesh = meshFilter.sharedMesh;
             }
 
             collider.convex = true;
 
-            Rigidbody rb =
-                pieceTransform
-                    .GetComponent<Rigidbody>();
+            Rigidbody rb = pieceTransform.GetComponent<Rigidbody>();
 
             if (rb == null)
             {
-                rb =
-                    pieceTransform.gameObject
-                        .AddComponent<Rigidbody>();
+                rb = pieceTransform.gameObject.AddComponent<Rigidbody>();
             }
 
             rb.mass = pieceMass;
@@ -181,33 +139,17 @@ public class BreakableTarget : MonoBehaviour
             pieces[i] = piece;
         }
 
-        Debug.Log(
-            $"{name}: Automatically setup " +
-            $"{pieces.Length} breakable pieces."
-        );
+        Debug.Log($"{name}: Automatically setup " + $"{pieces.Length} breakable pieces.");
     }
 
-    public void BreakPiece(
-        BreakableTargetPiece piece,
-        Vector3 hitPoint,
-        Vector3 shotDirection
-    )
+    public void BreakPiece(BreakableTargetPiece piece, Vector3 hitPoint, Vector3 shotDirection)
     {
-        if (
-            piece == null ||
-            hasCollapsed ||
-            isReassembling
-        )
+        if (piece == null || hasCollapsed || isReassembling)
         {
             return;
         }
 
-        bool wasBroken =
-            piece.PunchOut(
-                hitPoint,
-                shotDirection,
-                punchForce
-            );
+        bool wasBroken = piece.PunchOut(hitPoint, shotDirection, punchForce);
 
         if (!wasBroken)
             return;
@@ -215,95 +157,51 @@ public class BreakableTarget : MonoBehaviour
         brokenPieceCount++;
         lastHitTime = Time.time;
 
-        float brokenPercentage =
-            (
-                (float)brokenPieceCount /
-                pieces.Length
-            ) * 100f;
+        float brokenPercentage = ((float)brokenPieceCount / pieces.Length) * 100f;
 
-        if (
-            brokenPercentage >=
-            collapsePercentage
-        )
+        if (brokenPercentage >= collapsePercentage)
         {
             CollapseTarget();
         }
     }
 
-    public void TemporarilyIgnorePieceCollisions(
-        BreakableTargetPiece shotPiece
-    )
+    public void TemporarilyIgnorePieceCollisions(BreakableTargetPiece shotPiece)
     {
-        StartCoroutine(
-            IgnorePieceCollisionsRoutine(
-                shotPiece
-            )
-        );
+        StartCoroutine(IgnorePieceCollisionsRoutine(shotPiece));
     }
 
-    private IEnumerator
-        IgnorePieceCollisionsRoutine(
-            BreakableTargetPiece shotPiece
-        )
+    private IEnumerator IgnorePieceCollisionsRoutine(BreakableTargetPiece shotPiece)
     {
-        if (
-            shotPiece == null ||
-            shotPiece.PieceCollider == null
-        )
+        if (shotPiece == null || shotPiece.PieceCollider == null)
         {
             yield break;
         }
 
-        Collider shotCollider =
-            shotPiece.PieceCollider;
+        Collider shotCollider = shotPiece.PieceCollider;
 
-        foreach (
-            BreakableTargetPiece piece
-            in pieces
-        )
+        foreach (BreakableTargetPiece piece in pieces)
         {
-            if (
-                piece == null ||
-                piece == shotPiece ||
-                piece.PieceCollider == null
-            )
+            if (piece == null || piece == shotPiece || piece.PieceCollider == null)
             {
                 continue;
             }
 
-            Physics.IgnoreCollision(
-                shotCollider,
-                piece.PieceCollider,
-                true
-            );
+            Physics.IgnoreCollision(shotCollider, piece.PieceCollider, true);
         }
 
-        yield return new WaitForSeconds(
-            collisionIgnoreDuration
-        );
+        yield return new WaitForSeconds(collisionIgnoreDuration);
 
         if (shotCollider == null)
             yield break;
 
-        foreach (
-            BreakableTargetPiece piece
-            in pieces
-        )
+        foreach (BreakableTargetPiece piece in pieces)
         {
-            if (
-                piece == null ||
-                piece == shotPiece ||
-                piece.PieceCollider == null
-            )
+            if (piece == null || piece == shotPiece || piece.PieceCollider == null)
             {
                 continue;
             }
 
-            Physics.IgnoreCollision(
-                shotCollider,
-                piece.PieceCollider,
-                false
-            );
+            Physics.IgnoreCollision(shotCollider, piece.PieceCollider, false);
         }
     }
 
@@ -317,10 +215,7 @@ public class BreakableTarget : MonoBehaviour
         // We intentionally keep piece-vs-piece
         // collisions here because we LIKE
         // the glorious cardboard explosion. 😂
-        foreach (
-            BreakableTargetPiece piece
-            in pieces
-        )
+        foreach (BreakableTargetPiece piece in pieces)
         {
             if (piece == null)
                 continue;
@@ -328,17 +223,12 @@ public class BreakableTarget : MonoBehaviour
             piece.Release();
         }
 
-        StartCoroutine(
-            ReassembleAfterExplosion()
-        );
+        StartCoroutine(ReassembleAfterExplosion());
     }
 
-    private IEnumerator
-        ReassembleAfterExplosion()
+    private IEnumerator ReassembleAfterExplosion()
     {
-        yield return new WaitForSeconds(
-            explosionResetDelay
-        );
+        yield return new WaitForSeconds(explosionResetDelay);
 
         yield return ReassembleTarget();
     }
@@ -351,15 +241,9 @@ public class BreakableTarget : MonoBehaviour
         isReassembling = true;
 
         // Freeze all currently broken pieces.
-        foreach (
-            BreakableTargetPiece piece
-            in pieces
-        )
+        foreach (BreakableTargetPiece piece in pieces)
         {
-            if (
-                piece == null ||
-                !piece.IsBroken
-            )
+            if (piece == null || !piece.IsBroken)
             {
                 continue;
             }
@@ -369,42 +253,21 @@ public class BreakableTarget : MonoBehaviour
 
         float longestReturnTime = 0f;
 
-        foreach (
-            BreakableTargetPiece piece
-            in pieces
-        )
+        foreach (BreakableTargetPiece piece in pieces)
         {
-            if (
-                piece == null ||
-                !piece.IsBroken
-            )
+            if (piece == null || !piece.IsBroken)
             {
                 continue;
             }
 
-            float delay =
-                Random.Range(
-                    0f,
-                    returnStagger
-                );
+            float delay = Random.Range(0f, returnStagger);
 
-            longestReturnTime =
-                Mathf.Max(
-                    longestReturnTime,
-                    delay + returnDuration
-                );
+            longestReturnTime = Mathf.Max(longestReturnTime, delay + returnDuration);
 
-            StartCoroutine(
-                ReturnPieceRoutine(
-                    piece,
-                    delay
-                )
-            );
+            StartCoroutine(ReturnPieceRoutine(piece, delay));
         }
 
-        yield return new WaitForSeconds(
-            longestReturnTime + 0.05f
-        );
+        yield return new WaitForSeconds(longestReturnTime + 0.05f);
 
         RestoreAllPieceCollisions();
 
@@ -413,135 +276,66 @@ public class BreakableTarget : MonoBehaviour
         isReassembling = false;
     }
 
-    private IEnumerator ReturnPieceRoutine(
-        BreakableTargetPiece piece,
-        float delay
-    )
+    private IEnumerator ReturnPieceRoutine(BreakableTargetPiece piece, float delay)
     {
-        yield return new WaitForSeconds(
-            delay
-        );
+        yield return new WaitForSeconds(delay);
 
         if (piece == null)
             yield break;
 
-        Vector3 startPosition =
-            piece.transform.position;
+        Vector3 startPosition = piece.transform.position;
 
-        Quaternion startRotation =
-            piece.transform.rotation;
+        Quaternion startRotation = piece.transform.rotation;
 
-        float randomDirection =
-            Random.value < 0.5f
-                ? -1f
-                : 1f;
+        float randomDirection = Random.value < 0.5f ? -1f : 1f;
 
-        float phase =
-            Random.Range(
-                0f,
-                Mathf.PI * 2f
-            );
+        float phase = Random.Range(0f, Mathf.PI * 2f);
 
         float elapsed = 0f;
 
-        while (
-            elapsed < returnDuration
-        )
+        while (elapsed < returnDuration)
         {
             elapsed += Time.deltaTime;
 
-            float t =
-                Mathf.Clamp01(
-                    elapsed /
-                    returnDuration
-                );
+            float t = Mathf.Clamp01(elapsed / returnDuration);
 
             // Smooth start + smooth landing.
-            float eased =
-                t * t *
-                (3f - 2f * t);
+            float eased = t * t * (3f - 2f * t);
 
-            Vector3 targetPosition =
-                piece
-                    .GetOriginalWorldPosition();
+            Vector3 targetPosition = piece.GetOriginalWorldPosition();
 
-            Quaternion targetRotation =
-                piece
-                    .GetOriginalWorldRotation();
+            Quaternion targetRotation = piece.GetOriginalWorldRotation();
 
-            Vector3 travelDirection =
-                targetPosition -
-                startPosition;
+            Vector3 travelDirection = targetPosition - startPosition;
 
-            Vector3 side =
-                Vector3.Cross(
-                    Vector3.up,
-                    travelDirection.normalized
-                );
+            Vector3 side = Vector3.Cross(Vector3.up, travelDirection.normalized);
 
-            if (
-                side.sqrMagnitude <
-                0.001f
-            )
+            if (side.sqrMagnitude < 0.001f)
             {
                 side = Vector3.right;
             }
 
             side.Normalize();
 
-            float magicEnvelope =
-                Mathf.Sin(
-                    t * Mathf.PI
-                );
+            float magicEnvelope = Mathf.Sin(t * Mathf.PI);
 
-            float arc =
-                magicEnvelope *
-                returnArcHeight;
+            float arc = magicEnvelope * returnArcHeight;
 
-            float swirl =
-                Mathf.Sin(
-                    t *
-                    Mathf.PI *
-                    2f +
-                    phase
-                ) *
-                magicEnvelope *
-                returnSwirlAmount;
+            float swirl = Mathf.Sin(t * Mathf.PI * 2f + phase) * magicEnvelope * returnSwirlAmount;
 
-            Vector3 position =
-                Vector3.Lerp(
-                    startPosition,
-                    targetPosition,
-                    eased
-                );
+            Vector3 position = Vector3.Lerp(startPosition, targetPosition, eased);
 
-            position +=
-                Vector3.up * arc;
+            position += Vector3.up * arc;
 
-            position +=
-                side * swirl;
+            position += side * swirl;
 
-            piece.transform.position =
-                position;
+            piece.transform.position = position;
 
-            Quaternion rotation =
-                Quaternion.Slerp(
-                    startRotation,
-                    targetRotation,
-                    eased
-                );
+            Quaternion rotation = Quaternion.Slerp(startRotation, targetRotation, eased);
 
-            float magicSpin =
-                magicEnvelope *
-                returnSpinDegrees *
-                randomDirection;
+            float magicSpin = magicEnvelope * returnSpinDegrees * randomDirection;
 
-            piece.transform.rotation =
-                Quaternion.AngleAxis(
-                    magicSpin,
-                    Vector3.up
-                ) *
-                rotation;
+            piece.transform.rotation = Quaternion.AngleAxis(magicSpin, Vector3.up) * rotation;
 
             yield return null;
         }
@@ -549,48 +343,27 @@ public class BreakableTarget : MonoBehaviour
         piece.CompleteReturn();
     }
 
-    private void
-        RestoreAllPieceCollisions()
+    private void RestoreAllPieceCollisions()
     {
-        for (
-            int i = 0;
-            i < pieces.Length;
-            i++
-        )
+        for (int i = 0; i < pieces.Length; i++)
         {
-            BreakableTargetPiece pieceA =
-                pieces[i];
+            BreakableTargetPiece pieceA = pieces[i];
 
-            if (
-                pieceA == null ||
-                pieceA.PieceCollider == null
-            )
+            if (pieceA == null || pieceA.PieceCollider == null)
             {
                 continue;
             }
 
-            for (
-                int j = i + 1;
-                j < pieces.Length;
-                j++
-            )
+            for (int j = i + 1; j < pieces.Length; j++)
             {
-                BreakableTargetPiece pieceB =
-                    pieces[j];
+                BreakableTargetPiece pieceB = pieces[j];
 
-                if (
-                    pieceB == null ||
-                    pieceB.PieceCollider == null
-                )
+                if (pieceB == null || pieceB.PieceCollider == null)
                 {
                     continue;
                 }
 
-                Physics.IgnoreCollision(
-                    pieceA.PieceCollider,
-                    pieceB.PieceCollider,
-                    false
-                );
+                Physics.IgnoreCollision(pieceA.PieceCollider, pieceB.PieceCollider, false);
             }
         }
     }

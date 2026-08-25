@@ -19,8 +19,8 @@ MonoBehaviour:
   equippedPrefab: {fileID: 1481942915625970157, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
   damage: 10
   range: 15
-  fireRate: 4
-  magazineSize: 8
-  reloadTime: 1.2
+  fireRate: 10
+  magazineSize: 16
+  reloadTime: 0.8
   fireMode: 0
   animationStyle: 1

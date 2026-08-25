@@ -141,5 +141,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TargetRail
   targetPrefab: {fileID: 8890882593145112060, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+  startingState: 0
+  activeCycleState: 1
+  autoCycle: 1
+  inactiveDurationRange: {x: 2, y: 5}
+  activeDurationRange: {x: 5, y: 10}
   travelDistance: 6
   moveSpeed: 2
+  playerStopDistance: 1
+  playerHeightSafetyMultiplier: 1.1
+  facingOffset: 0

@@ -9,24 +9,20 @@ public class TargetRail : MonoBehaviour
 
     [Header("State")]
     [SerializeField]
-    private PracticeTargetState startingState =
-        PracticeTargetState.Inactive;
+    private PracticeTargetState startingState = PracticeTargetState.Inactive;
 
     [SerializeField]
-    private PracticeTargetState activeCycleState =
-        PracticeTargetState.Active;
+    private PracticeTargetState activeCycleState = PracticeTargetState.Active;
 
     [Header("Automatic State Cycle")]
     [SerializeField]
     private bool autoCycle = true;
 
     [SerializeField]
-    private Vector2 inactiveDurationRange =
-        new Vector2(2f, 5f);
+    private Vector2 inactiveDurationRange = new Vector2(2f, 5f);
 
     [SerializeField]
-    private Vector2 activeDurationRange =
-        new Vector2(5f, 10f);
+    private Vector2 activeDurationRange = new Vector2(5f, 10f);
 
     [Header("Movement")]
     [SerializeField]
@@ -70,8 +66,7 @@ public class TargetRail : MonoBehaviour
     private Coroutine autoCycleRoutine;
 
     private bool IsOperational =>
-        currentState == PracticeTargetState.Active ||
-        currentState == PracticeTargetState.Hardcore;
+        currentState == PracticeTargetState.Active || currentState == PracticeTargetState.Hardcore;
 
     private void Awake()
     {
@@ -80,10 +75,7 @@ public class TargetRail : MonoBehaviour
         SpawnTarget();
         SetupMovement();
 
-        ApplyState(
-            startingState,
-            false
-        );
+        ApplyState(startingState, false);
     }
 
     private void Start()
@@ -105,8 +97,7 @@ public class TargetRail : MonoBehaviour
 
     private void FindRequiredObjects()
     {
-        Transform[] children =
-            GetComponentsInChildren<Transform>(true);
+        Transform[] children = GetComponentsInChildren<Transform>(true);
 
         foreach (Transform child in children)
         {
@@ -123,16 +114,12 @@ public class TargetRail : MonoBehaviour
 
         if (targetMover == null)
         {
-            Debug.LogError(
-                $"{name}: Could not find 'TargetMover'."
-            );
+            Debug.LogError($"{name}: Could not find 'TargetMover'.");
         }
 
         if (targetMount == null)
         {
-            Debug.LogError(
-                $"{name}: Could not find 'TargetMount'."
-            );
+            Debug.LogError($"{name}: Could not find 'TargetMount'.");
         }
     }
 
@@ -140,74 +127,57 @@ public class TargetRail : MonoBehaviour
     {
         if (cachedPlayer == null)
         {
-            GameObject playerObject =
-                GameObject.FindGameObjectWithTag("Player");
+            GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
 
             if (playerObject == null)
             {
-                Debug.LogError(
-                    $"{name}: Could not find Player."
-                );
+                Debug.LogError($"{name}: Could not find Player.");
 
                 return;
             }
 
-            cachedPlayer =
-                playerObject.transform;
+            cachedPlayer = playerObject.transform;
 
-            cachedPlayerController =
-                playerObject.GetComponent<CharacterController>();
+            cachedPlayerController = playerObject.GetComponent<CharacterController>();
         }
 
-        player =
-            cachedPlayer;
+        player = cachedPlayer;
 
-        playerController =
-            cachedPlayerController;
+        playerController = cachedPlayerController;
     }
 
     private void SpawnTarget()
     {
-        if (
-            targetPrefab == null ||
-            targetMount == null
-        )
+        if (targetPrefab == null || targetMount == null)
         {
             return;
         }
 
-        GameObject target =
-            Instantiate(
-                targetPrefab,
-                targetMount
-            );
+        GameObject target = Instantiate(targetPrefab, targetMount);
 
-        target.name =
-            targetPrefab.name;
+        target.name = targetPrefab.name;
 
         // Search the ENTIRE spawned prefab,
         // not only its top GameObject.
-        practiceTarget =
-            target.GetComponentInChildren<PracticeTarget>(true);
+        practiceTarget = target.GetComponentInChildren<PracticeTarget>(true);
 
         if (practiceTarget != null)
         {
-            spawnedTarget =
-                practiceTarget.transform;
+            spawnedTarget = practiceTarget.transform;
+
+            practiceTarget.Initialize(player);
         }
         else
         {
-            spawnedTarget =
-                target.transform;
+            spawnedTarget = target.transform;
 
             Debug.LogError(
-                $"{name}: Spawned target '{target.name}' " +
-                $"does not contain a PracticeTarget component."
+                $"{name}: Spawned target '{target.name}' "
+                    + $"does not contain a PracticeTarget component."
             );
         }
 
-        targetBaseLocalRotation =
-            spawnedTarget.localRotation;
+        targetBaseLocalRotation = spawnedTarget.localRotation;
     }
 
     private void SetupMovement()
@@ -215,28 +185,18 @@ public class TargetRail : MonoBehaviour
         if (targetMover == null)
             return;
 
-        Vector3 startPosition =
-            targetMover.localPosition;
+        Vector3 startPosition = targetMover.localPosition;
 
-        float halfDistance =
-            travelDistance * 0.5f;
+        float halfDistance = travelDistance * 0.5f;
 
-        leftPosition =
-            startPosition +
-            Vector3.left * halfDistance;
+        leftPosition = startPosition + Vector3.left * halfDistance;
 
-        rightPosition =
-            startPosition +
-            Vector3.right * halfDistance;
+        rightPosition = startPosition + Vector3.right * halfDistance;
     }
 
     private void MoveTarget()
     {
-        if (
-            targetMover == null ||
-            moveSpeed <= 0f ||
-            travelDistance <= 0f
-        )
+        if (targetMover == null || moveSpeed <= 0f || travelDistance <= 0f)
         {
             return;
         }
@@ -244,97 +204,58 @@ public class TargetRail : MonoBehaviour
         if (IsPlayerTooClose())
             return;
 
-        Vector3 destination =
-            movingRight
-                ? rightPosition
-                : leftPosition;
+        Vector3 destination = movingRight ? rightPosition : leftPosition;
 
-        targetMover.localPosition =
-            Vector3.MoveTowards(
-                targetMover.localPosition,
-                destination,
-                moveSpeed * Time.deltaTime
-            );
+        targetMover.localPosition = Vector3.MoveTowards(
+            targetMover.localPosition,
+            destination,
+            moveSpeed * Time.deltaTime
+        );
 
-        if (
-            Vector3.Distance(
-                targetMover.localPosition,
-                destination
-            ) <= 0.001f
-        )
+        if (Vector3.Distance(targetMover.localPosition, destination) <= 0.001f)
         {
-            movingRight =
-                !movingRight;
+            movingRight = !movingRight;
         }
     }
 
     private bool IsPlayerTooClose()
     {
-        if (
-            player == null ||
-            spawnedTarget == null
-        )
+        if (player == null || spawnedTarget == null)
         {
             return false;
         }
 
-        Vector3 difference =
-            player.position -
-            spawnedTarget.position;
+        Vector3 difference = player.position - spawnedTarget.position;
 
-        float horizontalDistance =
-            new Vector2(
-                difference.x,
-                difference.z
-            ).magnitude;
+        float horizontalDistance = new Vector2(difference.x, difference.z).magnitude;
 
         float playerHeight =
-            playerController != null
-                ? playerController.height *
-                  player.lossyScale.y
-                : 2f;
+            playerController != null ? playerController.height * player.lossyScale.y : 2f;
 
-        float verticalTolerance =
-            playerHeight *
-            playerHeightSafetyMultiplier;
+        float verticalTolerance = playerHeight * playerHeightSafetyMultiplier;
 
-        float verticalDistance =
-            Mathf.Abs(
-                difference.y
-            );
+        float verticalDistance = Mathf.Abs(difference.y);
 
-        return
-            horizontalDistance <= playerStopDistance &&
-            verticalDistance <= verticalTolerance;
+        return horizontalDistance <= playerStopDistance && verticalDistance <= verticalTolerance;
     }
 
     private void FacePlayer()
     {
-        if (
-            player == null ||
-            spawnedTarget == null ||
-            targetMount == null
-        )
+        if (player == null || spawnedTarget == null || targetMount == null)
         {
             return;
         }
 
-        Vector3 directionToPlayer =
-            player.position -
-            spawnedTarget.position;
+        Vector3 directionToPlayer = player.position - spawnedTarget.position;
 
         directionToPlayer.y = 0f;
 
         if (directionToPlayer.sqrMagnitude < 0.001f)
             return;
 
-        Quaternion baseWorldRotation =
-            targetMount.rotation *
-            targetBaseLocalRotation;
+        Quaternion baseWorldRotation = targetMount.rotation * targetBaseLocalRotation;
 
-        Vector3 baseFacingDirection =
-            baseWorldRotation *
-            Vector3.up;
+        Vector3 baseFacingDirection = baseWorldRotation * Vector3.up;
 
         baseFacingDirection.y = 0f;
 
@@ -343,51 +264,34 @@ public class TargetRail : MonoBehaviour
 
         baseFacingDirection.Normalize();
 
-        float angle =
-            Vector3.SignedAngle(
-                baseFacingDirection,
-                directionToPlayer.normalized,
-                Vector3.up
-            );
+        float angle = Vector3.SignedAngle(
+            baseFacingDirection,
+            directionToPlayer.normalized,
+            Vector3.up
+        );
 
         // Only the cardboard target rotates,
         // around its local Z axis.
         spawnedTarget.localRotation =
-            targetBaseLocalRotation *
-            Quaternion.AngleAxis(
-                angle + facingOffset,
-                Vector3.forward
-            );
+            targetBaseLocalRotation * Quaternion.AngleAxis(angle + facingOffset, Vector3.forward);
     }
 
     // -------------------------
     // STATE
     // -------------------------
 
-    public void SetState(
-        PracticeTargetState newState
-    )
+    public void SetState(PracticeTargetState newState)
     {
-        ApplyState(
-            newState,
-            true
-        );
+        ApplyState(newState, true);
     }
 
-    private void ApplyState(
-        PracticeTargetState newState,
-        bool animate
-    )
+    private void ApplyState(PracticeTargetState newState, bool animate)
     {
-        currentState =
-            newState;
+        currentState = newState;
 
         if (practiceTarget != null)
         {
-            practiceTarget.SetState(
-                currentState,
-                animate
-            );
+            practiceTarget.SetState(currentState, animate);
         }
     }
 
@@ -399,30 +303,21 @@ public class TargetRail : MonoBehaviour
     {
         if (autoCycleRoutine != null)
         {
-            StopCoroutine(
-                autoCycleRoutine
-            );
+            StopCoroutine(autoCycleRoutine);
         }
 
-        autoCycleRoutine =
-            StartCoroutine(
-                AutoCycleRoutine()
-            );
+        autoCycleRoutine = StartCoroutine(AutoCycleRoutine());
     }
 
     public void SetAutoCycle(bool enabled)
     {
-        autoCycle =
-            enabled;
+        autoCycle = enabled;
 
         if (autoCycleRoutine != null)
         {
-            StopCoroutine(
-                autoCycleRoutine
-            );
+            StopCoroutine(autoCycleRoutine);
 
-            autoCycleRoutine =
-                null;
+            autoCycleRoutine = null;
         }
 
         if (autoCycle)
@@ -439,44 +334,27 @@ public class TargetRail : MonoBehaviour
 
             if (IsOperational)
             {
-                waitTime =
-                    Random.Range(
-                        activeDurationRange.x,
-                        activeDurationRange.y
-                    );
+                waitTime = Random.Range(activeDurationRange.x, activeDurationRange.y);
             }
             else
             {
-                waitTime =
-                    Random.Range(
-                        inactiveDurationRange.x,
-                        inactiveDurationRange.y
-                    );
+                waitTime = Random.Range(inactiveDurationRange.x, inactiveDurationRange.y);
             }
 
-            yield return new WaitForSeconds(
-                waitTime
-            );
+            yield return new WaitForSeconds(waitTime);
 
             if (IsOperational)
             {
-                ApplyState(
-                    PracticeTargetState.Inactive,
-                    true
-                );
+                ApplyState(PracticeTargetState.Inactive, true);
             }
             else
             {
                 PracticeTargetState nextState =
-                    activeCycleState ==
-                    PracticeTargetState.Inactive
+                    activeCycleState == PracticeTargetState.Inactive
                         ? PracticeTargetState.Active
                         : activeCycleState;
 
-                ApplyState(
-                    nextState,
-                    true
-                );
+                ApplyState(nextState, true);
             }
         }
 
