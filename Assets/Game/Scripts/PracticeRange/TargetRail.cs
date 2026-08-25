@@ -13,10 +13,16 @@ public class TargetRail : MonoBehaviour
     [SerializeField]
     private float moveSpeed = 2f;
 
+    [Header("Player Safety")]
+    [SerializeField]
+    private float playerStopDistance = 1f;
+
     private Transform targetMover;
     private Transform targetMount;
 
-    private Vector3 startPosition;
+    private Transform spawnedTarget;
+    private Transform player;
+
     private Vector3 leftPosition;
     private Vector3 rightPosition;
 
@@ -25,6 +31,7 @@ public class TargetRail : MonoBehaviour
     private void Awake()
     {
         FindRequiredObjects();
+        FindPlayer();
         SpawnTarget();
         SetupMovement();
     }
@@ -42,48 +49,33 @@ public class TargetRail : MonoBehaviour
         foreach (Transform child in children)
         {
             if (child.name == "TargetMover")
-            {
                 targetMover = child;
-            }
-            else if (child.name == "TargetMount")
-            {
+
+            if (child.name == "TargetMount")
                 targetMount = child;
-            }
         }
+    }
 
-        if (targetMover == null)
-        {
-            Debug.LogError(
-                $"{name}: Could not find 'TargetMover'."
-            );
-        }
+    private void FindPlayer()
+    {
+        GameObject playerObject =
+            GameObject.FindGameObjectWithTag("Player");
 
-        if (targetMount == null)
-        {
-            Debug.LogError(
-                $"{name}: Could not find 'TargetMount'."
-            );
-        }
+        if (playerObject != null)
+            player = playerObject.transform;
     }
 
     private void SpawnTarget()
     {
-        if (
-            targetPrefab == null ||
-            targetMount == null
-        )
-        {
+        if (targetPrefab == null || targetMount == null)
             return;
-        }
 
         GameObject target =
-            Instantiate(
-                targetPrefab,
-                targetMount
-            );
+            Instantiate(targetPrefab, targetMount);
 
-        target.name =
-            targetPrefab.name;
+        target.name = targetPrefab.name;
+
+        spawnedTarget = target.transform;
     }
 
     private void SetupMovement()
@@ -91,19 +83,17 @@ public class TargetRail : MonoBehaviour
         if (targetMover == null)
             return;
 
-        startPosition =
+        Vector3 startPosition =
             targetMover.localPosition;
 
         float halfDistance =
             travelDistance * 0.5f;
 
         leftPosition =
-            startPosition +
-            Vector3.left * halfDistance;
+            startPosition + Vector3.left * halfDistance;
 
         rightPosition =
-            startPosition +
-            Vector3.right * halfDistance;
+            startPosition + Vector3.right * halfDistance;
     }
 
     private void MoveTarget()
@@ -116,6 +106,9 @@ public class TargetRail : MonoBehaviour
         {
             return;
         }
+
+        if (IsPlayerTooClose())
+            return;
 
         Vector3 destination =
             movingRight
@@ -136,8 +129,18 @@ public class TargetRail : MonoBehaviour
             ) <= 0.001f
         )
         {
-            movingRight =
-                !movingRight;
+            movingRight = !movingRight;
         }
+    }
+
+    private bool IsPlayerTooClose()
+    {
+        if (player == null || spawnedTarget == null)
+            return false;
+
+        return Vector3.Distance(
+            player.position,
+            spawnedTarget.position
+        ) <= playerStopDistance;
     }
 }
