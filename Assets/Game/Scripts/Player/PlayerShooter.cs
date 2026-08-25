@@ -83,17 +83,24 @@ public class PlayerShooter : MonoBehaviour
 
         currentAmmo--;
 
-        nextFireTime = Time.time + 1f / equippedWeapon.fireRate;
+        nextFireTime =
+            Time.time + 1f / equippedWeapon.fireRate;
 
-        Vector3 direction = (playerAim.AimPoint - muzzle.position).normalized;
+        Vector3 direction =
+            (playerAim.AimPoint - muzzle.position).normalized;
 
-        Vector3 endPoint = muzzle.position + direction * equippedWeapon.range;
+        Vector3 endPoint =
+            muzzle.position +
+            direction * equippedWeapon.range;
 
         Color? auraColor = GetAuraColor();
 
         bool didHit = false;
+
         Vector3 hitPoint = Vector3.zero;
         Vector3 hitNormal = Vector3.zero;
+
+        BreakableTargetPiece targetPiece = null;
 
         if (
             Physics.Raycast(
@@ -111,67 +118,131 @@ public class PlayerShooter : MonoBehaviour
             hitPoint = hit.point;
             hitNormal = hit.normal;
 
-            // Gameplay damage stays INSTANT
-            EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
+            // Check if we hit a breakable practice target piece.
+            targetPiece =
+                hit.collider
+                    .GetComponentInParent<BreakableTargetPiece>();
+
+            // Gameplay enemy damage stays INSTANT.
+            EnemyHealth enemy =
+                hit.collider.GetComponentInParent<EnemyHealth>();
 
             if (enemy != null)
+            {
                 enemy.TakeDamage(equippedWeapon.damage);
+            }
         }
 
-        SpawnMuzzleVFX(muzzle.position, direction, auraColor);
+        SpawnMuzzleVFX(
+            muzzle.position,
+            direction,
+            auraColor
+        );
+
+        System.Action onArrive = null;
+
+        if (didHit)
+        {
+            onArrive = () =>
+            {
+                SpawnImpactVFX(
+                    hitPoint,
+                    hitNormal,
+                    auraColor
+                );
+
+                if (
+                    targetPiece != null &&
+                    targetPiece.Target != null
+                )
+                {
+                    targetPiece.Target.BreakPiece(
+                        targetPiece,
+                        hitPoint,
+                        direction
+                    );
+                }
+            };
+        }
 
         SpawnShotVFX(
             muzzle.position,
             endPoint,
             auraColor,
-            didHit ? () => SpawnImpactVFX(hitPoint, hitNormal, auraColor) : null
+            onArrive
         );
 
         if (currentAmmo <= 0)
+        {
             StartCoroutine(Reload());
+        }
     }
 
-    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor, System.Action onArrive)
+    private void SpawnShotVFX(
+        Vector3 start,
+        Vector3 end,
+        Color? auraColor,
+        System.Action onArrive
+    )
     {
         if (plasmaBoltPrefab == null)
             return;
 
-        PlasmaBoltVFX bolt = Instantiate(plasmaBoltPrefab);
+        PlasmaBoltVFX bolt =
+            Instantiate(plasmaBoltPrefab);
 
-        bolt.Initialize(start, end, auraColor, onArrive);
+        bolt.Initialize(
+            start,
+            end,
+            auraColor,
+            onArrive
+        );
     }
 
-    private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
+    private void SpawnMuzzleVFX(
+        Vector3 position,
+        Vector3 direction,
+        Color? auraColor
+    )
     {
         if (plasmaMuzzlePrefab == null)
             return;
 
-        PlasmaMuzzleVFX muzzleVfx = Instantiate(
-            plasmaMuzzlePrefab,
-            position,
-            Quaternion.LookRotation(direction)
-        );
+        PlasmaMuzzleVFX muzzleVfx =
+            Instantiate(
+                plasmaMuzzlePrefab,
+                position,
+                Quaternion.LookRotation(direction)
+            );
 
         muzzleVfx.Play(auraColor);
     }
 
-    private void SpawnImpactVFX(Vector3 position, Vector3 normal, Color? auraColor)
+    private void SpawnImpactVFX(
+        Vector3 position,
+        Vector3 normal,
+        Color? auraColor
+    )
     {
         if (plasmaImpactPrefab == null)
             return;
 
-        PlasmaImpactVFX impact = Instantiate(
-            plasmaImpactPrefab,
-            position + normal * 0.01f,
-            Quaternion.LookRotation(normal)
-        );
+        PlasmaImpactVFX impact =
+            Instantiate(
+                plasmaImpactPrefab,
+                position + normal * 0.01f,
+                Quaternion.LookRotation(normal)
+            );
 
         impact.Play(auraColor);
     }
 
     private Color? GetAuraColor()
     {
-        if (playerCharacter != null && playerCharacter.ActiveVisual != null)
+        if (
+            playerCharacter != null &&
+            playerCharacter.ActiveVisual != null
+        )
         {
             return playerCharacter.ActiveVisual.AuraColor;
         }
@@ -186,20 +257,28 @@ public class PlayerShooter : MonoBehaviour
 
         isReloading = true;
 
-        Debug.Log($"Reloading {equippedWeapon.itemName}...");
+        Debug.Log(
+            $"Reloading {equippedWeapon.itemName}..."
+        );
 
-        yield return new WaitForSeconds(equippedWeapon.reloadTime);
+        yield return new WaitForSeconds(
+            equippedWeapon.reloadTime
+        );
 
         currentAmmo = equippedWeapon.magazineSize;
 
         isReloading = false;
 
         Debug.Log(
-            $"Reloaded {equippedWeapon.itemName}: " + $"{currentAmmo}/{equippedWeapon.magazineSize}"
+            $"Reloaded {equippedWeapon.itemName}: " +
+            $"{currentAmmo}/{equippedWeapon.magazineSize}"
         );
     }
 
-    public void EquipWeapon(WeaponItemData weapon, Transform weaponMuzzle)
+    public void EquipWeapon(
+        WeaponItemData weapon,
+        Transform weaponMuzzle
+    )
     {
         StopAllCoroutines();
 
@@ -207,6 +286,7 @@ public class PlayerShooter : MonoBehaviour
         muzzle = weaponMuzzle;
 
         currentAmmo = weapon.magazineSize;
+
         isReloading = false;
         nextFireTime = 0f;
     }

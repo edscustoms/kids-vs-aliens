@@ -680,7 +680,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f35f37cc5f6fea74285d63977536d53a, type: 2}
+  - {fileID: 2100000, guid: cdbab56bdd8f4b24b87c9391c430ab22, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3749,6 +3749,63 @@ MonoBehaviour:
   - {fileID: 145005393}
   - {fileID: 1250138162}
   - {fileID: 127747414}
+--- !u!1001 &1549958225
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4.66412
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.98288
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7984498633016714434, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8890882593145112060, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+      propertyPath: m_Name
+      value: PracticeTarget_Alien_V_01
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
 --- !u!1 &1590005855
 GameObject:
   m_ObjectHideFlags: 0
@@ -4798,6 +4855,7 @@ MonoBehaviour:
     m_Bits: 0
   autoAimRange: 20
   forceMobileAimInEditor: 0
+  fadeWhenBlockingPlayer: {fileID: 0}
 --- !u!114 &1809920724
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5758,3 +5816,4 @@ SceneRoots:
   - {fileID: 569662404}
   - {fileID: 828890722}
   - {fileID: 484425698}
+  - {fileID: 1549958225}
