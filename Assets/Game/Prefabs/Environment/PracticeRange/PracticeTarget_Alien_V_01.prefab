@@ -3740,7 +3740,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableTarget
   pieceMass: 0.12
-  punchForce: 50
+  punchForce: 1
+  collisionIgnoreDuration: 0.12
   collapsePercentage: 12
 --- !u!1 &8975551755074001755
 GameObject:

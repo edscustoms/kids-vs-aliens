@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class BreakableTarget : MonoBehaviour
@@ -8,6 +9,9 @@ public class BreakableTarget : MonoBehaviour
 
     [SerializeField]
     private float punchForce = 5f;
+
+    [SerializeField]
+    private float collisionIgnoreDuration = 0.12f;
 
     [Header("Collapse")]
     [SerializeField]
@@ -112,6 +116,46 @@ public class BreakableTarget : MonoBehaviour
         if (brokenPercentage >= collapsePercentage)
         {
             CollapseTarget();
+        }
+    }
+
+    public void TemporarilyIgnorePieceCollisions(BreakableTargetPiece shotPiece)
+    {
+        StartCoroutine(IgnorePieceCollisionsRoutine(shotPiece));
+    }
+
+    private IEnumerator IgnorePieceCollisionsRoutine(BreakableTargetPiece shotPiece)
+    {
+        if (shotPiece == null || shotPiece.PieceCollider == null)
+        {
+            yield break;
+        }
+
+        Collider shotCollider = shotPiece.PieceCollider;
+
+        foreach (BreakableTargetPiece piece in pieces)
+        {
+            if (piece == null || piece == shotPiece || piece.PieceCollider == null)
+            {
+                continue;
+            }
+
+            Physics.IgnoreCollision(shotCollider, piece.PieceCollider, true);
+        }
+
+        yield return new WaitForSeconds(collisionIgnoreDuration);
+
+        if (shotCollider == null)
+            yield break;
+
+        foreach (BreakableTargetPiece piece in pieces)
+        {
+            if (piece == null || piece == shotPiece || piece.PieceCollider == null)
+            {
+                continue;
+            }
+
+            Physics.IgnoreCollision(shotCollider, piece.PieceCollider, false);
         }
     }
 
