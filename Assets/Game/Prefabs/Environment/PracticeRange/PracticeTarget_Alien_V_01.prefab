@@ -3743,6 +3743,13 @@ MonoBehaviour:
   punchForce: 1
   collisionIgnoreDuration: 0.12
   collapsePercentage: 12
+  explosionResetDelay: 3
+  inactiveResetDelay: 5
+  returnDuration: 1.1
+  returnStagger: 0.25
+  returnArcHeight: 0.4
+  returnSwirlAmount: 0.2
+  returnSpinDegrees: 180
 --- !u!1 &8975551755074001755
 GameObject:
   m_ObjectHideFlags: 0
