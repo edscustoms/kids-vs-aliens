@@ -2891,7 +2891,7 @@ Transform:
   m_GameObject: {fileID: 6556056446662174353}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: -0, z: 0, w: 0.7071067}
-  m_LocalPosition: {x: 0.05902958, y: -0, z: 0.84999996}
+  m_LocalPosition: {x: 0.673, y: 0, z: 1.252}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3799,7 +3799,7 @@ MonoBehaviour:
   hingeDuration: 2
   plasmaBoltPrefab: {fileID: 3143334613468970144, guid: b7b3f0c0087ae644e84d2793bc81ca55, type: 3}
   shotRange: 50
-  fireIntervalRange: {x: 0.5, y: 2}
+  fireIntervalRange: {x: 0.5, y: 1.5}
   hitChance: 30
   missRadius: 1.5
   boltColor: {r: 1, g: 0.05, b: 0.05, a: 1}

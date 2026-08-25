@@ -3,9 +3,28 @@ using UnityEngine;
 
 public class TargetRail : MonoBehaviour
 {
-    [Header("Target")]
+    // =====================================================
+    // INSPECTOR
+    // =====================================================
+
+    [Header("Targets")]
     [SerializeField]
-    private GameObject targetPrefab;
+    private GameObject[] targetPrefabs;
+
+    [Header("Rail Models")]
+    [SerializeField]
+    private GameObject straightRailPrefab;
+
+    [SerializeField]
+    private GameObject endCapPrefab;
+
+    [Header("Rail")]
+    [SerializeField]
+    [Range(1, 3)]
+    private int railLength = 1;
+
+    [SerializeField]
+    private float moveSpeed = 2f;
 
     [Header("State")]
     [SerializeField]
@@ -18,34 +37,40 @@ public class TargetRail : MonoBehaviour
     [SerializeField]
     private bool autoCycle = true;
 
+    [Tooltip("How long the target stays fully folded down.")]
     [SerializeField]
-    private Vector2 inactiveDurationRange = new Vector2(2f, 5f);
+    private float sleepDuration = 3f;
 
     [SerializeField]
     private Vector2 activeDurationRange = new Vector2(5f, 10f);
 
-    [Header("Movement")]
-    [SerializeField]
-    private float travelDistance = 6f;
+    // =====================================================
+    // FIXED RAIL MECHANICS
+    // =====================================================
 
-    [SerializeField]
-    private float moveSpeed = 2f;
+    private const float RailModuleLength = 1f;
+    private const float CapGap = 0.042f;
+    private const float CarriageLength = 0.24f;
+    private const float EndClearance = 0.005f;
 
-    [Header("Player Safety")]
-    [SerializeField]
-    private float playerStopDistance = 1f;
+    private const float FacingTransitionDuration = 0.5f;
 
-    [SerializeField]
-    private float playerHeightSafetyMultiplier = 1.1f;
+    private const float PlayerStopDistance = 1f;
+    private const float PlayerHeightSafetyMultiplier = 1.1f;
 
-    [Header("Facing")]
-    [SerializeField]
-    private float facingOffset = 0f;
+    private const float FacingOffset = 0f;
 
+    // =====================================================
+    // REFERENCES
+    // =====================================================
+
+    private Transform railModels;
     private Transform targetMover;
     private Transform targetMount;
 
     private Transform spawnedTarget;
+    private Transform spawnedHingePivot;
+
     private PracticeTarget practiceTarget;
 
     private Transform player;
@@ -54,28 +79,55 @@ public class TargetRail : MonoBehaviour
     private static Transform cachedPlayer;
     private static CharacterController cachedPlayerController;
 
+    // =====================================================
+    // STATE
+    // =====================================================
+
     private Quaternion targetBaseLocalRotation;
+
+    private PracticeTargetState currentState;
+
+    private bool movementAndFacingEnabled;
+    private bool isTransitioning;
+
+    private Coroutine autoCycleRoutine;
+    private Coroutine stateTransitionRoutine;
+
+    // =====================================================
+    // MOVEMENT
+    // =====================================================
 
     private Vector3 leftPosition;
     private Vector3 rightPosition;
 
     private bool movingRight = true;
 
-    private PracticeTargetState currentState;
-
-    private Coroutine autoCycleRoutine;
+    // =====================================================
+    // PROPERTIES
+    // =====================================================
 
     private bool IsOperational =>
         currentState == PracticeTargetState.Active || currentState == PracticeTargetState.Hardcore;
+
+    private float TotalRailLength => railLength * RailModuleLength;
+
+    private float TargetHingeDuration =>
+        practiceTarget != null ? practiceTarget.HingeDuration : 1.6f;
+
+    // =====================================================
+    // UNITY
+    // =====================================================
 
     private void Awake()
     {
         FindRequiredObjects();
         FindPlayer();
-        SpawnTarget();
+
+        BuildRailVisuals();
+        SpawnRandomTarget();
         SetupMovement();
 
-        ApplyState(startingState, false);
+        ApplyStartingState();
     }
 
     private void Start()
@@ -91,9 +143,16 @@ public class TargetRail : MonoBehaviour
         if (!IsOperational)
             return;
 
+        if (!movementAndFacingEnabled)
+            return;
+
         FacePlayer();
         MoveTarget();
     }
+
+    // =====================================================
+    // FIND OBJECTS
+    // =====================================================
 
     private void FindRequiredObjects()
     {
@@ -101,6 +160,11 @@ public class TargetRail : MonoBehaviour
 
         foreach (Transform child in children)
         {
+            if (child.name == "RailModels")
+            {
+                railModels = child;
+            }
+
             if (child.name == "TargetMover")
             {
                 targetMover = child;
@@ -110,6 +174,11 @@ public class TargetRail : MonoBehaviour
             {
                 targetMount = child;
             }
+        }
+
+        if (railModels == null)
+        {
+            Debug.LogError($"{name}: Could not find 'RailModels'.");
         }
 
         if (targetMover == null)
@@ -146,57 +215,248 @@ public class TargetRail : MonoBehaviour
         playerController = cachedPlayerController;
     }
 
-    private void SpawnTarget()
+    // =====================================================
+    // BUILD RAIL
+    // =====================================================
+
+    private void BuildRailVisuals()
     {
-        if (targetPrefab == null || targetMount == null)
+        if (railModels == null || straightRailPrefab == null || endCapPrefab == null)
         {
             return;
         }
 
-        GameObject target = Instantiate(targetPrefab, targetMount);
+        ClearRailVisuals();
 
-        target.name = targetPrefab.name;
+        // -------------------------------------------------
+        // STRAIGHT 1M MODULES
+        // -------------------------------------------------
 
-        // Search the ENTIRE spawned prefab,
-        // not only its top GameObject.
+        for (int i = 0; i < railLength; i++)
+        {
+            GameObject railPiece = Instantiate(straightRailPrefab, railModels);
+
+            railPiece.name = $"Rail_{i + 1}";
+
+            railPiece.transform.localPosition = new Vector3(-i * RailModuleLength, 0f, 0f);
+
+            railPiece.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+
+            railPiece.transform.localScale = Vector3.one;
+        }
+
+        // -------------------------------------------------
+        // RIGHT CAP
+        // -------------------------------------------------
+
+        GameObject rightCap = Instantiate(endCapPrefab, railModels);
+
+        rightCap.name = "RailCap_Right";
+
+        rightCap.transform.localPosition = new Vector3(CapGap, 0f, 0f);
+
+        rightCap.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+
+        rightCap.transform.localScale = Vector3.one;
+
+        // -------------------------------------------------
+        // LEFT CAP
+        // -------------------------------------------------
+
+        GameObject leftCap = Instantiate(endCapPrefab, railModels);
+
+        leftCap.name = "RailCap_Left";
+
+        leftCap.transform.localPosition = new Vector3(-TotalRailLength - CapGap, 0f, 0f);
+
+        leftCap.transform.localRotation = Quaternion.Euler(-90f, 180f, 0f);
+
+        leftCap.transform.localScale = Vector3.one;
+    }
+
+    private void ClearRailVisuals()
+    {
+        if (railModels == null)
+            return;
+
+        for (int i = railModels.childCount - 1; i >= 0; i--)
+        {
+            GameObject child = railModels.GetChild(i).gameObject;
+
+            child.SetActive(false);
+
+            Destroy(child);
+        }
+    }
+
+    // =====================================================
+    // RANDOM TARGET
+    // =====================================================
+
+    private void SpawnRandomTarget()
+    {
+        if (targetMount == null)
+            return;
+
+        GameObject selectedPrefab = GetRandomTargetPrefab();
+
+        if (selectedPrefab == null)
+        {
+            Debug.LogError($"{name}: No valid target prefabs assigned.");
+
+            return;
+        }
+
+        GameObject target = Instantiate(selectedPrefab, targetMount);
+
+        target.name = selectedPrefab.name;
+
         practiceTarget = target.GetComponentInChildren<PracticeTarget>(true);
 
         if (practiceTarget != null)
         {
             spawnedTarget = practiceTarget.transform;
-
-            practiceTarget.Initialize(player);
         }
         else
         {
             spawnedTarget = target.transform;
 
             Debug.LogError(
-                $"{name}: Spawned target '{target.name}' "
-                    + $"does not contain a PracticeTarget component."
+                $"{name}: Spawned target '{target.name}' " + "does not contain PracticeTarget."
             );
         }
 
+        spawnedHingePivot = FindChildByName(target.transform, "HingePivot");
+
+        if (spawnedHingePivot == null)
+        {
+            Debug.LogError($"{name}: Target '{target.name}' " + "does not contain 'HingePivot'.");
+        }
+
         targetBaseLocalRotation = spawnedTarget.localRotation;
+
+        SnapHingeToMount();
+
+        if (practiceTarget != null)
+        {
+            practiceTarget.Initialize(player);
+        }
     }
+
+    private GameObject GetRandomTargetPrefab()
+    {
+        if (targetPrefabs == null || targetPrefabs.Length == 0)
+        {
+            return null;
+        }
+
+        int validCount = 0;
+
+        foreach (GameObject targetPrefab in targetPrefabs)
+        {
+            if (targetPrefab != null)
+            {
+                validCount++;
+            }
+        }
+
+        if (validCount == 0)
+            return null;
+
+        int randomIndex = Random.Range(0, validCount);
+
+        foreach (GameObject targetPrefab in targetPrefabs)
+        {
+            if (targetPrefab == null)
+                continue;
+
+            if (randomIndex == 0)
+            {
+                return targetPrefab;
+            }
+
+            randomIndex--;
+        }
+
+        return null;
+    }
+
+    private Transform FindChildByName(Transform root, string childName)
+    {
+        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform child in children)
+        {
+            if (child.name == childName)
+            {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
+    // =====================================================
+    // HINGE ALIGNMENT
+    // =====================================================
+
+    private void SnapHingeToMount()
+    {
+        if (spawnedTarget == null || spawnedHingePivot == null || targetMount == null)
+        {
+            return;
+        }
+
+        Vector3 offset = targetMount.position - spawnedHingePivot.position;
+
+        spawnedTarget.position += offset;
+    }
+
+    private void SetTargetRotationKeepingHinge(Quaternion localRotation)
+    {
+        if (spawnedTarget == null)
+            return;
+
+        spawnedTarget.localRotation = localRotation;
+
+        SnapHingeToMount();
+    }
+
+    // =====================================================
+    // MOVEMENT SETUP
+    // =====================================================
 
     private void SetupMovement()
     {
         if (targetMover == null)
             return;
 
-        Vector3 startPosition = targetMover.localPosition;
+        float halfCarriage = CarriageLength * 0.5f;
 
-        float halfDistance = travelDistance * 0.5f;
+        float rightX = -halfCarriage - EndClearance;
 
-        leftPosition = startPosition + Vector3.left * halfDistance;
+        float leftX = -TotalRailLength + halfCarriage + EndClearance;
 
-        rightPosition = startPosition + Vector3.right * halfDistance;
+        Vector3 current = targetMover.localPosition;
+
+        leftPosition = new Vector3(leftX, current.y, current.z);
+
+        rightPosition = new Vector3(rightX, current.y, current.z);
+
+        current.x = (leftX + rightX) * 0.5f;
+
+        targetMover.localPosition = current;
+
+        movingRight = true;
     }
+
+    // =====================================================
+    // MOVEMENT
+    // =====================================================
 
     private void MoveTarget()
     {
-        if (targetMover == null || moveSpeed <= 0f || travelDistance <= 0f)
+        if (targetMover == null || moveSpeed <= 0f)
         {
             return;
         }
@@ -218,6 +478,10 @@ public class TargetRail : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // PLAYER SAFETY
+    // =====================================================
+
     private bool IsPlayerTooClose()
     {
         if (player == null || spawnedTarget == null)
@@ -232,18 +496,22 @@ public class TargetRail : MonoBehaviour
         float playerHeight =
             playerController != null ? playerController.height * player.lossyScale.y : 2f;
 
-        float verticalTolerance = playerHeight * playerHeightSafetyMultiplier;
+        float verticalTolerance = playerHeight * PlayerHeightSafetyMultiplier;
 
         float verticalDistance = Mathf.Abs(difference.y);
 
-        return horizontalDistance <= playerStopDistance && verticalDistance <= verticalTolerance;
+        return horizontalDistance <= PlayerStopDistance && verticalDistance <= verticalTolerance;
     }
 
-    private void FacePlayer()
+    // =====================================================
+    // FACING
+    // =====================================================
+
+    private Quaternion GetPlayerFacingRotation()
     {
         if (player == null || spawnedTarget == null || targetMount == null)
         {
-            return;
+            return targetBaseLocalRotation;
         }
 
         Vector3 directionToPlayer = player.position - spawnedTarget.position;
@@ -251,7 +519,9 @@ public class TargetRail : MonoBehaviour
         directionToPlayer.y = 0f;
 
         if (directionToPlayer.sqrMagnitude < 0.001f)
-            return;
+        {
+            return spawnedTarget.localRotation;
+        }
 
         Quaternion baseWorldRotation = targetMount.rotation * targetBaseLocalRotation;
 
@@ -260,7 +530,9 @@ public class TargetRail : MonoBehaviour
         baseFacingDirection.y = 0f;
 
         if (baseFacingDirection.sqrMagnitude < 0.001f)
-            return;
+        {
+            return spawnedTarget.localRotation;
+        }
 
         baseFacingDirection.Normalize();
 
@@ -270,34 +542,192 @@ public class TargetRail : MonoBehaviour
             Vector3.up
         );
 
-        // Only the cardboard target rotates,
-        // around its local Z axis.
-        spawnedTarget.localRotation =
-            targetBaseLocalRotation * Quaternion.AngleAxis(angle + facingOffset, Vector3.forward);
+        return targetBaseLocalRotation
+            * Quaternion.AngleAxis(angle + FacingOffset, Vector3.forward);
     }
 
-    // -------------------------
-    // STATE
-    // -------------------------
-
-    public void SetState(PracticeTargetState newState)
+    private void FacePlayer()
     {
-        ApplyState(newState, true);
+        SetTargetRotationKeepingHinge(GetPlayerFacingRotation());
     }
 
-    private void ApplyState(PracticeTargetState newState, bool animate)
+    // =====================================================
+    // STARTING STATE
+    // =====================================================
+
+    private void ApplyStartingState()
     {
-        currentState = newState;
+        currentState = startingState;
+
+        movementAndFacingEnabled = startingState != PracticeTargetState.Inactive;
+
+        if (startingState == PracticeTargetState.Inactive)
+        {
+            SetTargetRotationKeepingHinge(targetBaseLocalRotation);
+        }
 
         if (practiceTarget != null)
         {
-            practiceTarget.SetState(currentState, animate);
+            practiceTarget.SetState(startingState, false);
         }
     }
 
-    // -------------------------
-    // AUTO CYCLE
-    // -------------------------
+    // =====================================================
+    // STATE
+    // =====================================================
+
+    public void SetState(PracticeTargetState newState)
+    {
+        if (stateTransitionRoutine != null)
+        {
+            StopCoroutine(stateTransitionRoutine);
+
+            stateTransitionRoutine = null;
+        }
+
+        if (newState == PracticeTargetState.Inactive)
+        {
+            stateTransitionRoutine = StartCoroutine(DeactivateRoutine());
+        }
+        else
+        {
+            stateTransitionRoutine = StartCoroutine(ActivateRoutine(newState));
+        }
+    }
+
+    // =====================================================
+    // DEACTIVATE
+    // =====================================================
+
+    private IEnumerator DeactivateRoutine()
+    {
+        isTransitioning = true;
+
+        movementAndFacingEnabled = false;
+
+        if (practiceTarget != null)
+        {
+            practiceTarget.StopFiring();
+        }
+
+        // -------------------------------------------------
+        // STEP 1:
+        // Smoothly return to neutral.
+        // -------------------------------------------------
+
+        if (spawnedTarget != null)
+        {
+            Quaternion startRotation = spawnedTarget.localRotation;
+
+            float elapsed = 0f;
+
+            while (elapsed < FacingTransitionDuration)
+            {
+                elapsed += Time.deltaTime;
+
+                float t = Mathf.Clamp01(elapsed / FacingTransitionDuration);
+
+                t = SmoothStep(t);
+
+                Quaternion rotation = Quaternion.Slerp(startRotation, targetBaseLocalRotation, t);
+
+                SetTargetRotationKeepingHinge(rotation);
+
+                yield return null;
+            }
+
+            SetTargetRotationKeepingHinge(targetBaseLocalRotation);
+        }
+
+        // -------------------------------------------------
+        // STEP 2:
+        // Fold completely down.
+        // -------------------------------------------------
+
+        currentState = PracticeTargetState.Inactive;
+
+        if (practiceTarget != null)
+        {
+            practiceTarget.SetState(PracticeTargetState.Inactive, true);
+        }
+
+        yield return new WaitForSeconds(TargetHingeDuration);
+
+        isTransitioning = false;
+
+        stateTransitionRoutine = null;
+    }
+
+    // =====================================================
+    // ACTIVATE
+    // =====================================================
+
+    private IEnumerator ActivateRoutine(PracticeTargetState newState)
+    {
+        isTransitioning = true;
+
+        movementAndFacingEnabled = false;
+
+        SetTargetRotationKeepingHinge(targetBaseLocalRotation);
+
+        currentState = newState;
+
+        // -------------------------------------------------
+        // STEP 1:
+        // Raise completely while neutral.
+        // -------------------------------------------------
+
+        if (practiceTarget != null)
+        {
+            practiceTarget.SetState(newState, true);
+        }
+
+        yield return new WaitForSeconds(TargetHingeDuration);
+
+        // -------------------------------------------------
+        // STEP 2:
+        // Smoothly turn toward Amy.
+        // -------------------------------------------------
+
+        Quaternion startRotation =
+            spawnedTarget != null ? spawnedTarget.localRotation : targetBaseLocalRotation;
+
+        float elapsed = 0f;
+
+        while (elapsed < FacingTransitionDuration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t = Mathf.Clamp01(elapsed / FacingTransitionDuration);
+
+            t = SmoothStep(t);
+
+            Quaternion desiredRotation = GetPlayerFacingRotation();
+
+            Quaternion rotation = Quaternion.Slerp(startRotation, desiredRotation, t);
+
+            SetTargetRotationKeepingHinge(rotation);
+
+            yield return null;
+        }
+
+        SetTargetRotationKeepingHinge(GetPlayerFacingRotation());
+
+        // -------------------------------------------------
+        // STEP 3:
+        // Normal live movement / tracking.
+        // -------------------------------------------------
+
+        movementAndFacingEnabled = true;
+
+        isTransitioning = false;
+
+        stateTransitionRoutine = null;
+    }
+
+    // =====================================================
+    // AUTOMATIC STATE CYCLE
+    // =====================================================
 
     private void StartAutoCycle()
     {
@@ -330,34 +760,60 @@ public class TargetRail : MonoBehaviour
     {
         while (autoCycle)
         {
-            float waitTime;
+            // -------------------------------------------------
+            // SLEEP
+            // -------------------------------------------------
 
-            if (IsOperational)
+            if (!IsOperational)
             {
-                waitTime = Random.Range(activeDurationRange.x, activeDurationRange.y);
-            }
-            else
-            {
-                waitTime = Random.Range(inactiveDurationRange.x, inactiveDurationRange.y);
-            }
+                while (isTransitioning)
+                {
+                    yield return null;
+                }
 
-            yield return new WaitForSeconds(waitTime);
+                yield return new WaitForSeconds(Mathf.Max(0f, sleepDuration));
 
-            if (IsOperational)
-            {
-                ApplyState(PracticeTargetState.Inactive, true);
-            }
-            else
-            {
                 PracticeTargetState nextState =
                     activeCycleState == PracticeTargetState.Inactive
                         ? PracticeTargetState.Active
                         : activeCycleState;
 
-                ApplyState(nextState, true);
+                SetState(nextState);
+
+                while (isTransitioning)
+                {
+                    yield return null;
+                }
+            }
+
+            // -------------------------------------------------
+            // ACTIVE
+            // -------------------------------------------------
+
+            if (IsOperational)
+            {
+                float activeTime = Random.Range(activeDurationRange.x, activeDurationRange.y);
+
+                yield return new WaitForSeconds(Mathf.Max(0f, activeTime));
+
+                SetState(PracticeTargetState.Inactive);
+
+                while (isTransitioning)
+                {
+                    yield return null;
+                }
             }
         }
 
         autoCycleRoutine = null;
+    }
+
+    // =====================================================
+    // HELPERS
+    // =====================================================
+
+    private float SmoothStep(float t)
+    {
+        return t * t * (3f - 2f * t);
     }
 }

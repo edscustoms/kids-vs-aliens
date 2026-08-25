@@ -10,22 +10,23 @@ public enum PracticeTargetState
 
 public class PracticeTarget : MonoBehaviour
 {
+    // =====================================================
+    // INSPECTOR
+    // =====================================================
+
     [Header("Hinge")]
     [SerializeField]
-    private Vector3 inactiveHingeRotation = new Vector3(90f, 0f, 0f);
-
-    [SerializeField]
-    private float hingeDuration = 0.5f;
+    private float hingeDuration = 1.6f;
 
     [Header("Firing")]
     [SerializeField]
     private PlasmaBoltVFX plasmaBoltPrefab;
 
     [SerializeField]
-    private float shotRange = 50f;
+    private Vector2 fireIntervalRange = new Vector2(1.5f, 3f);
 
     [SerializeField]
-    private Vector2 fireIntervalRange = new Vector2(1.5f, 3f);
+    private Color boltColor = new Color(1f, 0.05f, 0.05f);
 
     [Header("Accuracy")]
     [SerializeField]
@@ -35,9 +36,6 @@ public class PracticeTarget : MonoBehaviour
     [SerializeField]
     private float missRadius = 1.5f;
 
-    [SerializeField]
-    private Color boltColor = new Color(1f, 0.05f, 0.05f);
-
     [Header("Hardcore")]
     [SerializeField]
     private float baseDamage = 10f;
@@ -46,8 +44,18 @@ public class PracticeTarget : MonoBehaviour
     [Range(0f, 100f)]
     private float damageReductionPerPlayerHit = 20f;
 
-    [SerializeField]
-    private float hardcoreHitRadius = 0.6f;
+    // =====================================================
+    // FIXED MECHANICS
+    // =====================================================
+
+    private static readonly Vector3 InactiveHingeRotation = new Vector3(90f, 0f, 0f);
+
+    private const float ShotRange = 50f;
+    private const float HardcoreHitRadius = 0.6f;
+
+    // =====================================================
+    // REFERENCES
+    // =====================================================
 
     private Transform hingePivot;
     private Transform piecesRoot;
@@ -58,6 +66,10 @@ public class PracticeTarget : MonoBehaviour
 
     private BreakableTarget breakableTarget;
 
+    // =====================================================
+    // STATE
+    // =====================================================
+
     private Quaternion activeHingeRotation;
 
     private Coroutine hingeRoutine;
@@ -65,10 +77,20 @@ public class PracticeTarget : MonoBehaviour
 
     private PracticeTargetState state = PracticeTargetState.Inactive;
 
+    // =====================================================
+    // PROPERTIES
+    // =====================================================
+
     public PracticeTargetState State => state;
+
+    public float HingeDuration => hingeDuration;
 
     private bool IsOperational =>
         state == PracticeTargetState.Active || state == PracticeTargetState.Hardcore;
+
+    // =====================================================
+    // UNITY
+    // =====================================================
 
     private void Awake()
     {
@@ -82,6 +104,10 @@ public class PracticeTarget : MonoBehaviour
         breakableTarget = GetComponentInChildren<BreakableTarget>(true);
     }
 
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+
     public void Initialize(Transform playerTransform)
     {
         player = playerTransform;
@@ -92,6 +118,10 @@ public class PracticeTarget : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // FIND OBJECTS
+    // =====================================================
+
     private void FindRequiredObjects()
     {
         Transform[] children = GetComponentsInChildren<Transform>(true);
@@ -99,13 +129,19 @@ public class PracticeTarget : MonoBehaviour
         foreach (Transform child in children)
         {
             if (child.name == "HingePivot")
+            {
                 hingePivot = child;
+            }
 
             if (child.name == "BreakablePieces")
+            {
                 piecesRoot = child;
+            }
 
             if (child.name == "TargetFireOrigin")
+            {
                 fireOrigin = child;
+            }
         }
 
         if (hingePivot == null)
@@ -121,53 +157,171 @@ public class PracticeTarget : MonoBehaviour
         if (fireOrigin == null)
         {
             Debug.LogWarning(
-                $"{name}: Could not find 'TargetFireOrigin'. " + $"Target firing will be disabled."
+                $"{name}: Could not find 'TargetFireOrigin'. " + "Target firing will be disabled."
             );
         }
     }
 
+    // =====================================================
+    // STATE
+    // =====================================================
+
     public void SetState(PracticeTargetState newState, bool animate = true)
     {
+        PracticeTargetState previousState = state;
+
         state = newState;
 
         if (hingeRoutine != null)
         {
             StopCoroutine(hingeRoutine);
+
             hingeRoutine = null;
         }
 
-        UpdateFiring();
+        StopFiring();
 
-        if (!animate)
+        bool wasOperational = previousState != PracticeTargetState.Inactive;
+
+        bool willBeOperational = newState != PracticeTargetState.Inactive;
+
+        // Active -> Hardcore or Hardcore -> Active.
+        // No hinge animation required.
+        if (wasOperational && willBeOperational)
         {
-            ApplyStateImmediately();
+            SetHittable(true);
+            StartFiring();
+
             return;
         }
 
-        // Hittable while raising/lowering.
+        // Scene/startup setup.
+        if (!animate)
+        {
+            ApplyStateImmediately();
+
+            if (IsOperational)
+            {
+                StartFiring();
+            }
+
+            return;
+        }
+
+        // Target remains hittable while
+        // physically raising/lowering.
         SetHittable(true);
 
         hingeRoutine = StartCoroutine(AnimateHinge());
     }
 
-    private void UpdateFiring()
+    // =====================================================
+    // HINGE
+    // =====================================================
+
+    private IEnumerator AnimateHinge()
     {
+        if (hingePivot == null)
+        {
+            hingeRoutine = null;
+
+            yield break;
+        }
+
+        Quaternion startRotation = hingePivot.localRotation;
+
+        Quaternion targetRotation =
+            state == PracticeTargetState.Inactive ? GetInactiveRotation() : activeHingeRotation;
+
+        float duration = Mathf.Max(0.01f, hingeDuration);
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            float smoothT = t * t * (3f - 2f * t);
+
+            hingePivot.localRotation = Quaternion.Slerp(startRotation, targetRotation, smoothT);
+
+            yield return null;
+        }
+
+        hingePivot.localRotation = targetRotation;
+
+        if (state == PracticeTargetState.Inactive)
+        {
+            SetHittable(false);
+        }
+        else
+        {
+            StartFiring();
+        }
+
+        hingeRoutine = null;
+    }
+
+    private void ApplyStateImmediately()
+    {
+        if (hingePivot == null)
+            return;
+
+        if (state == PracticeTargetState.Inactive)
+        {
+            hingePivot.localRotation = GetInactiveRotation();
+
+            SetHittable(false);
+        }
+        else
+        {
+            hingePivot.localRotation = activeHingeRotation;
+
+            SetHittable(true);
+        }
+    }
+
+    private Quaternion GetInactiveRotation()
+    {
+        return activeHingeRotation * Quaternion.Euler(InactiveHingeRotation);
+    }
+
+    // =====================================================
+    // FIRING
+    // =====================================================
+
+    private void StartFiring()
+    {
+        if (!IsOperational)
+            return;
+
+        if (plasmaBoltPrefab == null || fireOrigin == null || player == null)
+        {
+            return;
+        }
+
         if (fireRoutine != null)
         {
             StopCoroutine(fireRoutine);
-            fireRoutine = null;
         }
 
-        if (IsOperational)
-        {
-            fireRoutine = StartCoroutine(FireRoutine());
-        }
+        fireRoutine = StartCoroutine(FireRoutine());
+    }
+
+    public void StopFiring()
+    {
+        if (fireRoutine == null)
+            return;
+
+        StopCoroutine(fireRoutine);
+
+        fireRoutine = null;
     }
 
     private IEnumerator FireRoutine()
     {
-        // Random initial delay so multiple
-        // targets don't fire together.
         yield return new WaitForSeconds(Random.Range(fireIntervalRange.x, fireIntervalRange.y));
 
         while (IsOperational)
@@ -201,6 +355,10 @@ public class PracticeTarget : MonoBehaviour
 
         Vector3 aimPoint = playerTargetPosition;
 
+        // -------------------------------------------------
+        // MISS OFFSET
+        // -------------------------------------------------
+
         if (!willHit)
         {
             Vector2 randomOffset = Random.insideUnitCircle * missRadius;
@@ -216,24 +374,27 @@ public class PracticeTarget : MonoBehaviour
 
         Vector3 shotEndPosition;
 
+        // -------------------------------------------------
+        // HIT
+        // -------------------------------------------------
+
         if (willHit)
         {
-            // Successful accuracy roll:
-            // visually hits Amy.
             shotEndPosition = playerTargetPosition;
         }
+        // -------------------------------------------------
+        // MISS CONTINUES INTO WORLD
+        // -------------------------------------------------
+
         else
         {
-            // Missed Amy:
-            // continue past the miss point until
-            // something in the world is actually hit.
-            if (Physics.Raycast(fireOrigin.position, shotDirection, out RaycastHit hit, shotRange))
+            if (Physics.Raycast(fireOrigin.position, shotDirection, out RaycastHit hit, ShotRange))
             {
                 shotEndPosition = hit.point;
             }
             else
             {
-                shotEndPosition = fireOrigin.position + shotDirection * shotRange;
+                shotEndPosition = fireOrigin.position + shotDirection * ShotRange;
             }
         }
 
@@ -249,6 +410,10 @@ public class PracticeTarget : MonoBehaviour
         );
     }
 
+    // =====================================================
+    // HARDCORE DAMAGE
+    // =====================================================
+
     private void TryDealHardcoreDamage(Vector3 shotEndPosition)
     {
         if (player == null || playerHealth == null)
@@ -256,11 +421,12 @@ public class PracticeTarget : MonoBehaviour
             return;
         }
 
-        // Lets Amy dodge the bolt.
         float distance = Vector3.Distance(player.position + Vector3.up, shotEndPosition);
 
-        if (distance > hardcoreHitRadius)
+        if (distance > HardcoreHitRadius)
+        {
             return;
+        }
 
         float damage = CalculateHardcoreDamage();
 
@@ -281,64 +447,9 @@ public class PracticeTarget : MonoBehaviour
         return baseDamage * damageMultiplier;
     }
 
-    private void ApplyStateImmediately()
-    {
-        if (hingePivot == null)
-            return;
-
-        if (state == PracticeTargetState.Inactive)
-        {
-            hingePivot.localRotation = GetInactiveRotation();
-
-            SetHittable(false);
-        }
-        else
-        {
-            hingePivot.localRotation = activeHingeRotation;
-
-            SetHittable(true);
-        }
-    }
-
-    private IEnumerator AnimateHinge()
-    {
-        if (hingePivot == null)
-            yield break;
-
-        Quaternion startRotation = hingePivot.localRotation;
-
-        Quaternion targetRotation =
-            state == PracticeTargetState.Inactive ? GetInactiveRotation() : activeHingeRotation;
-
-        float elapsed = 0f;
-
-        while (elapsed < hingeDuration)
-        {
-            elapsed += Time.deltaTime;
-
-            float t = Mathf.Clamp01(elapsed / hingeDuration);
-
-            float smoothT = t * t * (3f - 2f * t);
-
-            hingePivot.localRotation = Quaternion.Slerp(startRotation, targetRotation, smoothT);
-
-            yield return null;
-        }
-
-        hingePivot.localRotation = targetRotation;
-
-        if (state == PracticeTargetState.Inactive)
-        {
-            SetHittable(false);
-        }
-
-        hingeRoutine = null;
-    }
-
-    private Quaternion GetInactiveRotation()
-    {
-        return activeHingeRotation * Quaternion.Euler(inactiveHingeRotation);
-    }
+    // =====================================================
+    // HIT COLLIDERS
+    // =====================================================
 
     private void SetHittable(bool hittable)
     {

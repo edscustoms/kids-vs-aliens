@@ -138,8 +138,6 @@ public class BreakableTarget : MonoBehaviour
 
             pieces[i] = piece;
         }
-
-        Debug.Log($"{name}: Automatically setup " + $"{pieces.Length} breakable pieces.");
     }
 
     public void BreakPiece(BreakableTargetPiece piece, Vector3 hitPoint, Vector3 shotDirection)
