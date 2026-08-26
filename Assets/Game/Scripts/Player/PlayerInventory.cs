@@ -5,8 +5,11 @@ using UnityEngine.InputSystem;
 
 public class PlayerInventory : MonoBehaviour
 {
-    [SerializeField] private PlayerEquipment playerEquipment;
-    [SerializeField] private int maxSlots = 5;
+    [SerializeField]
+    private PlayerEquipment playerEquipment;
+
+    [SerializeField]
+    private int maxSlots = 5;
 
     private readonly List<ItemData> items = new();
 
@@ -21,13 +24,10 @@ public class PlayerInventory : MonoBehaviour
 
         if (items.Count >= maxSlots)
         {
-            Debug.Log("Inventory full!");
             return;
         }
 
         items.Add(item);
-
-        Debug.Log($"Picked up: {item.itemName}");
 
         OnInventoryChanged?.Invoke();
     }
@@ -46,11 +46,9 @@ public class PlayerInventory : MonoBehaviour
                 break;
 
             case ItemType.Consumable:
-                Debug.Log($"Used: {item.itemName}");
                 break;
 
             default:
-                Debug.Log($"{item.itemName} cannot be used yet.");
                 break;
         }
     }
@@ -75,23 +73,15 @@ public class PlayerInventory : MonoBehaviour
             playerEquipment.UnequipWeapon();
         }
 
-        Vector3 dropPosition =
-            transform.position +
-            transform.forward * 2f +
-            Vector3.up * 0.6f;
+        Vector3 dropPosition = transform.position + transform.forward * 2f + Vector3.up * 0.6f;
 
-        Instantiate(
-            item.worldPrefab,
-            dropPosition,
-            Quaternion.identity
-        );
+        Instantiate(item.worldPrefab, dropPosition, Quaternion.identity);
 
         items.RemoveAt(index);
 
         OnInventoryChanged?.Invoke();
-
-        Debug.Log($"Dropped: {item.itemName}");
     }
+
     private void Update()
     {
         if (Keyboard.current == null)

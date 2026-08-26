@@ -55,7 +55,5 @@ public class InputModeController : MonoBehaviour
         {
             mobileControlsCanvas.SetActive(mode == GameInputMode.Mobile);
         }
-
-        Debug.Log($"Game input mode: {CurrentMode}");
     }
 }

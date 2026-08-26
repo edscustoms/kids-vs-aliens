@@ -23,8 +23,6 @@ public class EnemyHealth : MonoBehaviour
 
         OnHealthChanged?.Invoke();
 
-        Debug.Log($"{name} took {damage} damage. HP: {currentHealth}/{maxHealth}");
-
         if (currentHealth <= 0f)
             Die();
     }

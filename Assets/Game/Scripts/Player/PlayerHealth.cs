@@ -41,10 +41,6 @@ public class PlayerHealth : MonoBehaviour
 
         OnHealthChanged?.Invoke();
 
-        Debug.Log(
-            $"Player | Armor: {currentArmor}/{maxArmor} | HP: {currentHealth}/{maxHealth}"
-        );
-
         if (currentHealth <= 0f)
             Die();
     }
@@ -52,6 +48,5 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         isDead = true;
-        Debug.Log("PLAYER DIED 💀");
     }
 }

@@ -257,16 +257,6 @@ public class AimTarget : MonoBehaviour
         localBodyRadius = Mathf.Max(largestDimension * 0.5f, 0.05f);
 
         bodyCached = true;
-
-        Debug.Log(
-            $"{name} AimTarget cached. "
-                + $"BodyRoot={cachedBodyRoot.name}, "
-                + $"Colliders={cachedColliderCount}, "
-                + $"Renderers={cachedRendererCount}, "
-                + $"Center={localBodyCenter}, "
-                + $"Radius={localBodyRadius}",
-            this
-        );
     }
 
     private void EncapsulateRendererBounds(

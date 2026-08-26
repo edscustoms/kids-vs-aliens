@@ -45,14 +45,22 @@ public class BreakableTarget : MonoBehaviour
     private BreakableTargetPiece[] pieces;
 
     private int brokenPieceCount;
+
     public int BrokenPieceCount => brokenPieceCount;
 
     private bool hasCollapsed;
+
     public bool IsCollapsed => hasCollapsed;
+
     private bool isReassembling;
+
     public bool IsReassembling => isReassembling;
 
     private float lastHitTime;
+
+    // =====================================================
+    // UNITY
+    // =====================================================
 
     private void Awake()
     {
@@ -73,6 +81,10 @@ public class BreakableTarget : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // SETUP
+    // =====================================================
+
     private void FindPiecesRoot()
     {
         Transform[] children = GetComponentsInChildren<Transform>(true);
@@ -86,7 +98,7 @@ public class BreakableTarget : MonoBehaviour
             }
         }
 
-        Debug.LogError($"{name}: Could not find a child named " + $"'BreakablePieces'.");
+        Debug.LogError($"{name}: Could not find a child named 'BreakablePieces'.");
     }
 
     private void SetupPieces()
@@ -100,6 +112,16 @@ public class BreakableTarget : MonoBehaviour
         {
             Transform pieceTransform = piecesRoot.GetChild(i);
 
+            // -------------------------------------------------
+            // BREAKABLE TARGET PIECE
+            //
+            // This lightweight gameplay component may still
+            // be added at runtime for now.
+            //
+            // The expensive/important part is the MeshCollider,
+            // which is now baked into the prefab beforehand.
+            // -------------------------------------------------
+
             BreakableTargetPiece piece = pieceTransform.GetComponent<BreakableTargetPiece>();
 
             if (piece == null)
@@ -107,21 +129,67 @@ public class BreakableTarget : MonoBehaviour
                 piece = pieceTransform.gameObject.AddComponent<BreakableTargetPiece>();
             }
 
-            MeshFilter meshFilter = pieceTransform.GetComponent<MeshFilter>();
+            // -------------------------------------------------
+            // BAKED MESH COLLIDER
+            //
+            // IMPORTANT:
+            //
+            // We no longer:
+            //
+            // - AddComponent<MeshCollider>()
+            // - assign MeshFilter.sharedMesh
+            // - ask Unity to cook collider geometry at runtime
+            //
+            // The collider must already exist on the prefab,
+            // created by BreakableTargetColliderBaker.
+            //
+            // This lets the original FBX mesh have
+            // Read/Write disabled in the final build.
+            // -------------------------------------------------
 
             MeshCollider collider = pieceTransform.GetComponent<MeshCollider>();
 
             if (collider == null)
             {
-                collider = pieceTransform.gameObject.AddComponent<MeshCollider>();
+                Debug.LogError(
+                    $"{name}/{pieceTransform.name}: "
+                        + "Missing baked MeshCollider. "
+                        + "Run Tools > Kids VS Aliens > "
+                        + "Bake Selected Target Colliders."
+                );
+
+                continue;
             }
 
-            if (collider.sharedMesh == null && meshFilter != null)
+            if (collider.sharedMesh == null)
             {
-                collider.sharedMesh = meshFilter.sharedMesh;
+                Debug.LogError(
+                    $"{name}/{pieceTransform.name}: " + "Baked MeshCollider has no mesh assigned."
+                );
+
+                continue;
             }
 
-            collider.convex = true;
+            if (!collider.convex)
+            {
+                Debug.LogWarning(
+                    $"{name}/{pieceTransform.name}: "
+                        + "MeshCollider was not convex. "
+                        + "Setting convex=true."
+                );
+
+                collider.convex = true;
+            }
+
+            // -------------------------------------------------
+            // RIGIDBODY
+            //
+            // Rigidbody can still safely be created at runtime.
+            //
+            // It does NOT require CPU-readable mesh data.
+            // We can optionally bake these later too, but there
+            // is no need to complicate this cleanup right now.
+            // -------------------------------------------------
 
             Rigidbody rb = pieceTransform.GetComponent<Rigidbody>();
 
@@ -131,7 +199,9 @@ public class BreakableTarget : MonoBehaviour
             }
 
             rb.mass = pieceMass;
+
             rb.isKinematic = true;
+
             rb.useGravity = false;
 
             piece.Initialize(this);
@@ -139,6 +209,10 @@ public class BreakableTarget : MonoBehaviour
             pieces[i] = piece;
         }
     }
+
+    // =====================================================
+    // BREAK
+    // =====================================================
 
     public void BreakPiece(BreakableTargetPiece piece, Vector3 hitPoint, Vector3 shotDirection)
     {
@@ -153,6 +227,7 @@ public class BreakableTarget : MonoBehaviour
             return;
 
         brokenPieceCount++;
+
         lastHitTime = Time.time;
 
         float brokenPercentage = ((float)brokenPieceCount / pieces.Length) * 100f;
@@ -162,6 +237,10 @@ public class BreakableTarget : MonoBehaviour
             CollapseTarget();
         }
     }
+
+    // =====================================================
+    // TEMPORARY COLLISION IGNORE
+    // =====================================================
 
     public void TemporarilyIgnorePieceCollisions(BreakableTargetPiece shotPiece)
     {
@@ -203,6 +282,10 @@ public class BreakableTarget : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // COLLAPSE
+    // =====================================================
+
     private void CollapseTarget()
     {
         if (hasCollapsed)
@@ -210,9 +293,8 @@ public class BreakableTarget : MonoBehaviour
 
         hasCollapsed = true;
 
-        // We intentionally keep piece-vs-piece
-        // collisions here because we LIKE
-        // the glorious cardboard explosion. 😂
+        // Keep piece-vs-piece collisions.
+        // Glorious cardboard explosion stays. 😂
         foreach (BreakableTargetPiece piece in pieces)
         {
             if (piece == null)
@@ -231,6 +313,10 @@ public class BreakableTarget : MonoBehaviour
         yield return ReassembleTarget();
     }
 
+    // =====================================================
+    // REASSEMBLY
+    // =====================================================
+
     private IEnumerator ReassembleTarget()
     {
         if (isReassembling)
@@ -238,7 +324,6 @@ public class BreakableTarget : MonoBehaviour
 
         isReassembling = true;
 
-        // Freeze all currently broken pieces.
         foreach (BreakableTargetPiece piece in pieces)
         {
             if (piece == null || !piece.IsBroken)
@@ -270,7 +355,9 @@ public class BreakableTarget : MonoBehaviour
         RestoreAllPieceCollisions();
 
         brokenPieceCount = 0;
+
         hasCollapsed = false;
+
         isReassembling = false;
     }
 
@@ -297,7 +384,6 @@ public class BreakableTarget : MonoBehaviour
 
             float t = Mathf.Clamp01(elapsed / returnDuration);
 
-            // Smooth start + smooth landing.
             float eased = t * t * (3f - 2f * t);
 
             Vector3 targetPosition = piece.GetOriginalWorldPosition();
@@ -340,6 +426,10 @@ public class BreakableTarget : MonoBehaviour
 
         piece.CompleteReturn();
     }
+
+    // =====================================================
+    // COLLISION RESTORE
+    // =====================================================
 
     private void RestoreAllPieceCollisions()
     {
