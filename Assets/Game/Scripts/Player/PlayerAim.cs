@@ -35,14 +35,6 @@ public class PlayerAim : MonoBehaviour
     private float mobileRotationSpeed = 5f;
 
     [Tooltip(
-        "How far outside the visible screen a currently tracked target may go "
-            + "before mobile auto-aim releases it. 0.1 means roughly 10% beyond each edge."
-    )]
-    [Range(0f, 0.5f)]
-    [SerializeField]
-    private float mobileScreenMargin = 0.1f;
-
-    [Tooltip(
         "Distance used for mobile shots when there is no auto-aim target. "
             + "The exact value only creates a straight-forward aim direction."
     )]
@@ -71,7 +63,22 @@ public class PlayerAim : MonoBehaviour
     private int aimMask;
 
     private readonly RaycastHit[] mouseAimHits = new RaycastHit[32];
-    private readonly RaycastHit[] lineOfSightHits = new RaycastHit[32];
+
+    // We deliberately sample several meaningful areas of an enemy instead of
+    // treating BodyCenter as the only point that matters.
+    //
+    // This solves two important mobile aim problems:
+    //
+    // 1. A short wall may hide the target's center while most of the alien is
+    //    still clearly visible and shootable above the wall.
+    //
+    // 2. A target must actually be visible to the gameplay camera before Amy
+    //    is allowed to acquire it. Merely being mathematically close to the
+    //    edge of the viewport is not enough.
+    //
+    // Five points keeps the V1 test cheap while covering center / upper body /
+    // sides / lower body reasonably well.
+    private readonly Vector3[] mobileVisibilitySamples = new Vector3[5];
 
     // =====================================================
     // INITIALIZATION
@@ -200,53 +207,44 @@ public class PlayerAim : MonoBehaviour
          * MOBILE TARGET PRIORITY DESIGN
          * --------------------------------
          *
-         * We intentionally DO NOT continuously select the mathematically
-         * "best" target every frame.
+         * Target selection remains sticky:
          *
-         * Doing that would make auto-aim jump between enemies whenever
-         * another enemy becomes slightly closer or slightly more centered.
-         * That would feel nervous, unpredictable and very "aimbot-like".
+         * - Keep the current target while it remains valid.
+         * - Only find a replacement when the current target is no longer a
+         *   valid, genuinely visible target.
          *
-         * Instead mobile aiming uses HARD TARGET STICKINESS:
+         * VISIBLE now means BOTH:
          *
-         * 1. If Amy already has a valid target, KEEP that target.
+         * 1. THE PLAYER / AMY CAN SEE A REAL PART OF THE TARGET
+         *    A real physics ray from Amy toward one of several body samples
+         *    must hit target-owned geometry first.
          *
-         * 2. The current target is only released when it becomes invalid:
-         *      - target disabled / dead / no longer targetable
-         *      - outside auto-aim range
-         *      - sufficiently outside the camera view
-         *      - line of sight becomes blocked
+         * 2. THE GAMEPLAY CAMERA CAN SEE THAT SAME REAL PART
+         *    The sample must be inside the actual 0..1 viewport AND a real
+         *    camera ray must hit target-owned geometry first.
          *
-         * 3. Only when we need a NEW target do we compare all eligible targets.
+         * This prevents Amy from locking an alien that has not appeared on
+         * screen yet, while still allowing targets behind low cover to be
+         * acquired when their upper body is genuinely visible and shootable.
          *
-         * 4. New-target priority is primarily SCREEN POSITION:
-         *      The enemy closest to the center of the player's screen wins.
+         * New-target priority remains:
          *
-         *    Screen center is a better approximation of what the player is
-         *    visually focusing on than pure world-space distance.
+         * 1. closest visible point to screen center
+         * 2. world distance as tie-breaker
          *
-         * 5. If two targets are almost equally centered, WORLD DISTANCE
-         *    becomes the tie-breaker and the closer enemy wins.
-         *
-         * Later, if playtesting shows hard stickiness feels TOO sticky,
-         * we can add a switch threshold where a new target must score
-         * significantly better before stealing the lock.
-         *
-         * IMPORTANT:
-         * Target SELECTION and shot ACCURACY are separate systems.
-         *
-         * This code decides WHO Amy wants to shoot.
-         * Green / Blue / Yellow zones decide WHERE each shot goes.
-         * The weapon Physics.Raycast remains authoritative for WHAT gets hit.
+         * Target SELECTION and shot ACCURACY remain separate systems.
          */
 
-        if (CurrentTarget != null && IsValidMobileTarget(CurrentTarget))
+        if (
+            CurrentTarget != null
+            && TryGetValidMobileTargetPoint(CurrentTarget, out Vector3 currentVisiblePoint)
+        )
         {
-            ApplyMobileTarget();
+            ApplyMobileTarget(currentVisiblePoint);
             return;
         }
 
-        CurrentTarget = FindBestMobileTarget();
+        CurrentTarget = FindBestMobileTarget(out Vector3 newVisiblePoint);
 
         if (CurrentTarget == null)
         {
@@ -254,12 +252,12 @@ public class PlayerAim : MonoBehaviour
             return;
         }
 
-        ApplyMobileTarget();
+        ApplyMobileTarget(newVisiblePoint);
     }
 
-    private void ApplyMobileTarget()
+    private void ApplyMobileTarget(Vector3 visiblePoint)
     {
-        AimPoint = CurrentTarget.BodyCenter;
+        AimPoint = visiblePoint;
         HasAimPoint = true;
 
         RotateTowards(AimPoint, mobileRotationSpeed);
@@ -282,15 +280,14 @@ public class PlayerAim : MonoBehaviour
         // -------------------------------------------------
         // NO MOBILE TARGET
         //
-        // Mobile shooting must still work without auto-aim.
-        // If there is no valid lock, fire straight in the
-        // direction Amy is currently facing at muzzle height.
-        //
-        // PlayerShooter still performs its normal real raycast,
-        // so the player can shoot walls, props or empty space.
+        // Mobile shooting still works without auto-aim.
+        // Fire straight in the direction Amy currently faces.
         // -------------------------------------------------
 
-        if (CurrentTarget == null || !IsValidMobileTarget(CurrentTarget))
+        if (
+            CurrentTarget == null
+            || !TryGetValidMobileTargetPoint(CurrentTarget, out Vector3 visibleTargetPoint)
+        )
         {
             CurrentTarget = null;
 
@@ -303,7 +300,7 @@ public class PlayerAim : MonoBehaviour
         // forgotten in the Inspector.
         if (mobileAimSettings == null)
         {
-            shotAimPoint = CurrentTarget.BodyCenter;
+            shotAimPoint = visibleTargetPoint;
             return true;
         }
 
@@ -317,7 +314,12 @@ public class PlayerAim : MonoBehaviour
         };
 
         float worldRadius = CurrentTarget.BodyRadius * radiusMultiplier;
-        Vector3 targetCenter = CurrentTarget.BodyCenter;
+
+        // IMPORTANT:
+        // When a target is partly hidden by low cover we center the assist
+        // around the best currently visible/shootable body sample rather than
+        // blindly around BodyCenter behind the wall.
+        Vector3 targetCenter = visibleTargetPoint;
 
         Vector3 shotDirection = targetCenter - shotOrigin;
 
@@ -329,9 +331,8 @@ public class PlayerAim : MonoBehaviour
 
         shotDirection.Normalize();
 
-        // Build a 2D circle facing the shooter. The aim zones
-        // therefore behave like circles drawn over the enemy
-        // from Amy's perspective, not circles on the floor.
+        // Build a 2D circle facing the shooter. The aim zones therefore behave
+        // like circles drawn over the enemy from Amy's perspective.
         Vector3 aimRight = Vector3.Cross(Vector3.up, shotDirection);
 
         if (aimRight.sqrMagnitude < 0.000001f)
@@ -343,12 +344,11 @@ public class PlayerAim : MonoBehaviour
 
         Vector3 aimUp = Vector3.Cross(shotDirection, aimRight).normalized;
 
-        // Correct area distribution across the circle.
         Vector2 randomOffset = Random.insideUnitCircle * worldRadius;
 
         Vector3 desiredPoint = targetCenter + aimRight * randomOffset.x + aimUp * randomOffset.y;
 
-        // GREEN must resolve onto genuine target collider geometry.
+        // GREEN resolves onto genuine remaining target collider geometry.
         if (zone == MobileAimZone.Green)
         {
             if (
@@ -367,8 +367,8 @@ public class PlayerAim : MonoBehaviour
             return true;
         }
 
-        // BLUE / YELLOW are deliberately left uncorrected.
-        // The actual weapon raycast naturally decides hit/miss.
+        // BLUE / YELLOW remain uncorrected. The actual PlayerShooter raycast
+        // naturally decides whether the shot hits target, cover or empty space.
         shotAimPoint = desiredPoint;
         return true;
     }
@@ -377,8 +377,10 @@ public class PlayerAim : MonoBehaviour
     // MOBILE TARGET ACQUISITION
     // =====================================================
 
-    private AimTarget FindBestMobileTarget()
+    private AimTarget FindBestMobileTarget(out Vector3 bestVisiblePoint)
     {
+        bestVisiblePoint = Vector3.zero;
+
         if (mainCamera == null)
             return null;
 
@@ -398,27 +400,22 @@ public class PlayerAim : MonoBehaviour
             if (target == null || !target.IsTargetable)
                 continue;
 
-            Vector3 targetPosition = target.BodyCenter;
-            Vector3 worldDifference = targetPosition - transform.position;
+            Vector3 worldDifference = target.BodyCenter - transform.position;
             float worldDistanceSquared = worldDifference.sqrMagnitude;
 
             if (worldDistanceSquared > rangeSquared)
                 continue;
 
-            Vector3 viewportPosition = mainCamera.WorldToViewportPoint(targetPosition);
-
-            if (!IsInsideMobileViewport(viewportPosition))
+            if (
+                !TryGetCameraAndPlayerVisiblePoint(
+                    target,
+                    out Vector3 visiblePoint,
+                    out float screenDistanceSquared
+                )
+            )
+            {
                 continue;
-
-            if (!HasLineOfSight(target))
-                continue;
-
-            Vector2 screenDifference = new Vector2(
-                viewportPosition.x - 0.5f,
-                viewportPosition.y - 0.5f
-            );
-
-            float screenDistanceSquared = screenDifference.sqrMagnitude;
+            }
 
             const float screenTieTolerance = 0.0001f;
 
@@ -433,6 +430,7 @@ public class PlayerAim : MonoBehaviour
             if (betterScreenPosition || (approximatelySameScreenPosition && betterWorldDistance))
             {
                 bestTarget = target;
+                bestVisiblePoint = visiblePoint;
                 bestScreenDistanceSquared = screenDistanceSquared;
                 bestWorldDistanceSquared = worldDistanceSquared;
             }
@@ -445,13 +443,14 @@ public class PlayerAim : MonoBehaviour
     // CURRENT TARGET VALIDATION
     // =====================================================
 
-    private bool IsValidMobileTarget(AimTarget target)
+    private bool TryGetValidMobileTargetPoint(AimTarget target, out Vector3 visiblePoint)
     {
+        visiblePoint = Vector3.zero;
+
         if (target == null || !target.IsTargetable)
             return false;
 
-        Vector3 targetPosition = target.BodyCenter;
-        Vector3 difference = targetPosition - transform.position;
+        Vector3 difference = target.BodyCenter - transform.position;
 
         if (difference.sqrMagnitude > autoAimRange * autoAimRange)
             return false;
@@ -459,38 +458,118 @@ public class PlayerAim : MonoBehaviour
         if (mainCamera == null)
             return false;
 
-        Vector3 viewportPosition = mainCamera.WorldToViewportPoint(targetPosition);
-
-        if (!IsInsideMobileViewport(viewportPosition))
-            return false;
-
-        return HasLineOfSight(target);
+        return TryGetCameraAndPlayerVisiblePoint(target, out visiblePoint, out _);
     }
 
     // =====================================================
-    // SCREEN VALIDATION
+    // TRUE CAMERA + PLAYER VISIBILITY
     // =====================================================
 
-    private bool IsInsideMobileViewport(Vector3 viewportPosition)
+    private bool TryGetCameraAndPlayerVisiblePoint(
+        AimTarget target,
+        out Vector3 bestVisiblePoint,
+        out float bestScreenDistanceSquared
+    )
+    {
+        bestVisiblePoint = Vector3.zero;
+        bestScreenDistanceSquared = Mathf.Infinity;
+
+        if (mainCamera == null || target == null)
+            return false;
+
+        BuildMobileVisibilitySamples(target);
+
+        Vector3 cameraOrigin = mainCamera.transform.position;
+        Vector3 playerOrigin = GetLineOfSightOrigin();
+
+        bool foundVisiblePoint = false;
+
+        for (int i = 0; i < mobileVisibilitySamples.Length; i++)
+        {
+            Vector3 samplePoint = mobileVisibilitySamples[i];
+
+            Vector3 viewportPosition = mainCamera.WorldToViewportPoint(samplePoint);
+
+            // Strict 0..1 camera visibility.
+            // No old +10% off-screen acquisition margin: a target must actually
+            // have a tested body sample on the player's visible screen.
+            if (!IsInsideVisibleViewport(viewportPosition))
+                continue;
+
+            // The camera must physically see target-owned geometry along this
+            // on-screen sample ray. A wall / prop / nearer enemy blocks it.
+            if (!RayHitsTargetFirst(cameraOrigin, samplePoint, target))
+                continue;
+
+            // Amy must ALSO physically have a clear path to the same part of
+            // the target. This is what allows upper body visibility over low
+            // cover without pretending BodyCenter is the whole enemy.
+            if (!RayHitsTargetFirst(playerOrigin, samplePoint, target))
+                continue;
+
+            Vector2 screenDifference = new Vector2(
+                viewportPosition.x - 0.5f,
+                viewportPosition.y - 0.5f
+            );
+
+            float screenDistanceSquared = screenDifference.sqrMagnitude;
+
+            if (screenDistanceSquared >= bestScreenDistanceSquared)
+                continue;
+
+            bestVisiblePoint = samplePoint;
+            bestScreenDistanceSquared = screenDistanceSquared;
+            foundVisiblePoint = true;
+        }
+
+        return foundVisiblePoint;
+    }
+
+    private void BuildMobileVisibilitySamples(AimTarget target)
+    {
+        Vector3 center = target.BodyCenter;
+        float radius = Mathf.Max(target.BodyRadius, 0.05f);
+
+        // Camera-right gives us sensible screen-space left/right samples even
+        // when the enemy or rail is rotated in world space.
+        Vector3 right = mainCamera != null ? mainCamera.transform.right : transform.right;
+
+        // Center / torso.
+        mobileVisibilitySamples[0] = center;
+
+        // Upper body / head region. This is especially important for low cover.
+        mobileVisibilitySamples[1] = center + Vector3.up * (radius * 0.60f);
+
+        // Upper-left and upper-right body regions.
+        mobileVisibilitySamples[2] =
+            center + Vector3.up * (radius * 0.30f) + right * (radius * 0.45f);
+
+        mobileVisibilitySamples[3] =
+            center + Vector3.up * (radius * 0.30f) - right * (radius * 0.45f);
+
+        // Lower body sample. Useful when upper geometry is hidden by something
+        // but legs / lower silhouette are genuinely visible.
+        mobileVisibilitySamples[4] = center - Vector3.up * (radius * 0.35f);
+    }
+
+    private bool IsInsideVisibleViewport(Vector3 viewportPosition)
     {
         if (viewportPosition.z <= 0f)
             return false;
 
-        return viewportPosition.x >= -mobileScreenMargin
-            && viewportPosition.x <= 1f + mobileScreenMargin
-            && viewportPosition.y >= -mobileScreenMargin
-            && viewportPosition.y <= 1f + mobileScreenMargin;
+        return viewportPosition.x >= 0f
+            && viewportPosition.x <= 1f
+            && viewportPosition.y >= 0f
+            && viewportPosition.y <= 1f;
     }
 
     // =====================================================
-    // LINE OF SIGHT
+    // PHYSICAL VISIBILITY TEST
     // =====================================================
 
-    private bool HasLineOfSight(AimTarget target)
+    private bool RayHitsTargetFirst(Vector3 origin, Vector3 samplePoint, AimTarget target)
     {
-        Vector3 origin = GetLineOfSightOrigin();
-        Vector3 destination = target.BodyCenter;
-        Vector3 direction = destination - origin;
+        Vector3 direction = samplePoint - origin;
         float distance = direction.magnitude;
 
         if (distance <= 0.001f)
@@ -498,50 +577,61 @@ public class PlayerAim : MonoBehaviour
 
         direction /= distance;
 
-        int hitCount = Physics.RaycastNonAlloc(
-            origin,
-            direction,
-            lineOfSightHits,
-            distance,
-            aimMask,
-            QueryTriggerInteraction.Ignore
-        );
+        // The sample point is conceptually inside/around the target body.
+        // Cast slightly beyond it so a sample near the surface can still hit
+        // the target collider instead of ending just before it.
+        float padding = Mathf.Max(0.08f, target.BodyRadius * 0.20f);
+        float castDistance = distance + padding;
 
-        for (int i = 0; i < hitCount; i++)
+        // We only care about the FIRST physical object on this line.
+        // aimMask already excludes the Player layer, so a single Raycast is
+        // enough here and is cheaper than collecting/sorting many hits.
+        if (
+            !Physics.Raycast(
+                origin,
+                direction,
+                out RaycastHit hit,
+                castDistance,
+                aimMask,
+                QueryTriggerInteraction.Ignore
+            )
+        )
         {
-            RaycastHit hit = lineOfSightHits[i];
-
-            if (hit.collider == null)
-                continue;
-
-            if (IsPlayerCollider(hit.collider))
-                continue;
-
-            // Geometry belonging to the candidate itself
-            // does not obstruct LOS to that candidate.
-            if (target.OwnsCollider(hit.collider))
-                continue;
-
-            // Anything else before the target center blocks LOS.
-            if (hit.distance < distance - 0.02f)
-                return false;
+            return false;
         }
 
-        return true;
+        return target.OwnsCollider(hit.collider);
     }
+
+    // =====================================================
+    // PLAYER LOS ORIGIN
+    // =====================================================
 
     private Vector3 GetLineOfSightOrigin()
     {
         if (characterController != null)
         {
-            return characterController.bounds.center;
+            Bounds bounds = characterController.bounds;
+
+            // Use Amy's upper torso / eye-line rather than the exact center of
+            // the CharacterController. The old center ray was too low and made
+            // short cover incorrectly hide an alien that Amy and the camera
+            // could clearly see over.
+            //
+            // This is still derived from Amy's real controller bounds, so it
+            // scales automatically with the character instead of hardcoding a
+            // world-space height.
+            return bounds.center + Vector3.up * (bounds.extents.y * 0.55f);
         }
 
-        return transform.position + Vector3.up;
+        return transform.position + Vector3.up * 1.4f;
     }
 
     private bool IsPlayerCollider(Collider collider)
     {
+        if (collider == null)
+            return false;
+
         Transform colliderTransform = collider.transform;
 
         return colliderTransform == transform || colliderTransform.IsChildOf(transform);
