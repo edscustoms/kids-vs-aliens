@@ -210,6 +210,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TargetRail
   targetPrefabs:
   - {fileID: 8890882593145112060, guid: 50103e7e74cc99d46aa461e1872c0718, type: 3}
+  - {fileID: 1314989713242655177, guid: d2f8286daeb360241a2cb44395b66189, type: 3}
+  - {fileID: 1152306857320793782, guid: b07e17b226a6013479424b841a0f8e06, type: 3}
   straightRailPrefab: {fileID: 5616119563967023694, guid: c3a459e1b9780ee4eacadc2d0274b1e9, type: 3}
   endCapPrefab: {fileID: 6021761493289400267, guid: 4a7c15c440d3a8c46baf099508a0c7a8, type: 3}
   railLength: 3

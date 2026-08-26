@@ -20,7 +20,7 @@ public class TargetRail : MonoBehaviour
 
     [Header("Rail")]
     [SerializeField]
-    [Range(1, 3)]
+    [Range(2, 5)]
     private int railLength = 1;
 
     [SerializeField]
