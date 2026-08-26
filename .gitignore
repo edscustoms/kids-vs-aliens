@@ -11,6 +11,7 @@
 MemoryCaptures/
 UserSettings/
 Recordings/
+.utmp/
 
 ###############################################################################
 # Visual Studio / Rider / VS Code
