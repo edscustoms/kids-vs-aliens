@@ -146,7 +146,20 @@ public class TargetRail : MonoBehaviour
         if (!movementAndFacingEnabled)
             return;
 
-        FacePlayer();
+        // V1 LOS behaviour:
+        //
+        // Do not visually track Amy through walls.
+        // If LOS is lost, the target simply keeps its last
+        // facing direction while rail movement continues.
+        //
+        // After the first Android build/demo, this LOS logic
+        // should move into reusable enemy/combat architecture
+        // instead of living specifically on PracticeTarget.
+        if (practiceTarget != null && practiceTarget.CanSeePlayer())
+        {
+            FacePlayer();
+        }
+
         MoveTarget();
     }
 

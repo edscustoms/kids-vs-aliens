@@ -217,7 +217,7 @@ MonoBehaviour:
   railLength: 3
   moveSpeed: 2
   startingState: 0
-  activeCycleState: 1
+  activeCycleState: 2
   autoCycle: 1
   sleepDuration: 3
   activeDurationRange: {x: 5, y: 10}

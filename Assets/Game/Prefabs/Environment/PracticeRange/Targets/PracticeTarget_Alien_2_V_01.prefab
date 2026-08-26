@@ -747,6 +747,7 @@ GameObject:
   - component: {fileID: 7883926963501381536}
   - component: {fileID: 147885405661914167}
   - component: {fileID: 581416498633903916}
+  - component: {fileID: 2150442842218695570}
   m_Layer: 0
   m_Name: PracticeTarget_Alien_2_V_01
   m_TagString: Untagged
@@ -814,6 +815,27 @@ MonoBehaviour:
   missRadius: 1.5
   baseDamage: 10
   damageReductionPerPlayerHit: 20
+--- !u!114 &2150442842218695570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1314989713242655177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a5442c43fda8474f823d1b6b0c07505, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AimTarget
+  targetable: 1
+  bodyRootOverride: {fileID: 0}
+  explicitAimPoints: []
+  cachedBodyRoot: {fileID: 0}
+  localBodyCenter: {x: 0, y: 0, z: 0}
+  localBodyRadius: 0.5
+  bodyCached: 0
+  cachedColliderCount: 0
+  cachedRendererCount: 0
 --- !u!1 &1506590127956001318
 GameObject:
   m_ObjectHideFlags: 0

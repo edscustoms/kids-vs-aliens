@@ -63,6 +63,9 @@ public class PracticeTarget : MonoBehaviour
 
     private Transform player;
     private PlayerHealth playerHealth;
+    private CharacterController playerController;
+
+    private readonly RaycastHit[] shotHits = new RaycastHit[32];
 
     private BreakableTarget breakableTarget;
 
@@ -115,6 +118,7 @@ public class PracticeTarget : MonoBehaviour
         if (player != null)
         {
             playerHealth = player.GetComponent<PlayerHealth>();
+            playerController = player.GetComponent<CharacterController>();
         }
     }
 
@@ -334,6 +338,140 @@ public class PracticeTarget : MonoBehaviour
         fireRoutine = null;
     }
 
+    // =====================================================
+    // PLAYER VISIBILITY / SHOT COLLISION
+    //
+    // V1 NOTE:
+    //
+    // Practice targets must not know Amy's exact position
+    // through walls.
+    //
+    // This logic intentionally lives here for the mobile
+    // POC. After the first Android build works, combat LOS
+    // and shot resolution should be moved into reusable
+    // components shared by practice targets and real enemies.
+    //
+    // Rules:
+    // - Own target colliders never block this target.
+    // - Amy does not block the visibility test to herself.
+    // - Any other solid collider before Amy blocks vision.
+    // - The actual shot stops at the FIRST real world hit,
+    //   so Hardcore damage can never pass through a wall.
+    // =====================================================
+
+    public bool CanSeePlayer()
+    {
+        if (player == null || fireOrigin == null)
+        {
+            return false;
+        }
+
+        Vector3 targetPosition = GetPlayerTargetPosition();
+        Vector3 direction = targetPosition - fireOrigin.position;
+        float distance = direction.magnitude;
+
+        if (distance <= 0.001f)
+            return true;
+
+        direction /= distance;
+
+        int hitCount = Physics.RaycastNonAlloc(
+            fireOrigin.position,
+            direction,
+            shotHits,
+            distance,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore
+        );
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = shotHits[i];
+
+            if (hit.collider == null)
+                continue;
+
+            if (IsOwnCollider(hit.collider))
+                continue;
+
+            if (IsPlayerCollider(hit.collider))
+                continue;
+
+            if (hit.distance < distance - 0.02f)
+                return false;
+        }
+
+        return true;
+    }
+
+    private Vector3 GetPlayerTargetPosition()
+    {
+        if (playerController != null)
+        {
+            return playerController.bounds.center;
+        }
+
+        return player.position + Vector3.up;
+    }
+
+    private bool TryGetFirstShotHit(Vector3 direction, out RaycastHit closestHit)
+    {
+        closestHit = default;
+
+        int hitCount = Physics.RaycastNonAlloc(
+            fireOrigin.position,
+            direction,
+            shotHits,
+            ShotRange,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore
+        );
+
+        bool foundHit = false;
+        float closestDistance = Mathf.Infinity;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = shotHits[i];
+
+            if (hit.collider == null)
+                continue;
+
+            // Never let a target immediately shoot itself.
+            if (IsOwnCollider(hit.collider))
+                continue;
+
+            if (hit.distance >= closestDistance)
+                continue;
+
+            closestDistance = hit.distance;
+            closestHit = hit;
+            foundHit = true;
+        }
+
+        return foundHit;
+    }
+
+    private bool IsOwnCollider(Collider collider)
+    {
+        if (collider == null)
+            return false;
+
+        Transform hitTransform = collider.transform;
+
+        return hitTransform == transform || hitTransform.IsChildOf(transform);
+    }
+
+    private bool IsPlayerCollider(Collider collider)
+    {
+        if (player == null || collider == null)
+            return false;
+
+        Transform hitTransform = collider.transform;
+
+        return hitTransform == player || hitTransform.IsChildOf(player);
+    }
+
     private void Fire()
     {
         if (plasmaBoltPrefab == null || fireOrigin == null || player == null)
@@ -349,7 +487,12 @@ public class PracticeTarget : MonoBehaviour
             return;
         }
 
-        Vector3 playerTargetPosition = player.position + Vector3.up;
+        // Do not fire when Amy is hidden by a wall, prop,
+        // another target, or any other solid obstruction.
+        if (!CanSeePlayer())
+            return;
+
+        Vector3 playerTargetPosition = GetPlayerTargetPosition();
 
         bool willHit = Random.Range(0f, 100f) <= hitChance;
 
@@ -372,33 +515,35 @@ public class PracticeTarget : MonoBehaviour
 
         Vector3 shotDirection = (aimPoint - fireOrigin.position).normalized;
 
-        Vector3 shotEndPosition;
-
         // -------------------------------------------------
-        // HIT
-        // -------------------------------------------------
-
-        if (willHit)
-        {
-            shotEndPosition = playerTargetPosition;
-        }
-        // -------------------------------------------------
-        // MISS CONTINUES INTO WORLD
+        // REAL PHYSICAL SHOT
+        //
+        // Hits and misses both resolve against the world.
+        // The bolt stops at the first real collider instead
+        // of magically passing through walls to its endpoint.
         // -------------------------------------------------
 
-        else
-        {
-            if (Physics.Raycast(fireOrigin.position, shotDirection, out RaycastHit hit, ShotRange))
-            {
-                shotEndPosition = hit.point;
-            }
-            else
-            {
-                shotEndPosition = fireOrigin.position + shotDirection * ShotRange;
-            }
-        }
+        bool hitSomething = TryGetFirstShotHit(shotDirection, out RaycastHit worldHit);
+
+        Vector3 shotEndPosition =
+            hitSomething ? worldHit.point : fireOrigin.position + shotDirection * ShotRange;
 
         bool isHardcore = state == PracticeTargetState.Hardcore;
+
+        // -------------------------------------------------
+        // HARDCORE DAMAGE
+        //
+        // Damage requires BOTH:
+        // 1. this shot was rolled as an intended hit
+        // 2. Amy was physically the FIRST object hit
+        //
+        // A wall therefore prevents damage automatically.
+        // Miss shots remain harmless even if random spread
+        // happens to cross Amy, preserving the existing rule.
+        // -------------------------------------------------
+
+        bool genuinelyHitPlayer =
+            willHit && hitSomething && IsPlayerCollider(worldHit.collider);
 
         PlasmaBoltVFX bolt = Instantiate(plasmaBoltPrefab);
 
@@ -406,7 +551,9 @@ public class PracticeTarget : MonoBehaviour
             fireOrigin.position,
             shotEndPosition,
             boltColor,
-            isHardcore && willHit ? () => TryDealHardcoreDamage(shotEndPosition) : null
+            isHardcore && genuinelyHitPlayer
+                ? () => TryDealHardcoreDamage(shotEndPosition)
+                : null
         );
     }
 
