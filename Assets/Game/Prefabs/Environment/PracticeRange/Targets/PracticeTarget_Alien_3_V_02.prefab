@@ -648,7 +648,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PracticeTarget
   hingeDuration: 2
   plasmaBoltPrefab: {fileID: 3143334613468970144, guid: b7b3f0c0087ae644e84d2793bc81ca55, type: 3}
-  fireIntervalRange: {x: 0.5, y: 1.5}
+  fireIntervalRange: {x: 0.2, y: 0.8}
   boltColor: {r: 0.05098039, g: 0.9582672, b: 1, a: 1}
   hitChance: 30
   missRadius: 1.5

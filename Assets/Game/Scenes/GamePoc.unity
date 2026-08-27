@@ -463,7 +463,7 @@ Light:
   serializedVersion: 13
   m_Type: 0
   m_Color: {r: 0.23921569, g: 0.59607846, b: 0.6745098, a: 1}
-  m_Intensity: 10000
+  m_Intensity: 2000
   m_Range: 30
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -557,8 +557,8 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   targetCenter: {fileID: 342451338}
-  targetRandomExtents: {x: 4, y: 0, z: 5}
-  retargetInterval: 1.5
+  targetRandomExtents: {x: 3, y: 0, z: 7}
+  retargetInterval: 1
   aimSpeed: 6
 --- !u!4 &97643627 stripped
 Transform:
@@ -4680,7 +4680,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1490648921}
   m_Layer: 0
-  m_Name: AlienLightSweep_Test
+  m_Name: AlienLightSweep
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6180,7 +6180,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1805186336
 Transform:
   m_ObjectHideFlags: 0
