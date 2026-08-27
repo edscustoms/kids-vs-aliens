@@ -75,7 +75,7 @@ public class FadeWhenBlockingPlayer : MonoBehaviour
             playerController = player.GetComponent<CharacterController>();
         }
 
-        fadeWalls = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+        fadeWalls = fadeWalls = FindObjectsByType<Renderer>();
 
         propertyBlock = new MaterialPropertyBlock();
 
