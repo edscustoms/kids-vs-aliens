@@ -18,6 +18,9 @@ public class MenuPreviewStage : MonoBehaviour
     private float framingPadding = 1.25f;
 
     private GameObject currentInstance;
+    private GameObject currentPreviewPrefab;
+    private GameObject currentWeaponInstance;
+
     private MenuPreviewSettings currentSettings;
 
     public GameObject CurrentInstance => currentInstance;
@@ -48,15 +51,30 @@ public class MenuPreviewStage : MonoBehaviour
 
     public void ShowLoadout(GameObject characterPreviewPrefab, WeaponItemData weapon)
     {
-        if (!SpawnRoot(characterPreviewPrefab))
-            return;
-
-        if (weapon != null)
+        if (characterPreviewPrefab == null)
         {
-            AttachWeaponToCurrentCharacter(weapon);
+            Clear();
+            return;
         }
 
-        FrameCurrent();
+        bool characterChanged =
+            currentInstance == null || currentPreviewPrefab != characterPreviewPrefab;
+
+        if (characterChanged)
+        {
+            if (!SpawnRoot(characterPreviewPrefab))
+                return;
+
+            // Frame ONLY the character before a weapon becomes its child.
+            //
+            // This keeps Amy/Granny in exactly the same screen position
+            // regardless of whether NONE, a pistol, rifle, etc. is selected.
+            FrameCurrent();
+        }
+
+        // If only the weapon changed, keep the existing character instance,
+        // animator state and camera exactly as they are.
+        ReplaceLoadoutWeapon(weapon);
     }
 
     private bool SpawnRoot(GameObject prefab)
@@ -67,6 +85,8 @@ public class MenuPreviewStage : MonoBehaviour
         {
             return false;
         }
+
+        currentPreviewPrefab = prefab;
 
         currentInstance = Instantiate(prefab, previewSpawn);
 
@@ -94,9 +114,22 @@ public class MenuPreviewStage : MonoBehaviour
         return true;
     }
 
-    private void AttachWeaponToCurrentCharacter(WeaponItemData weapon)
+    private void ReplaceLoadoutWeapon(WeaponItemData weapon)
     {
-        if (currentInstance == null || weapon == null || weapon.equippedPrefab == null)
+        if (currentWeaponInstance != null)
+        {
+            // Disable immediately so there is never one rendered frame with
+            // both the old and new weapon present.
+            currentWeaponInstance.SetActive(false);
+            Destroy(currentWeaponInstance);
+            currentWeaponInstance = null;
+        }
+
+        // NONE is a completely valid selected state.
+        if (weapon == null)
+            return;
+
+        if (currentInstance == null || weapon.equippedPrefab == null)
         {
             return;
         }
@@ -113,28 +146,30 @@ public class MenuPreviewStage : MonoBehaviour
             return;
         }
 
-        GameObject weaponObject = Instantiate(weapon.equippedPrefab);
+        currentWeaponInstance = Instantiate(weapon.equippedPrefab);
 
-        weaponObject.name = weapon.equippedPrefab.name;
+        currentWeaponInstance.name = weapon.equippedPrefab.name;
 
-        PlasmaCoreSetup plasmaSetup = weaponObject.GetComponentInChildren<PlasmaCoreSetup>();
+        PlasmaCoreSetup plasmaSetup =
+            currentWeaponInstance.GetComponentInChildren<PlasmaCoreSetup>();
 
         if (plasmaSetup != null)
         {
             plasmaSetup.Configure(characterVisual.AuraColor);
         }
 
-        Transform gripPoint = FindChildByName(weaponObject.transform, "GripPoint");
+        Transform gripPoint = FindChildByName(currentWeaponInstance.transform, "GripPoint");
 
         if (gripPoint == null)
         {
             Debug.LogWarning($"Menu preview weapon '{weapon.name}' has no GripPoint.");
 
-            Destroy(weaponObject);
+            Destroy(currentWeaponInstance);
+            currentWeaponInstance = null;
             return;
         }
 
-        AlignGripToSocket(weaponObject.transform, gripPoint, characterVisual.WeaponSocket);
+        AlignGripToSocket(currentWeaponInstance.transform, gripPoint, characterVisual.WeaponSocket);
     }
 
     // =====================================================
@@ -147,8 +182,16 @@ public class MenuPreviewStage : MonoBehaviour
         {
             Destroy(currentInstance);
         }
+        else if (currentWeaponInstance != null)
+        {
+            // Normally the weapon is a child of currentInstance, but keep
+            // this safe if that ever changes later.
+            Destroy(currentWeaponInstance);
+        }
 
         currentInstance = null;
+        currentPreviewPrefab = null;
+        currentWeaponInstance = null;
         currentSettings = null;
     }
 

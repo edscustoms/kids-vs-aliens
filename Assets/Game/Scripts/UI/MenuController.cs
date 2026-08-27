@@ -212,14 +212,16 @@ public class MenuController : MonoBehaviour
 
         RefreshSelectButton();
 
-        if (isLoadoutPreviewMode)
+        if (!isLoadoutPreviewMode)
         {
-            ShowSelectedLoadout();
-        }
-        else
-        {
+            // Browse mode previews the item currently under the carousel.
             previewStage.Show(item.previewPrefab);
         }
+
+        // IMPORTANT:
+        // In loadout preview mode, browsing must NOT rebuild the selected
+        // loadout. The player is only looking through possible choices.
+        // The combined preview changes only when SELECT is pressed.
     }
 
     // =====================================================
