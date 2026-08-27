@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a5a9cef5e2c5d39489430b005f136d07, type: 3}
-  m_Name: PlasmaPistol_MenuItem
+  m_Name: NoneWeapon_MenuItem
   m_EditorClassIdentifier: Assembly-CSharp::MenuPreviewItem
-  id: plasma_pistol
-  displayName: Plasma Pistol
+  id: weapon_none
+  displayName: NONE
   type: 1
-  previewPrefab: {fileID: 5182591707336637479, guid: 1b6467921d91c3543a1f8d0adab2dce9, type: 3}
-  clearsSlot: 0
+  previewPrefab: {fileID: 0}
+  clearsSlot: 1
   characterPrefab: {fileID: 0}
-  weaponItemData: {fileID: 11400000, guid: 3765c3b1e078cf14487dc137ccde2ce1, type: 2}
+  weaponItemData: {fileID: 0}

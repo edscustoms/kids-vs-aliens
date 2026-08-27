@@ -411,7 +411,7 @@ GameObject:
   - component: {fileID: 99691369}
   - component: {fileID: 99691368}
   m_Layer: 5
-  m_Name: PrevievButton
+  m_Name: PreviewButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -434,7 +434,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.3, y: 0.08}
   m_AnchorMax: {x: 0.7, y: 0.16}
-  m_AnchoredPosition: {x: 23.997986, y: 50}
+  m_AnchoredPosition: {x: 23.997986, y: 50.8}
   m_SizeDelta: {x: 104.2729, y: 53.8741}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &99691368
@@ -480,19 +480,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 99691369}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1058547680}
-        m_TargetAssemblyTypeName: MenuController, Assembly-CSharp
-        m_MethodName: ExitGame
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &99691369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -674,7 +662,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.48, y: 1}
-  m_AnchoredPosition: {x: -28.998413, y: 305}
+  m_AnchoredPosition: {x: -28.998169, y: 305}
   m_SizeDelta: {x: -173.9753, y: 6.0863}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &173935272
@@ -1620,7 +1608,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.08}
   m_AnchorMax: {x: 0.18, y: 0.92}
-  m_AnchoredPosition: {x: -4.000122, y: -2}
+  m_AnchoredPosition: {x: -4.0002136, y: -2}
   m_SizeDelta: {x: 52, y: 52}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &787231771
@@ -1741,7 +1729,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.08}
   m_AnchorMax: {x: 0.18, y: 0.92}
-  m_AnchoredPosition: {x: -4.000122, y: -5.999996}
+  m_AnchoredPosition: {x: -4.0002136, y: -5.999996}
   m_SizeDelta: {x: 52, y: 52}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &804434877
@@ -2508,6 +2496,10 @@ MonoBehaviour:
   previousItemButton: {fileID: 804434877}
   nextItemButton: {fileID: 197588717}
   itemNameText: {fileID: 253903651}
+  selectButton: {fileID: 2002747720}
+  selectButtonText: {fileID: 805970628}
+  previewButton: {fileID: 99691368}
+  exitBackButtonText: {fileID: 1547789601}
   gameSceneName: GamePoc
 --- !u!4 &1058547681
 Transform:
@@ -3363,7 +3355,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.24, y: 0.19}
   m_AnchorMax: {x: 0.76, y: 0.29}
-  m_AnchoredPosition: {x: 24, y: -281}
+  m_AnchoredPosition: {x: 24, y: -295}
   m_SizeDelta: {x: 14.554, y: 32.154}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1784977628
@@ -3761,7 +3753,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.3, y: 0.08}
   m_AnchorMax: {x: 0.7, y: 0.16}
-  m_AnchoredPosition: {x: 23.997986, y: 185}
+  m_AnchoredPosition: {x: 23.997986, y: 185.8}
   m_SizeDelta: {x: 104.2729, y: 53.8741}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2002747720
@@ -3807,19 +3799,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2002747721}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1058547680}
-        m_TargetAssemblyTypeName: MenuController, Assembly-CSharp
-        m_MethodName: ExitGame
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &2002747721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3969,7 +3949,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.3, y: 0.08}
   m_AnchorMax: {x: 0.7, y: 0.16}
-  m_AnchoredPosition: {x: 23.997986, y: -291.99997}
+  m_AnchoredPosition: {x: 23.997986, y: -305.99994}
   m_SizeDelta: {x: 104.2729, y: 53.8741}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2096712304

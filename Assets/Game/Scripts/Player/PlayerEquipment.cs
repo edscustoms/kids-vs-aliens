@@ -32,14 +32,19 @@ public class PlayerEquipment : MonoBehaviour
 
     private void Start()
     {
-        WeaponItemData weaponToEquip =
-            PlayerLoadoutState.SelectedWeapon != null
-                ? PlayerLoadoutState.SelectedWeapon
-                : startingWeapon;
+        // If the menu explicitly selected a weapon slot state, respect it.
+        // SelectedWeapon may intentionally be null when NONE was selected.
+        WeaponItemData weaponToEquip = PlayerLoadoutState.HasWeaponSelection
+            ? PlayerLoadoutState.SelectedWeapon
+            : startingWeapon;
 
         if (weaponToEquip != null)
         {
             EquipWeapon(weaponToEquip);
+        }
+        else
+        {
+            UnequipWeapon();
         }
     }
 

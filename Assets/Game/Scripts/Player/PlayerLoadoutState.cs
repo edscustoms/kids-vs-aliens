@@ -1,12 +1,13 @@
-using UnityEngine;
-
 public static class PlayerLoadoutState
 {
     public static CharacterVisual SelectedCharacter { get; private set; }
     public static WeaponItemData SelectedWeapon { get; private set; }
 
-    public static bool HasCharacter => SelectedCharacter != null;
-    public static bool HasWeapon => SelectedWeapon != null;
+    // Important:
+    // null + HasWeaponSelection == false = no menu choice was made, use gameplay fallback.
+    // null + HasWeaponSelection == true  = player explicitly selected NONE.
+    public static bool HasCharacterSelection { get; private set; }
+    public static bool HasWeaponSelection { get; private set; }
 
     public static void SelectCharacter(CharacterVisual characterPrefab)
     {
@@ -14,28 +15,31 @@ public static class PlayerLoadoutState
             return;
 
         SelectedCharacter = characterPrefab;
+        HasCharacterSelection = true;
     }
 
     public static void SelectWeapon(WeaponItemData weaponItemData)
     {
-        if (weaponItemData == null)
-            return;
-
+        // Null is VALID here: it means the player deliberately selected NONE.
         SelectedWeapon = weaponItemData;
+        HasWeaponSelection = true;
     }
 
-    public static void SetLoadout(CharacterVisual characterPrefab, WeaponItemData weaponItemData)
+    public static void ClearCharacterSelection()
     {
-        if (characterPrefab != null)
-            SelectedCharacter = characterPrefab;
+        SelectedCharacter = null;
+        HasCharacterSelection = false;
+    }
 
-        if (weaponItemData != null)
-            SelectedWeapon = weaponItemData;
+    public static void ClearWeaponSelection()
+    {
+        SelectedWeapon = null;
+        HasWeaponSelection = false;
     }
 
     public static void Clear()
     {
-        SelectedCharacter = null;
-        SelectedWeapon = null;
+        ClearCharacterSelection();
+        ClearWeaponSelection();
     }
 }

@@ -252,15 +252,18 @@ public class MenuController : MonoBehaviour
 
             case MenuPreviewType.Weapon:
             {
-                if (item.weaponItemData == null)
+                if (!CanSelectItem(item))
                 {
-                    Debug.LogWarning($"{item.name}: Weapon menu item has no weaponItemData.");
+                    Debug.LogWarning(
+                        $"{item.name}: Weapon menu item is not configured. "
+                            + "Assign Weapon Item Data, or enable Clears Slot for a NONE entry."
+                    );
                     return;
                 }
 
                 selectedWeaponItem = item;
 
-                PlayerLoadoutState.SelectWeapon(item.weaponItemData);
+                PlayerLoadoutState.SelectWeapon(item.clearsSlot ? null : item.weaponItemData);
 
                 break;
             }
@@ -310,9 +313,9 @@ public class MenuController : MonoBehaviour
 
         return item.type switch
         {
-            MenuPreviewType.Character => item.characterPrefab != null,
+            MenuPreviewType.Character => !item.clearsSlot && item.characterPrefab != null,
 
-            MenuPreviewType.Weapon => item.weaponItemData != null,
+            MenuPreviewType.Weapon => item.clearsSlot || item.weaponItemData != null,
 
             _ => false,
         };
@@ -398,18 +401,24 @@ public class MenuController : MonoBehaviour
 
     private void ResolveInitialSelections()
     {
-        selectedCharacterItem = FindCharacterItem(PlayerLoadoutState.SelectedCharacter);
+        if (PlayerLoadoutState.HasCharacterSelection)
+        {
+            selectedCharacterItem = FindCharacterItem(PlayerLoadoutState.SelectedCharacter);
+        }
 
-        selectedWeaponItem = FindWeaponItem(PlayerLoadoutState.SelectedWeapon);
+        if (PlayerLoadoutState.HasWeaponSelection)
+        {
+            selectedWeaponItem = FindWeaponItem(PlayerLoadoutState.SelectedWeapon);
+        }
 
         if (selectedCharacterItem == null)
         {
-            selectedCharacterItem = FindFirstSelectableItem(MenuPreviewType.Character);
+            selectedCharacterItem = FindDefaultItem(MenuPreviewType.Character);
         }
 
         if (selectedWeaponItem == null)
         {
-            selectedWeaponItem = FindFirstSelectableItem(MenuPreviewType.Weapon);
+            selectedWeaponItem = FindDefaultItem(MenuPreviewType.Weapon);
         }
 
         SyncLoadoutState();
@@ -437,16 +446,19 @@ public class MenuController : MonoBehaviour
 
     private MenuPreviewItem FindWeaponItem(WeaponItemData weapon)
     {
-        if (weapon == null)
-            return null;
-
         foreach (MenuPreviewItem item in catalog.Items)
         {
-            if (
-                item != null
-                && item.type == MenuPreviewType.Weapon
-                && item.weaponItemData == weapon
-            )
+            if (item == null || item.type != MenuPreviewType.Weapon)
+            {
+                continue;
+            }
+
+            if (weapon == null && item.clearsSlot)
+            {
+                return item;
+            }
+
+            if (weapon != null && !item.clearsSlot && item.weaponItemData == weapon)
             {
                 return item;
             }
@@ -455,8 +467,23 @@ public class MenuController : MonoBehaviour
         return null;
     }
 
-    private MenuPreviewItem FindFirstSelectableItem(MenuPreviewType type)
+    private MenuPreviewItem FindDefaultItem(MenuPreviewType type)
     {
+        // Prefer a real item as the initial default.
+        // This preserves the current behaviour where the player starts
+        // with the first configured weapon instead of automatically NONE.
+        foreach (MenuPreviewItem item in catalog.Items)
+        {
+            if (item == null || item.type != type || item.clearsSlot)
+            {
+                continue;
+            }
+
+            if (CanSelectItem(item))
+                return item;
+        }
+
+        // If a category only contains NONE, that is still a valid default.
         foreach (MenuPreviewItem item in catalog.Items)
         {
             if (item == null || item.type != type)
@@ -473,10 +500,17 @@ public class MenuController : MonoBehaviour
 
     private void SyncLoadoutState()
     {
-        PlayerLoadoutState.SetLoadout(
-            selectedCharacterItem != null ? selectedCharacterItem.characterPrefab : null,
-            selectedWeaponItem != null ? selectedWeaponItem.weaponItemData : null
-        );
+        if (selectedCharacterItem != null && selectedCharacterItem.characterPrefab != null)
+        {
+            PlayerLoadoutState.SelectCharacter(selectedCharacterItem.characterPrefab);
+        }
+
+        if (selectedWeaponItem != null)
+        {
+            PlayerLoadoutState.SelectWeapon(
+                selectedWeaponItem.clearsSlot ? null : selectedWeaponItem.weaponItemData
+            );
+        }
     }
 
     // =====================================================
