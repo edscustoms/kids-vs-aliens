@@ -210,6 +210,8 @@ namespace StarterAssets
 
         private void CameraRotation()
         {
+            if (InputModeController.IsMobile)
+                return;
             if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
                 float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
