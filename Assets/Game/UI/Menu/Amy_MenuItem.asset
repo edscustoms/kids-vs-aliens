@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5a9cef5e2c5d39489430b005f136d07, type: 3}
   m_Name: Amy_MenuItem
   m_EditorClassIdentifier: Assembly-CSharp::MenuPreviewItem
-  id: 
+  id: amy
   displayName: Amy
   type: 0
-  previewPrefab: {fileID: 8243671722853626172, guid: 7c76d6c3a1c670d4ebc31938f0180f22, type: 3}
+  previewPrefab: {fileID: 7479995438431859893, guid: 7c55726862045234185d26db1e5c5db2, type: 3}
+  characterPrefab: {fileID: 9208920759478264055, guid: 7c76d6c3a1c670d4ebc31938f0180f22, type: 3}
+  weaponItemData: {fileID: 0}

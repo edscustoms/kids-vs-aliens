@@ -9,7 +9,9 @@ public class PlayerEquipment : MonoBehaviour
     [SerializeField]
     private PlayerShooter playerShooter;
 
-    // Temporary: only for testing dynamic equip
+    [Tooltip(
+        "Fallback used when GamePoc is launched directly or no menu weapon has been selected."
+    )]
     [SerializeField]
     private WeaponItemData startingWeapon;
 
@@ -23,13 +25,22 @@ public class PlayerEquipment : MonoBehaviour
     private void Awake()
     {
         if (playerCharacter == null)
+        {
             playerCharacter = GetComponent<PlayerCharacter>();
+        }
     }
 
     private void Start()
     {
-        if (startingWeapon != null)
-            EquipWeapon(startingWeapon);
+        WeaponItemData weaponToEquip =
+            PlayerLoadoutState.SelectedWeapon != null
+                ? PlayerLoadoutState.SelectedWeapon
+                : startingWeapon;
+
+        if (weaponToEquip != null)
+        {
+            EquipWeapon(weaponToEquip);
+        }
     }
 
     public bool IsEquipped(ItemData item)
@@ -109,7 +120,9 @@ public class PlayerEquipment : MonoBehaviour
         playerShooter.UnequipWeapon();
 
         if (equippedWeaponObject != null)
+        {
             Destroy(equippedWeaponObject);
+        }
 
         equippedWeaponObject = null;
         equippedWeapon = null;

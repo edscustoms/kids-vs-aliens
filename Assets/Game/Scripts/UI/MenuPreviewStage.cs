@@ -30,20 +30,55 @@ public class MenuPreviewStage : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // SINGLE ITEM PREVIEW
+    // =====================================================
+
     public void Show(GameObject prefab)
+    {
+        if (!SpawnRoot(prefab))
+            return;
+
+        FrameCurrent();
+    }
+
+    // =====================================================
+    // COMBINED LOADOUT PREVIEW
+    // =====================================================
+
+    public void ShowLoadout(GameObject characterPreviewPrefab, WeaponItemData weapon)
+    {
+        if (!SpawnRoot(characterPreviewPrefab))
+            return;
+
+        if (weapon != null)
+        {
+            AttachWeaponToCurrentCharacter(weapon);
+        }
+
+        FrameCurrent();
+    }
+
+    private bool SpawnRoot(GameObject prefab)
     {
         Clear();
 
         if (prefab == null || previewSpawn == null || previewCamera == null)
-            return;
+        {
+            return false;
+        }
 
         currentInstance = Instantiate(prefab, previewSpawn);
+
         currentInstance.name = prefab.name;
 
         Transform model = currentInstance.transform;
 
         model.localPosition = Vector3.zero;
+
         model.localRotation = Quaternion.identity;
+
+        model.localScale = Vector3.one;
 
         currentSettings = currentInstance.GetComponent<MenuPreviewSettings>();
 
@@ -56,8 +91,55 @@ public class MenuPreviewStage : MonoBehaviour
             model.localScale *= currentSettings.scaleMultiplier;
         }
 
-        FrameCurrent();
+        return true;
     }
+
+    private void AttachWeaponToCurrentCharacter(WeaponItemData weapon)
+    {
+        if (currentInstance == null || weapon == null || weapon.equippedPrefab == null)
+        {
+            return;
+        }
+
+        CharacterVisual characterVisual = currentInstance.GetComponentInChildren<CharacterVisual>(
+            true
+        );
+
+        if (characterVisual == null || !characterVisual.HasWeaponSocket)
+        {
+            Debug.LogWarning(
+                $"Menu preview character '{currentInstance.name}' has no usable CharacterVisual/WeaponSocket."
+            );
+            return;
+        }
+
+        GameObject weaponObject = Instantiate(weapon.equippedPrefab);
+
+        weaponObject.name = weapon.equippedPrefab.name;
+
+        PlasmaCoreSetup plasmaSetup = weaponObject.GetComponentInChildren<PlasmaCoreSetup>();
+
+        if (plasmaSetup != null)
+        {
+            plasmaSetup.Configure(characterVisual.AuraColor);
+        }
+
+        Transform gripPoint = FindChildByName(weaponObject.transform, "GripPoint");
+
+        if (gripPoint == null)
+        {
+            Debug.LogWarning($"Menu preview weapon '{weapon.name}' has no GripPoint.");
+
+            Destroy(weaponObject);
+            return;
+        }
+
+        AlignGripToSocket(weaponObject.transform, gripPoint, characterVisual.WeaponSocket);
+    }
+
+    // =====================================================
+    // CLEAR / ROTATE / FRAME
+    // =====================================================
 
     public void Clear()
     {
@@ -83,7 +165,9 @@ public class MenuPreviewStage : MonoBehaviour
     public void FrameCurrent()
     {
         if (currentInstance == null || previewCamera == null)
+        {
             return;
+        }
 
         Renderer[] renderers = currentInstance.GetComponentsInChildren<Renderer>(true);
 
@@ -113,11 +197,13 @@ public class MenuPreviewStage : MonoBehaviour
             return;
 
         Vector3 target = bounds.center;
+
         float distanceMultiplier = 1f;
 
         if (currentSettings != null)
         {
             target += currentSettings.cameraTargetOffset;
+
             distanceMultiplier = currentSettings.cameraDistanceMultiplier;
         }
 
@@ -145,5 +231,38 @@ public class MenuPreviewStage : MonoBehaviour
             target - previewCamera.transform.position,
             Vector3.up
         );
+    }
+
+    // =====================================================
+    // WEAPON ALIGNMENT
+    // =====================================================
+
+    private void AlignGripToSocket(Transform weapon, Transform gripPoint, Transform weaponSocket)
+    {
+        Quaternion rotationDelta = weaponSocket.rotation * Quaternion.Inverse(gripPoint.rotation);
+
+        weapon.rotation = rotationDelta * weapon.rotation;
+
+        Vector3 positionDelta = weaponSocket.position - gripPoint.position;
+
+        weapon.position += positionDelta;
+
+        weapon.SetParent(weaponSocket, true);
+    }
+
+    private Transform FindChildByName(Transform parent, string childName)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName)
+                return child;
+
+            Transform result = FindChildByName(child, childName);
+
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 }

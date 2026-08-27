@@ -38,6 +38,22 @@ public class MenuController : MonoBehaviour
     [SerializeField]
     private TMP_Text itemNameText;
 
+    [Header("Selection")]
+    [SerializeField]
+    private Button selectButton;
+
+    [SerializeField]
+    private TMP_Text selectButtonText;
+
+    [Header("Loadout Preview")]
+    [SerializeField]
+    private Button previewButton;
+
+    [Header("Exit / Back")]
+    [Tooltip("Text inside the existing Exit button. Changes to BACK while previewing the loadout.")]
+    [SerializeField]
+    private TMP_Text exitBackButtonText;
+
     [Header("Game")]
     [SerializeField]
     private string gameSceneName = "GamePoc";
@@ -47,6 +63,11 @@ public class MenuController : MonoBehaviour
     private MenuPreviewType currentType;
     private int currentItemIndex;
 
+    private MenuPreviewItem selectedCharacterItem;
+    private MenuPreviewItem selectedWeaponItem;
+
+    private bool isLoadoutPreviewMode;
+
     private void Awake()
     {
         previousTypeButton.onClick.AddListener(PreviousType);
@@ -54,6 +75,12 @@ public class MenuController : MonoBehaviour
 
         previousItemButton.onClick.AddListener(PreviousItem);
         nextItemButton.onClick.AddListener(NextItem);
+
+        if (selectButton != null)
+            selectButton.onClick.AddListener(SelectCurrentItem);
+
+        if (previewButton != null)
+            previewButton.onClick.AddListener(EnterLoadoutPreview);
     }
 
     private void Start()
@@ -61,7 +88,10 @@ public class MenuController : MonoBehaviour
         currentType = MenuPreviewType.Character;
         currentItemIndex = 0;
 
+        ResolveInitialSelections();
+
         RefreshType();
+        RefreshModeUI();
     }
 
     private void OnDestroy()
@@ -71,7 +101,17 @@ public class MenuController : MonoBehaviour
 
         previousItemButton.onClick.RemoveListener(PreviousItem);
         nextItemButton.onClick.RemoveListener(NextItem);
+
+        if (selectButton != null)
+            selectButton.onClick.RemoveListener(SelectCurrentItem);
+
+        if (previewButton != null)
+            previewButton.onClick.RemoveListener(EnterLoadoutPreview);
     }
+
+    // =====================================================
+    // TYPE CAROUSEL
+    // =====================================================
 
     private void PreviousType()
     {
@@ -101,6 +141,10 @@ public class MenuController : MonoBehaviour
 
         RefreshType();
     }
+
+    // =====================================================
+    // ITEM CAROUSEL
+    // =====================================================
 
     private void PreviousItem()
     {
@@ -145,10 +189,15 @@ public class MenuController : MonoBehaviour
         {
             itemNameText.text = "NONE";
 
-            previewStage.Clear();
-
             previousItemButton.interactable = false;
             nextItemButton.interactable = false;
+
+            RefreshSelectButton();
+
+            // In loadout preview mode we KEEP showing the selected loadout,
+            // even if the currently browsed category has no items.
+            if (!isLoadoutPreviewMode)
+                previewStage.Clear();
 
             return;
         }
@@ -157,24 +206,315 @@ public class MenuController : MonoBehaviour
 
         nextItemButton.interactable = currentItems.Count > 1;
 
-        MenuPreviewItem item = currentItems[currentItemIndex];
+        MenuPreviewItem item = CurrentItem;
 
         itemNameText.text = item.displayName.ToUpperInvariant();
 
-        previewStage.Show(item.previewPrefab);
+        RefreshSelectButton();
+
+        if (isLoadoutPreviewMode)
+        {
+            ShowSelectedLoadout();
+        }
+        else
+        {
+            previewStage.Show(item.previewPrefab);
+        }
     }
+
+    // =====================================================
+    // SELECTION
+    // =====================================================
+
+    public void SelectCurrentItem()
+    {
+        MenuPreviewItem item = CurrentItem;
+
+        if (item == null)
+            return;
+
+        switch (item.type)
+        {
+            case MenuPreviewType.Character:
+            {
+                if (item.characterPrefab == null)
+                {
+                    Debug.LogWarning($"{item.name}: Character menu item has no characterPrefab.");
+                    return;
+                }
+
+                selectedCharacterItem = item;
+
+                PlayerLoadoutState.SelectCharacter(item.characterPrefab);
+
+                break;
+            }
+
+            case MenuPreviewType.Weapon:
+            {
+                if (item.weaponItemData == null)
+                {
+                    Debug.LogWarning($"{item.name}: Weapon menu item has no weaponItemData.");
+                    return;
+                }
+
+                selectedWeaponItem = item;
+
+                PlayerLoadoutState.SelectWeapon(item.weaponItemData);
+
+                break;
+            }
+
+            case MenuPreviewType.Grenade:
+            {
+                // Future loadout slot.
+                Debug.Log("Grenade selection is not wired yet.");
+                return;
+            }
+        }
+
+        RefreshSelectButton();
+
+        // This is the nice UX part:
+        // while PREVIEW is active, selecting a different item immediately
+        // refreshes the combined character + weapon presentation.
+        if (isLoadoutPreviewMode)
+        {
+            ShowSelectedLoadout();
+        }
+    }
+
+    private void RefreshSelectButton()
+    {
+        if (selectButton == null)
+            return;
+
+        MenuPreviewItem item = CurrentItem;
+
+        bool canSelect = CanSelectItem(item);
+
+        bool selected = IsSelectedItem(item);
+
+        selectButton.interactable = canSelect && !selected;
+
+        if (selectButtonText != null)
+        {
+            selectButtonText.text = selected ? "SELECTED" : "SELECT";
+        }
+    }
+
+    private bool CanSelectItem(MenuPreviewItem item)
+    {
+        if (item == null)
+            return false;
+
+        return item.type switch
+        {
+            MenuPreviewType.Character => item.characterPrefab != null,
+
+            MenuPreviewType.Weapon => item.weaponItemData != null,
+
+            _ => false,
+        };
+    }
+
+    private bool IsSelectedItem(MenuPreviewItem item)
+    {
+        if (item == null)
+            return false;
+
+        return item.type switch
+        {
+            MenuPreviewType.Character => item == selectedCharacterItem,
+
+            MenuPreviewType.Weapon => item == selectedWeaponItem,
+
+            _ => false,
+        };
+    }
+
+    // =====================================================
+    // LOADOUT PREVIEW MODE
+    // =====================================================
+
+    public void EnterLoadoutPreview()
+    {
+        if (selectedCharacterItem == null)
+        {
+            Debug.LogWarning("Cannot preview loadout: no selected character.");
+            return;
+        }
+
+        isLoadoutPreviewMode = true;
+
+        RefreshModeUI();
+        ShowSelectedLoadout();
+    }
+
+    private void ExitLoadoutPreview()
+    {
+        isLoadoutPreviewMode = false;
+
+        RefreshModeUI();
+
+        // Return to the exact category/item the player was browsing.
+        RefreshItem();
+    }
+
+    private void ShowSelectedLoadout()
+    {
+        if (selectedCharacterItem == null || selectedCharacterItem.previewPrefab == null)
+        {
+            previewStage.Clear();
+            return;
+        }
+
+        previewStage.ShowLoadout(
+            selectedCharacterItem.previewPrefab,
+            selectedWeaponItem != null ? selectedWeaponItem.weaponItemData : null
+        );
+    }
+
+    private void RefreshModeUI()
+    {
+        if (previewButton != null)
+        {
+            // We deliberately KEEP carousel + SELECT active in preview mode.
+            // Only PREVIEW itself becomes unavailable.
+            previewButton.interactable = !isLoadoutPreviewMode && selectedCharacterItem != null;
+        }
+
+        if (exitBackButtonText != null)
+        {
+            exitBackButtonText.text = isLoadoutPreviewMode ? "BACK" : "EXIT";
+        }
+
+        RefreshSelectButton();
+    }
+
+    // =====================================================
+    // DEFAULT / EXISTING SELECTIONS
+    // =====================================================
+
+    private void ResolveInitialSelections()
+    {
+        selectedCharacterItem = FindCharacterItem(PlayerLoadoutState.SelectedCharacter);
+
+        selectedWeaponItem = FindWeaponItem(PlayerLoadoutState.SelectedWeapon);
+
+        if (selectedCharacterItem == null)
+        {
+            selectedCharacterItem = FindFirstSelectableItem(MenuPreviewType.Character);
+        }
+
+        if (selectedWeaponItem == null)
+        {
+            selectedWeaponItem = FindFirstSelectableItem(MenuPreviewType.Weapon);
+        }
+
+        SyncLoadoutState();
+    }
+
+    private MenuPreviewItem FindCharacterItem(CharacterVisual character)
+    {
+        if (character == null)
+            return null;
+
+        foreach (MenuPreviewItem item in catalog.Items)
+        {
+            if (
+                item != null
+                && item.type == MenuPreviewType.Character
+                && item.characterPrefab == character
+            )
+            {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    private MenuPreviewItem FindWeaponItem(WeaponItemData weapon)
+    {
+        if (weapon == null)
+            return null;
+
+        foreach (MenuPreviewItem item in catalog.Items)
+        {
+            if (
+                item != null
+                && item.type == MenuPreviewType.Weapon
+                && item.weaponItemData == weapon
+            )
+            {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    private MenuPreviewItem FindFirstSelectableItem(MenuPreviewType type)
+    {
+        foreach (MenuPreviewItem item in catalog.Items)
+        {
+            if (item == null || item.type != type)
+            {
+                continue;
+            }
+
+            if (CanSelectItem(item))
+                return item;
+        }
+
+        return null;
+    }
+
+    private void SyncLoadoutState()
+    {
+        PlayerLoadoutState.SetLoadout(
+            selectedCharacterItem != null ? selectedCharacterItem.characterPrefab : null,
+            selectedWeaponItem != null ? selectedWeaponItem.weaponItemData : null
+        );
+    }
+
+    // =====================================================
+    // GAME / EXIT
+    // =====================================================
 
     public void PlayGame()
     {
+        SyncLoadoutState();
+
         SceneManager.LoadScene(gameSceneName);
     }
 
     public void ExitGame()
     {
+        if (isLoadoutPreviewMode)
+        {
+            ExitLoadoutPreview();
+            return;
+        }
+
 #if UNITY_EDITOR
         EditorApplication.isPlaying = false;
 #else
         Application.Quit();
 #endif
+    }
+
+    private MenuPreviewItem CurrentItem
+    {
+        get
+        {
+            if (currentItemIndex < 0 || currentItemIndex >= currentItems.Count)
+            {
+                return null;
+            }
+
+            return currentItems[currentItemIndex];
+        }
     }
 }
