@@ -14,11 +14,19 @@ public class LoadingSceneController : MonoBehaviour
 
     [Header("Timing")]
     [SerializeField]
-    private float minimumDisplayTime = 1f;
+    private float minimumDisplayTime = 1.5f;
+
+    [SerializeField]
+    private float fullBarHoldTime = 0.15f;
 
     private IEnumerator Start()
     {
         SetProgress(0f);
+
+        // Make sure the loading screen actually renders once
+        // before we start loading the next scene.
+        Canvas.ForceUpdateCanvases();
+        yield return null;
 
         float startTime = Time.unscaledTime;
 
@@ -33,23 +41,40 @@ public class LoadingSceneController : MonoBehaviour
 
         operation.allowSceneActivation = false;
 
-        while (operation.progress < 0.9f)
+        while (true)
         {
-            float progress = Mathf.Clamp01(operation.progress / 0.9f);
+            // Unity async loading stops around 0.9
+            // until scene activation is allowed.
+            float actualProgress = Mathf.Clamp01(operation.progress / 0.9f);
 
-            SetProgress(progress);
+            float elapsed = Time.unscaledTime - startTime;
+
+            float timedProgress =
+                minimumDisplayTime <= 0f ? 1f : Mathf.Clamp01(elapsed / minimumDisplayTime);
+
+            // Fast phone:
+            // animate over minimumDisplayTime.
+            //
+            // Slow phone:
+            // never visually outrun the real load.
+            float displayedProgress = Mathf.Min(actualProgress, timedProgress);
+
+            SetProgress(displayedProgress);
+
+            bool sceneLoaded = operation.progress >= 0.9f;
+
+            bool minimumTimeReached = elapsed >= minimumDisplayTime;
+
+            if (sceneLoaded && minimumTimeReached)
+                break;
 
             yield return null;
         }
 
         SetProgress(1f);
 
-        float elapsed = Time.unscaledTime - startTime;
-
-        if (elapsed < minimumDisplayTime)
-        {
-            yield return new WaitForSecondsRealtime(minimumDisplayTime - elapsed);
-        }
+        // Let 100% actually be visible briefly.
+        yield return new WaitForSecondsRealtime(fullBarHoldTime);
 
         operation.allowSceneActivation = true;
     }
@@ -61,7 +86,7 @@ public class LoadingSceneController : MonoBehaviour
 
         Vector3 scale = progressFill.localScale;
 
-        scale.x = progress;
+        scale.x = Mathf.Clamp01(progress);
 
         progressFill.localScale = scale;
     }
