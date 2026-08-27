@@ -14,6 +14,9 @@ public class CharacterSetupHelper : EditorWindow
 
     private const string CharacterPrefabFolder = "Assets/Game/Prefabs/Player/Characters";
 
+    private const string MenuCharacterPrefabFolder =
+        "Assets/Game/Prefabs/Menu/Characters";
+
     private const string MenuItemFolder = "Assets/Game/UI/Menu";
 
     [SerializeField]
@@ -83,9 +86,10 @@ public class CharacterSetupHelper : EditorWindow
                 + "• Extract embedded textures/materials\n"
                 + "• Animator controller\n"
                 + "• RightHand/WeaponSocket\n"
-                + "• CharacterVisual\n"
-                + "• MenuPreviewSettings\n"
-                + "• MenuPreviewItem\n"
+                + "• Gameplay CharacterVisual prefab\n"
+                + "• Separate menu preview wrapper prefab\n"
+                + "• MenuPreviewSettings on menu wrapper\n"
+                + "• MenuPreviewItem linked to BOTH preview + gameplay character\n"
                 + "• Optional MainMenuCatalog entry\n\n"
                 + "Safe to run again: existing prefab/menu assets are NOT overwritten.",
             MessageType.Info
@@ -207,7 +211,13 @@ public class CharacterSetupHelper : EditorWindow
         string safeName = GetSafeCharacterName();
 
         EditorGUILayout.SelectableLabel(
-            $"{CharacterPrefabFolder}/{safeName}.prefab",
+            $"Game: {CharacterPrefabFolder}/{safeName}.prefab",
+            EditorStyles.textField,
+            GUILayout.Height(EditorGUIUtility.singleLineHeight)
+        );
+
+        EditorGUILayout.SelectableLabel(
+            $"Menu: {MenuCharacterPrefabFolder}/{safeName}_MenuPreview.prefab",
             EditorStyles.textField,
             GUILayout.Height(EditorGUIUtility.singleLineHeight)
         );
@@ -215,7 +225,7 @@ public class CharacterSetupHelper : EditorWindow
         if (createMenuItem)
         {
             EditorGUILayout.SelectableLabel(
-                $"{MenuItemFolder}/{safeName}_MenuItem.asset",
+                $"Item: {MenuItemFolder}/{safeName}_MenuItem.asset",
                 EditorStyles.textField,
                 GUILayout.Height(EditorGUIUtility.singleLineHeight)
             );
@@ -251,20 +261,24 @@ public class CharacterSetupHelper : EditorWindow
         }
 
         string modelPath = AssetDatabase.GetAssetPath(modelAsset);
-
         string safeName = GetSafeCharacterName();
 
-        string prefabPath = $"{CharacterPrefabFolder}/{safeName}.prefab";
+        string gameplayPrefabPath =
+            $"{CharacterPrefabFolder}/{safeName}.prefab";
 
-        string menuItemPath = $"{MenuItemFolder}/{safeName}_MenuItem.asset";
+        string menuPreviewPrefabPath =
+            $"{MenuCharacterPrefabFolder}/{safeName}_MenuPreview.prefab";
+
+        string menuItemPath =
+            $"{MenuItemFolder}/{safeName}_MenuItem.asset";
 
         try
         {
-            // Always repair/import the source FBX first.
-            // This is intentionally done even when the prefab/menu item already exists.
+            // Always repair/import source first.
             ConfigureAndRepairModel(modelPath);
 
-            GameObject refreshedModel = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+            GameObject refreshedModel =
+                AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
 
             if (refreshedModel == null)
             {
@@ -274,45 +288,116 @@ public class CharacterSetupHelper : EditorWindow
             }
 
             EnsureFolder(CharacterPrefabFolder);
+            EnsureFolder(MenuCharacterPrefabFolder);
             EnsureFolder(MenuItemFolder);
 
-            bool prefabCreated = false;
+            bool gameplayPrefabCreated = false;
+            bool menuPreviewPrefabCreated = false;
             bool menuItemCreated = false;
             bool catalogAdded = false;
 
-            GameObject characterPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            // =====================================================
+            // 1. GAMEPLAY CHARACTER
+            // =====================================================
 
-            if (characterPrefab == null)
+            GameObject gameplayPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    gameplayPrefabPath
+                );
+
+            if (gameplayPrefab == null)
             {
-                characterPrefab = CreateCharacterPrefab(refreshedModel, safeName, prefabPath);
+                gameplayPrefab =
+                    CreateGameplayCharacterPrefab(
+                        refreshedModel,
+                        safeName,
+                        gameplayPrefabPath
+                    );
 
-                prefabCreated = true;
+                gameplayPrefabCreated = true;
             }
+
+            CharacterVisual gameplayCharacter =
+                gameplayPrefab.GetComponent<CharacterVisual>();
+
+            if (gameplayCharacter == null)
+            {
+                throw new InvalidOperationException(
+                    $"Gameplay prefab '{gameplayPrefab.name}' has no CharacterVisual component."
+                );
+            }
+
+            // =====================================================
+            // 2. MENU PREVIEW WRAPPER
+            //
+            // This prefab REFERENCES the gameplay prefab as a nested
+            // prefab instance. Meshes/textures/materials are not copied.
+            // =====================================================
+
+            GameObject menuPreviewPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    menuPreviewPrefabPath
+                );
+
+            if (menuPreviewPrefab == null)
+            {
+                menuPreviewPrefab =
+                    CreateMenuPreviewPrefab(
+                        gameplayPrefab,
+                        safeName,
+                        menuPreviewPrefabPath
+                    );
+
+                menuPreviewPrefabCreated = true;
+            }
+
+            // =====================================================
+            // 3. MENU ITEM = THE CONNECTION
+            // =====================================================
 
             MenuPreviewItem menuItem = null;
 
             if (createMenuItem)
             {
-                menuItem = AssetDatabase.LoadAssetAtPath<MenuPreviewItem>(menuItemPath);
+                menuItem =
+                    AssetDatabase.LoadAssetAtPath<MenuPreviewItem>(
+                        menuItemPath
+                    );
 
                 if (menuItem == null)
                 {
-                    menuItem = CreateCharacterMenuItem(characterPrefab, menuItemPath);
+                    menuItem =
+                        ScriptableObject.CreateInstance<MenuPreviewItem>();
+
+                    AssetDatabase.CreateAsset(
+                        menuItem,
+                        menuItemPath
+                    );
 
                     menuItemCreated = true;
                 }
 
+                ConfigureCharacterMenuItem(
+                    menuItem,
+                    menuPreviewPrefab,
+                    gameplayCharacter
+                );
+
                 if (addToMenuCatalog)
                 {
-                    catalogAdded = AddMenuItemToCatalog(menuItem, menuCatalog);
+                    catalogAdded =
+                        AddMenuItemToCatalog(
+                            menuItem,
+                            menuCatalog
+                        );
                 }
             }
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Selection.activeObject = characterPrefab;
-            EditorGUIUtility.PingObject(characterPrefab);
+            Selection.activeObject = menuPreviewPrefab;
+            EditorGUIUtility.PingObject(menuPreviewPrefab);
 
             string modelFolder = GetAssetFolder(modelPath);
 
@@ -329,31 +414,45 @@ public class CharacterSetupHelper : EditorWindow
             result.AppendLine($"• Materials → {modelFolder}/Materials");
 
             result.AppendLine();
-            result.AppendLine($"Prefab: {(prefabCreated ? "created" : "kept existing")}");
+            result.AppendLine(
+                $"Gameplay prefab: {(gameplayPrefabCreated ? "created" : "kept existing")}"
+            );
+            result.AppendLine($"• {gameplayPrefabPath}");
 
-            result.AppendLine($"• {prefabPath}");
+            result.AppendLine(
+                $"Menu preview: {(menuPreviewPrefabCreated ? "created" : "kept existing")}"
+            );
+            result.AppendLine($"• {menuPreviewPrefabPath}");
 
             if (createMenuItem)
             {
-                result.AppendLine($"Menu item: {(menuItemCreated ? "created" : "kept existing")}");
-
+                result.AppendLine(
+                    $"Menu item: {(menuItemCreated ? "created" : "updated")}"
+                );
                 result.AppendLine($"• {menuItemPath}");
+                result.AppendLine("• previewPrefab → menu preview wrapper");
+                result.AppendLine("• characterPrefab → gameplay CharacterVisual");
 
                 if (addToMenuCatalog)
                 {
-                    result.AppendLine($"Catalog: {(catalogAdded ? "added" : "already present")}");
+                    result.AppendLine(
+                        $"Catalog: {(catalogAdded ? "added" : "already present")}"
+                    );
                 }
             }
 
             statusMessage = result.ToString();
-
-            Debug.Log(statusMessage, characterPrefab);
+            Debug.Log(statusMessage, menuPreviewPrefab);
         }
         catch (Exception exception)
         {
             Debug.LogException(exception);
 
-            EditorUtility.DisplayDialog("Character Setup Failed", exception.Message, "OK");
+            EditorUtility.DisplayDialog(
+                "Character Setup Failed",
+                exception.Message,
+                "OK"
+            );
         }
     }
 
@@ -557,7 +656,11 @@ public class CharacterSetupHelper : EditorWindow
     // PREFAB
     // =====================================================
 
-    private GameObject CreateCharacterPrefab(GameObject model, string safeName, string prefabPath)
+    private GameObject CreateGameplayCharacterPrefab(
+        GameObject model,
+        string safeName,
+        string prefabPath
+    )
     {
         GameObject root = new GameObject(safeName);
 
@@ -567,29 +670,32 @@ public class CharacterSetupHelper : EditorWindow
 
             if (playerLayer < 0)
             {
-                throw new InvalidOperationException("Project layer 'Player' does not exist.");
+                throw new InvalidOperationException(
+                    "Project layer 'Player' does not exist."
+                );
             }
 
             root.layer = playerLayer;
 
-            GameObject modelInstance = PrefabUtility.InstantiatePrefab(model) as GameObject;
+            GameObject modelInstance =
+                PrefabUtility.InstantiatePrefab(model) as GameObject;
 
             if (modelInstance == null)
             {
-                throw new InvalidOperationException("Could not instantiate the source model.");
+                throw new InvalidOperationException(
+                    "Could not instantiate the source model."
+                );
             }
 
             modelInstance.transform.SetParent(root.transform, false);
-
             modelInstance.transform.localPosition = Vector3.zero;
-
             modelInstance.transform.localRotation = Quaternion.identity;
-
             modelInstance.transform.localScale = Vector3.one;
 
             SetLayerRecursively(modelInstance, playerLayer);
 
-            Animator animator = modelInstance.GetComponentInChildren<Animator>(true);
+            Animator animator =
+                modelInstance.GetComponentInChildren<Animator>(true);
 
             if (animator == null)
             {
@@ -597,10 +703,10 @@ public class CharacterSetupHelper : EditorWindow
             }
 
             animator.runtimeAnimatorController = animatorController;
-
             animator.applyRootMotion = false;
 
-            Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+            Transform rightHand =
+                animator.GetBoneTransform(HumanBodyBones.RightHand);
 
             if (rightHand == null)
             {
@@ -614,52 +720,130 @@ public class CharacterSetupHelper : EditorWindow
 
             if (weaponSocket == null)
             {
-                GameObject socketObject = new GameObject("WeaponSocket");
+                GameObject socketObject =
+                    new GameObject("WeaponSocket");
 
                 socketObject.layer = playerLayer;
 
                 weaponSocket = socketObject.transform;
 
                 weaponSocket.SetParent(rightHand, false);
-
                 weaponSocket.localPosition = Vector3.zero;
-
                 weaponSocket.localRotation = Quaternion.identity;
-
                 weaponSocket.localScale = Vector3.one;
             }
 
-            CharacterVisual characterVisual = root.AddComponent<CharacterVisual>();
+            CharacterVisual characterVisual =
+                root.AddComponent<CharacterVisual>();
 
-            SerializedObject visualSO = new SerializedObject(characterVisual);
+            SerializedObject visualSO =
+                new SerializedObject(characterVisual);
 
-            visualSO.FindProperty("animator").objectReferenceValue = animator;
+            visualSO.FindProperty("animator").objectReferenceValue =
+                animator;
 
-            visualSO.FindProperty("weaponSocket").objectReferenceValue = weaponSocket;
+            visualSO.FindProperty("weaponSocket").objectReferenceValue =
+                weaponSocket;
 
-            visualSO.FindProperty("auraColor").colorValue = auraColor;
+            visualSO.FindProperty("auraColor").colorValue =
+                auraColor;
 
             visualSO.ApplyModifiedPropertiesWithoutUndo();
 
-            MenuPreviewSettings previewSettings = root.AddComponent<MenuPreviewSettings>();
+            // IMPORTANT:
+            // Gameplay prefab intentionally has NO MenuPreviewSettings.
+            // Menu presentation now lives in a separate wrapper prefab.
 
-            previewSettings.localOffset = Vector3.zero;
-
-            previewSettings.localEulerAngles = previewEulerAngles;
-
-            previewSettings.scaleMultiplier = 1f;
-
-            previewSettings.cameraTargetOffset = Vector3.zero;
-
-            previewSettings.cameraDistanceMultiplier = 1f;
-
-            previewSettings.rotationSensitivity = 0.25f;
-
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            GameObject prefab =
+                PrefabUtility.SaveAsPrefabAsset(
+                    root,
+                    prefabPath
+                );
 
             if (prefab == null)
             {
-                throw new InvalidOperationException("Unity failed to save the character prefab.");
+                throw new InvalidOperationException(
+                    "Unity failed to save the gameplay character prefab."
+                );
+            }
+
+            return prefab;
+        }
+        finally
+        {
+            DestroyImmediate(root);
+        }
+    }
+
+    private GameObject CreateMenuPreviewPrefab(
+        GameObject gameplayPrefab,
+        string safeName,
+        string prefabPath
+    )
+    {
+        GameObject root =
+            new GameObject($"{safeName}_MenuPreview");
+
+        try
+        {
+            GameObject gameplayInstance =
+                PrefabUtility.InstantiatePrefab(
+                    gameplayPrefab
+                ) as GameObject;
+
+            if (gameplayInstance == null)
+            {
+                throw new InvalidOperationException(
+                    "Could not instantiate the gameplay character prefab for menu preview."
+                );
+            }
+
+            gameplayInstance.transform.SetParent(
+                root.transform,
+                false
+            );
+
+            gameplayInstance.transform.localPosition =
+                Vector3.zero;
+
+            gameplayInstance.transform.localRotation =
+                Quaternion.identity;
+
+            gameplayInstance.transform.localScale =
+                Vector3.one;
+
+            MenuPreviewSettings previewSettings =
+                root.AddComponent<MenuPreviewSettings>();
+
+            previewSettings.localOffset =
+                Vector3.zero;
+
+            previewSettings.localEulerAngles =
+                previewEulerAngles;
+
+            previewSettings.scaleMultiplier =
+                1f;
+
+            previewSettings.cameraTargetOffset =
+                Vector3.zero;
+
+            previewSettings.cameraDistanceMultiplier =
+                1f;
+
+            previewSettings.rotationSensitivity =
+                0.25f;
+
+            GameObject prefab =
+                PrefabUtility.SaveAsPrefabAsset(
+                    root,
+                    prefabPath
+                );
+
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Unity failed to save the menu preview prefab."
+                );
             }
 
             return prefab;
@@ -674,21 +858,29 @@ public class CharacterSetupHelper : EditorWindow
     // MENU ITEM / CATALOG
     // =====================================================
 
-    private MenuPreviewItem CreateCharacterMenuItem(GameObject previewPrefab, string menuItemPath)
+    private void ConfigureCharacterMenuItem(
+        MenuPreviewItem item,
+        GameObject menuPreviewPrefab,
+        CharacterVisual gameplayCharacterPrefab
+    )
     {
-        MenuPreviewItem item = ScriptableObject.CreateInstance<MenuPreviewItem>();
+        if (item == null)
+            throw new ArgumentNullException(nameof(item));
 
         item.id = characterId.Trim();
-
         item.displayName = displayName.Trim();
-
         item.type = MenuPreviewType.Character;
 
-        item.previewPrefab = previewPrefab;
+        // What the menu displays.
+        item.previewPrefab = menuPreviewPrefab;
 
-        AssetDatabase.CreateAsset(item, menuItemPath);
+        // What GamePoc actually spawns.
+        item.characterPrefab = gameplayCharacterPrefab;
 
-        return item;
+        // This is a character entry, so weapon data must be empty.
+        item.weaponItemData = null;
+
+        EditorUtility.SetDirty(item);
     }
 
     private bool AddMenuItemToCatalog(MenuPreviewItem menuItem, MenuPreviewCatalog catalog)

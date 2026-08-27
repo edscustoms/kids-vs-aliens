@@ -41,7 +41,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7141758866188703509}
   - component: {fileID: 160406022757512589}
-  - component: {fileID: 85235012323834821}
   m_Layer: 6
   m_Name: SportyGranny
   m_TagString: Untagged
@@ -80,24 +79,6 @@ MonoBehaviour:
   animator: {fileID: 2427567271531418516}
   weaponSocket: {fileID: 172159675417737075}
   auraColor: {r: 0, g: 1, b: 0.94952244, a: 1}
---- !u!114 &85235012323834821
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3513387132228752212}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 453d826fbed10164f8d17391bca75190, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MenuPreviewSettings
-  localOffset: {x: 0, y: 0, z: 0}
-  localEulerAngles: {x: 0, y: 180, z: 0}
-  scaleMultiplier: 1
-  cameraTargetOffset: {x: 0, y: 0, z: 0}
-  cameraDistanceMultiplier: 1
-  rotationSensitivity: 0.25
 --- !u!1001 &8132065221138066949
 PrefabInstance:
   m_ObjectHideFlags: 0

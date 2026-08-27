@@ -15,4 +15,6 @@ MonoBehaviour:
   id: sporty_granny
   displayName: Sporty Granny
   type: 0
-  previewPrefab: {fileID: 3513387132228752212, guid: 36602d022db5afe46b4f5a39704892e8, type: 3}
+  previewPrefab: {fileID: 5622341183522577045, guid: 307d99f1f2a556f41bc5a811b596d7ed, type: 3}
+  characterPrefab: {fileID: 160406022757512589, guid: 36602d022db5afe46b4f5a39704892e8, type: 3}
+  weaponItemData: {fileID: 0}

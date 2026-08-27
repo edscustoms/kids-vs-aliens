@@ -6298,6 +6298,9 @@ MonoBehaviour:
   mobileRotationSpeed: 5
   mobileNoTargetAimDistance: 50
   mobileAimSettings: {fileID: 11400000, guid: 16205b03757921f4ba560340f449b89b, type: 2}
+  freeLookDeadZone: 0.2
+  freeLookRotationSpeed: 8
+  freeLookTargetAngle: 35
 --- !u!114 &1809920724
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6387,7 +6390,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacter
   visualRoot: {fileID: 72181718}
-  startingCharacterPrefab: {fileID: 9208920759478264055, guid: 7c76d6c3a1c670d4ebc31938f0180f22, type: 3}
+  startingCharacterPrefab: {fileID: 160406022757512589, guid: 36602d022db5afe46b4f5a39704892e8, type: 3}
 --- !u!1 &1869179220
 GameObject:
   m_ObjectHideFlags: 0
