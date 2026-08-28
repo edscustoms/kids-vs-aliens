@@ -6,9 +6,7 @@ public class PlayerCharacter : MonoBehaviour
     [SerializeField]
     private Transform visualRoot;
 
-    [Tooltip(
-        "Fallback used when GamePoc is launched directly or no menu character has been selected."
-    )]
+    [Tooltip("Fallback used when GamePoc is launched directly without a menu loadout.")]
     [SerializeField]
     private CharacterVisual startingCharacterPrefab;
 
@@ -19,7 +17,7 @@ public class PlayerCharacter : MonoBehaviour
     private void Awake()
     {
         CharacterVisual characterToSpawn =
-            PlayerLoadoutState.SelectedCharacter != null
+            PlayerLoadoutState.IsInitialized && PlayerLoadoutState.SelectedCharacter != null
                 ? PlayerLoadoutState.SelectedCharacter
                 : startingCharacterPrefab;
 

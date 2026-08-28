@@ -125,9 +125,11 @@ public class MenuController : MonoBehaviour
 
     private void ChangeType(int direction)
     {
-        int typeCount = Enum.GetValues(typeof(MenuPreviewType)).Length;
+        int typeCount =
+            Enum.GetValues(typeof(MenuPreviewType)).Length;
 
-        int newIndex = (int)currentType + direction;
+        int newIndex =
+            (int)currentType + direction;
 
         if (newIndex < 0)
             newIndex = typeCount - 1;
@@ -135,7 +137,8 @@ public class MenuController : MonoBehaviour
         if (newIndex >= typeCount)
             newIndex = 0;
 
-        currentType = (MenuPreviewType)newIndex;
+        currentType =
+            (MenuPreviewType)newIndex;
 
         currentItemIndex = 0;
 
@@ -164,7 +167,8 @@ public class MenuController : MonoBehaviour
         currentItemIndex += direction;
 
         if (currentItemIndex < 0)
-            currentItemIndex = currentItems.Count - 1;
+            currentItemIndex =
+                currentItems.Count - 1;
 
         if (currentItemIndex >= currentItems.Count)
             currentItemIndex = 0;
@@ -174,9 +178,15 @@ public class MenuController : MonoBehaviour
 
     private void RefreshType()
     {
-        typeNameText.text = currentType.ToString().ToUpperInvariant();
+        typeNameText.text =
+            currentType
+                .ToString()
+                .ToUpperInvariant();
 
-        catalog.GetItems(currentType, currentItems);
+        catalog.GetItems(
+            currentType,
+            currentItems
+        );
 
         currentItemIndex = 0;
 
@@ -202,20 +212,26 @@ public class MenuController : MonoBehaviour
             return;
         }
 
-        previousItemButton.interactable = currentItems.Count > 1;
+        previousItemButton.interactable =
+            currentItems.Count > 1;
 
-        nextItemButton.interactable = currentItems.Count > 1;
+        nextItemButton.interactable =
+            currentItems.Count > 1;
 
-        MenuPreviewItem item = CurrentItem;
+        MenuPreviewItem item =
+            CurrentItem;
 
-        itemNameText.text = item.displayName.ToUpperInvariant();
+        itemNameText.text =
+            item.displayName.ToUpperInvariant();
 
         RefreshSelectButton();
 
         if (!isLoadoutPreviewMode)
         {
             // Browse mode previews the item currently under the carousel.
-            previewStage.Show(item.previewPrefab);
+            previewStage.Show(
+                item.previewPrefab
+            );
         }
 
         // IMPORTANT:
@@ -230,7 +246,8 @@ public class MenuController : MonoBehaviour
 
     public void SelectCurrentItem()
     {
-        MenuPreviewItem item = CurrentItem;
+        MenuPreviewItem item =
+            CurrentItem;
 
         if (item == null)
             return;
@@ -241,13 +258,13 @@ public class MenuController : MonoBehaviour
             {
                 if (item.characterPrefab == null)
                 {
-                    Debug.LogWarning($"{item.name}: Character menu item has no characterPrefab.");
+                    Debug.LogWarning(
+                        $"{item.name}: Character menu item has no characterPrefab."
+                    );
                     return;
                 }
 
                 selectedCharacterItem = item;
-
-                PlayerLoadoutState.SelectCharacter(item.characterPrefab);
 
                 break;
             }
@@ -257,15 +274,13 @@ public class MenuController : MonoBehaviour
                 if (!CanSelectItem(item))
                 {
                     Debug.LogWarning(
-                        $"{item.name}: Weapon menu item is not configured. "
-                            + "Assign Weapon Item Data, or enable Clears Slot for a NONE entry."
+                        $"{item.name}: Weapon menu item is not configured. " +
+                        "Assign Weapon Item Data, or enable Clears Slot for a NONE entry."
                     );
                     return;
                 }
 
                 selectedWeaponItem = item;
-
-                PlayerLoadoutState.SelectWeapon(item.clearsSlot ? null : item.weaponItemData);
 
                 break;
             }
@@ -273,10 +288,14 @@ public class MenuController : MonoBehaviour
             case MenuPreviewType.Grenade:
             {
                 // Future loadout slot.
-                Debug.Log("Grenade selection is not wired yet.");
+                Debug.Log(
+                    "Grenade selection is not wired yet."
+                );
                 return;
             }
         }
+
+        SyncLoadoutState();
 
         RefreshSelectButton();
 
@@ -294,45 +313,62 @@ public class MenuController : MonoBehaviour
         if (selectButton == null)
             return;
 
-        MenuPreviewItem item = CurrentItem;
+        MenuPreviewItem item =
+            CurrentItem;
 
-        bool canSelect = CanSelectItem(item);
+        bool canSelect =
+            CanSelectItem(item);
 
-        bool selected = IsSelectedItem(item);
+        bool selected =
+            IsSelectedItem(item);
 
-        selectButton.interactable = canSelect && !selected;
+        selectButton.interactable =
+            canSelect && !selected;
 
         if (selectButtonText != null)
         {
-            selectButtonText.text = selected ? "SELECTED" : "SELECT";
+            selectButtonText.text =
+                selected
+                    ? "SELECTED"
+                    : "SELECT";
         }
     }
 
-    private bool CanSelectItem(MenuPreviewItem item)
+    private bool CanSelectItem(
+        MenuPreviewItem item
+    )
     {
         if (item == null)
             return false;
 
         return item.type switch
         {
-            MenuPreviewType.Character => !item.clearsSlot && item.characterPrefab != null,
+            MenuPreviewType.Character =>
+                !item.clearsSlot
+                && item.characterPrefab != null,
 
-            MenuPreviewType.Weapon => item.clearsSlot || item.weaponItemData != null,
+            MenuPreviewType.Weapon =>
+                item.clearsSlot
+                || item.weaponItemData != null,
 
             _ => false,
         };
     }
 
-    private bool IsSelectedItem(MenuPreviewItem item)
+    private bool IsSelectedItem(
+        MenuPreviewItem item
+    )
     {
         if (item == null)
             return false;
 
         return item.type switch
         {
-            MenuPreviewType.Character => item == selectedCharacterItem,
+            MenuPreviewType.Character =>
+                item == selectedCharacterItem,
 
-            MenuPreviewType.Weapon => item == selectedWeaponItem,
+            MenuPreviewType.Weapon =>
+                item == selectedWeaponItem,
 
             _ => false,
         };
@@ -346,7 +382,9 @@ public class MenuController : MonoBehaviour
     {
         if (selectedCharacterItem == null)
         {
-            Debug.LogWarning("Cannot preview loadout: no selected character.");
+            Debug.LogWarning(
+                "Cannot preview loadout: no selected character."
+            );
             return;
         }
 
@@ -368,7 +406,10 @@ public class MenuController : MonoBehaviour
 
     private void ShowSelectedLoadout()
     {
-        if (selectedCharacterItem == null || selectedCharacterItem.previewPrefab == null)
+        if (
+            selectedCharacterItem == null
+            || selectedCharacterItem.previewPrefab == null
+        )
         {
             previewStage.Clear();
             return;
@@ -376,7 +417,9 @@ public class MenuController : MonoBehaviour
 
         previewStage.ShowLoadout(
             selectedCharacterItem.previewPrefab,
-            selectedWeaponItem != null ? selectedWeaponItem.weaponItemData : null
+            selectedWeaponItem != null
+                ? selectedWeaponItem.weaponItemData
+                : null
         );
     }
 
@@ -386,12 +429,17 @@ public class MenuController : MonoBehaviour
         {
             // We deliberately KEEP carousel + SELECT active in preview mode.
             // Only PREVIEW itself becomes unavailable.
-            previewButton.interactable = !isLoadoutPreviewMode && selectedCharacterItem != null;
+            previewButton.interactable =
+                !isLoadoutPreviewMode
+                && selectedCharacterItem != null;
         }
 
         if (exitBackButtonText != null)
         {
-            exitBackButtonText.text = isLoadoutPreviewMode ? "BACK" : "EXIT";
+            exitBackButtonText.text =
+                isLoadoutPreviewMode
+                    ? "BACK"
+                    : "EXIT";
         }
 
         RefreshSelectButton();
@@ -403,30 +451,41 @@ public class MenuController : MonoBehaviour
 
     private void ResolveInitialSelections()
     {
-        if (PlayerLoadoutState.HasCharacterSelection)
+        if (PlayerLoadoutState.IsInitialized)
         {
-            selectedCharacterItem = FindCharacterItem(PlayerLoadoutState.SelectedCharacter);
-        }
+            selectedCharacterItem =
+                FindCharacterItem(
+                    PlayerLoadoutState.SelectedCharacter
+                );
 
-        if (PlayerLoadoutState.HasWeaponSelection)
-        {
-            selectedWeaponItem = FindWeaponItem(PlayerLoadoutState.SelectedWeapon);
+            selectedWeaponItem =
+                FindWeaponItem(
+                    PlayerLoadoutState.SelectedWeapon
+                );
         }
 
         if (selectedCharacterItem == null)
         {
-            selectedCharacterItem = FindDefaultItem(MenuPreviewType.Character);
+            selectedCharacterItem =
+                FindDefaultItem(
+                    MenuPreviewType.Character
+                );
         }
 
         if (selectedWeaponItem == null)
         {
-            selectedWeaponItem = FindDefaultItem(MenuPreviewType.Weapon);
+            selectedWeaponItem =
+                FindDefaultItem(
+                    MenuPreviewType.Weapon
+                );
         }
 
         SyncLoadoutState();
     }
 
-    private MenuPreviewItem FindCharacterItem(CharacterVisual character)
+    private MenuPreviewItem FindCharacterItem(
+        CharacterVisual character
+    )
     {
         if (character == null)
             return null;
@@ -446,21 +505,33 @@ public class MenuController : MonoBehaviour
         return null;
     }
 
-    private MenuPreviewItem FindWeaponItem(WeaponItemData weapon)
+    private MenuPreviewItem FindWeaponItem(
+        WeaponItemData weapon
+    )
     {
         foreach (MenuPreviewItem item in catalog.Items)
         {
-            if (item == null || item.type != MenuPreviewType.Weapon)
+            if (
+                item == null
+                || item.type != MenuPreviewType.Weapon
+            )
             {
                 continue;
             }
 
-            if (weapon == null && item.clearsSlot)
+            if (
+                weapon == null
+                && item.clearsSlot
+            )
             {
                 return item;
             }
 
-            if (weapon != null && !item.clearsSlot && item.weaponItemData == weapon)
+            if (
+                weapon != null
+                && !item.clearsSlot
+                && item.weaponItemData == weapon
+            )
             {
                 return item;
             }
@@ -469,14 +540,20 @@ public class MenuController : MonoBehaviour
         return null;
     }
 
-    private MenuPreviewItem FindDefaultItem(MenuPreviewType type)
+    private MenuPreviewItem FindDefaultItem(
+        MenuPreviewType type
+    )
     {
         // Prefer a real item as the initial default.
         // This preserves the current behaviour where the player starts
         // with the first configured weapon instead of automatically NONE.
         foreach (MenuPreviewItem item in catalog.Items)
         {
-            if (item == null || item.type != type || item.clearsSlot)
+            if (
+                item == null
+                || item.type != type
+                || item.clearsSlot
+            )
             {
                 continue;
             }
@@ -488,7 +565,10 @@ public class MenuController : MonoBehaviour
         // If a category only contains NONE, that is still a valid default.
         foreach (MenuPreviewItem item in catalog.Items)
         {
-            if (item == null || item.type != type)
+            if (
+                item == null
+                || item.type != type
+            )
             {
                 continue;
             }
@@ -502,17 +582,21 @@ public class MenuController : MonoBehaviour
 
     private void SyncLoadoutState()
     {
-        if (selectedCharacterItem != null && selectedCharacterItem.characterPrefab != null)
-        {
-            PlayerLoadoutState.SelectCharacter(selectedCharacterItem.characterPrefab);
-        }
+        CharacterVisual characterPrefab =
+            selectedCharacterItem != null
+                ? selectedCharacterItem.characterPrefab
+                : null;
 
-        if (selectedWeaponItem != null)
-        {
-            PlayerLoadoutState.SelectWeapon(
-                selectedWeaponItem.clearsSlot ? null : selectedWeaponItem.weaponItemData
-            );
-        }
+        WeaponItemData weaponItemData =
+            selectedWeaponItem != null
+            && !selectedWeaponItem.clearsSlot
+                ? selectedWeaponItem.weaponItemData
+                : null;
+
+        PlayerLoadoutState.Initialize(
+            characterPrefab,
+            weaponItemData
+        );
     }
 
     // =====================================================
@@ -523,7 +607,9 @@ public class MenuController : MonoBehaviour
     {
         SyncLoadoutState();
 
-        SceneManager.LoadScene(gameSceneName);
+        SceneManager.LoadScene(
+            gameSceneName
+        );
     }
 
     public void ExitGame()
@@ -545,7 +631,10 @@ public class MenuController : MonoBehaviour
     {
         get
         {
-            if (currentItemIndex < 0 || currentItemIndex >= currentItems.Count)
+            if (
+                currentItemIndex < 0
+                || currentItemIndex >= currentItems.Count
+            )
             {
                 return null;
             }

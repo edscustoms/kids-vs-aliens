@@ -1,13 +1,16 @@
 public static class PlayerLoadoutState
 {
+    public static bool IsInitialized { get; private set; }
+
     public static CharacterVisual SelectedCharacter { get; private set; }
     public static WeaponItemData SelectedWeapon { get; private set; }
 
-    // Important:
-    // null + HasWeaponSelection == false = no menu choice was made, use gameplay fallback.
-    // null + HasWeaponSelection == true  = player explicitly selected NONE.
-    public static bool HasCharacterSelection { get; private set; }
-    public static bool HasWeaponSelection { get; private set; }
+    public static void Initialize(CharacterVisual characterPrefab, WeaponItemData weaponItemData)
+    {
+        SelectedCharacter = characterPrefab;
+        SelectedWeapon = weaponItemData;
+        IsInitialized = true;
+    }
 
     public static void SelectCharacter(CharacterVisual characterPrefab)
     {
@@ -15,31 +18,21 @@ public static class PlayerLoadoutState
             return;
 
         SelectedCharacter = characterPrefab;
-        HasCharacterSelection = true;
+        IsInitialized = true;
     }
 
     public static void SelectWeapon(WeaponItemData weaponItemData)
     {
-        // Null is VALID here: it means the player deliberately selected NONE.
+        // Null is a valid explicit selection:
+        // it means the player selected NONE.
         SelectedWeapon = weaponItemData;
-        HasWeaponSelection = true;
-    }
-
-    public static void ClearCharacterSelection()
-    {
-        SelectedCharacter = null;
-        HasCharacterSelection = false;
-    }
-
-    public static void ClearWeaponSelection()
-    {
-        SelectedWeapon = null;
-        HasWeaponSelection = false;
+        IsInitialized = true;
     }
 
     public static void Clear()
     {
-        ClearCharacterSelection();
-        ClearWeaponSelection();
+        SelectedCharacter = null;
+        SelectedWeapon = null;
+        IsInitialized = false;
     }
 }

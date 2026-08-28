@@ -142,6 +142,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 73e2f5b9478844a42af72f08f1d91051, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2911331404154884409}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 73e2f5b9478844a42af72f08f1d91051, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -7959144646925266403}
   m_SourcePrefab: {fileID: 100100000, guid: 73e2f5b9478844a42af72f08f1d91051, type: 3}
 --- !u!1 &1481942915625970157 stripped
 GameObject:
@@ -170,6 +173,21 @@ MonoBehaviour:
     jitter: 0.75
     arcWidth: 0.006
     refreshRate: 0.5
+--- !u!114 &-7959144646925266403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481942915625970157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e27a3235f2865242b376d5c39d3cf67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponInstance
+  gripPoint: {fileID: 2456223740350174793}
+  muzzle: {fileID: 1639113887997180802}
+  plasmaCoreSetup: {fileID: 2911331404154884409}
 --- !u!4 &2295493952620114775 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 73e2f5b9478844a42af72f08f1d91051, type: 3}

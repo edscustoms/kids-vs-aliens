@@ -19,11 +19,12 @@ public class MenuPreviewStage : MonoBehaviour
 
     private GameObject currentInstance;
     private GameObject currentPreviewPrefab;
-    private GameObject currentWeaponInstance;
+    private WeaponInstance currentWeaponInstance;
 
     private MenuPreviewSettings currentSettings;
 
-    public GameObject CurrentInstance => currentInstance;
+    public GameObject CurrentInstance =>
+        currentInstance;
 
     private void Start()
     {
@@ -49,7 +50,10 @@ public class MenuPreviewStage : MonoBehaviour
     // COMBINED LOADOUT PREVIEW
     // =====================================================
 
-    public void ShowLoadout(GameObject characterPreviewPrefab, WeaponItemData weapon)
+    public void ShowLoadout(
+        GameObject characterPreviewPrefab,
+        WeaponItemData weapon
+    )
     {
         if (characterPreviewPrefab == null)
         {
@@ -58,7 +62,8 @@ public class MenuPreviewStage : MonoBehaviour
         }
 
         bool characterChanged =
-            currentInstance == null || currentPreviewPrefab != characterPreviewPrefab;
+            currentInstance == null
+            || currentPreviewPrefab != characterPreviewPrefab;
 
         if (characterChanged)
         {
@@ -77,51 +82,79 @@ public class MenuPreviewStage : MonoBehaviour
         ReplaceLoadoutWeapon(weapon);
     }
 
-    private bool SpawnRoot(GameObject prefab)
+    private bool SpawnRoot(
+        GameObject prefab
+    )
     {
         Clear();
 
-        if (prefab == null || previewSpawn == null || previewCamera == null)
+        if (
+            prefab == null
+            || previewSpawn == null
+            || previewCamera == null
+        )
         {
             return false;
         }
 
-        currentPreviewPrefab = prefab;
+        currentPreviewPrefab =
+            prefab;
 
-        currentInstance = Instantiate(prefab, previewSpawn);
+        currentInstance =
+            Instantiate(
+                prefab,
+                previewSpawn
+            );
 
-        currentInstance.name = prefab.name;
+        currentInstance.name =
+            prefab.name;
 
-        Transform model = currentInstance.transform;
+        Transform model =
+            currentInstance.transform;
 
-        model.localPosition = Vector3.zero;
+        model.localPosition =
+            Vector3.zero;
 
-        model.localRotation = Quaternion.identity;
+        model.localRotation =
+            Quaternion.identity;
 
-        model.localScale = Vector3.one;
+        model.localScale =
+            Vector3.one;
 
-        currentSettings = currentInstance.GetComponent<MenuPreviewSettings>();
+        currentSettings =
+            currentInstance.GetComponent<MenuPreviewSettings>();
 
         if (currentSettings != null)
         {
-            model.localPosition = currentSettings.localOffset;
+            model.localPosition =
+                currentSettings.localOffset;
 
-            model.localRotation = Quaternion.Euler(currentSettings.localEulerAngles);
+            model.localRotation =
+                Quaternion.Euler(
+                    currentSettings.localEulerAngles
+                );
 
-            model.localScale *= currentSettings.scaleMultiplier;
+            model.localScale *=
+                currentSettings.scaleMultiplier;
         }
 
         return true;
     }
 
-    private void ReplaceLoadoutWeapon(WeaponItemData weapon)
+    private void ReplaceLoadoutWeapon(
+        WeaponItemData weapon
+    )
     {
         if (currentWeaponInstance != null)
         {
             // Disable immediately so there is never one rendered frame with
             // both the old and new weapon present.
-            currentWeaponInstance.SetActive(false);
-            Destroy(currentWeaponInstance);
+            currentWeaponInstance.gameObject.SetActive(false);
+
+            Destroy(
+                currentWeaponInstance.gameObject
+            );
+
             currentWeaponInstance = null;
         }
 
@@ -129,16 +162,19 @@ public class MenuPreviewStage : MonoBehaviour
         if (weapon == null)
             return;
 
-        if (currentInstance == null || weapon.equippedPrefab == null)
-        {
+        if (currentInstance == null)
             return;
-        }
 
-        CharacterVisual characterVisual = currentInstance.GetComponentInChildren<CharacterVisual>(
-            true
-        );
+        CharacterVisual characterVisual =
+            currentInstance
+                .GetComponentInChildren<CharacterVisual>(
+                    true
+                );
 
-        if (characterVisual == null || !characterVisual.HasWeaponSocket)
+        if (
+            characterVisual == null
+            || !characterVisual.HasWeaponSocket
+        )
         {
             Debug.LogWarning(
                 $"Menu preview character '{currentInstance.name}' has no usable CharacterVisual/WeaponSocket."
@@ -146,30 +182,11 @@ public class MenuPreviewStage : MonoBehaviour
             return;
         }
 
-        currentWeaponInstance = Instantiate(weapon.equippedPrefab);
-
-        currentWeaponInstance.name = weapon.equippedPrefab.name;
-
-        PlasmaCoreSetup plasmaSetup =
-            currentWeaponInstance.GetComponentInChildren<PlasmaCoreSetup>();
-
-        if (plasmaSetup != null)
-        {
-            plasmaSetup.Configure(characterVisual.AuraColor);
-        }
-
-        Transform gripPoint = FindChildByName(currentWeaponInstance.transform, "GripPoint");
-
-        if (gripPoint == null)
-        {
-            Debug.LogWarning($"Menu preview weapon '{weapon.name}' has no GripPoint.");
-
-            Destroy(currentWeaponInstance);
-            currentWeaponInstance = null;
-            return;
-        }
-
-        AlignGripToSocket(currentWeaponInstance.transform, gripPoint, characterVisual.WeaponSocket);
+        currentWeaponInstance =
+            WeaponInstance.SpawnAttached(
+                weapon,
+                characterVisual
+            );
     }
 
     // =====================================================
@@ -186,7 +203,9 @@ public class MenuPreviewStage : MonoBehaviour
         {
             // Normally the weapon is a child of currentInstance, but keep
             // this safe if that ever changes later.
-            Destroy(currentWeaponInstance);
+            Destroy(
+                currentWeaponInstance.gameObject
+            );
         }
 
         currentInstance = null;
@@ -195,24 +214,40 @@ public class MenuPreviewStage : MonoBehaviour
         currentSettings = null;
     }
 
-    public void RotateCurrent(float pointerDeltaX)
+    public void RotateCurrent(
+        float pointerDeltaX
+    )
     {
         if (currentInstance == null)
             return;
 
-        float sensitivity = currentSettings != null ? currentSettings.rotationSensitivity : 0.25f;
+        float sensitivity =
+            currentSettings != null
+                ? currentSettings.rotationSensitivity
+                : 0.25f;
 
-        currentInstance.transform.Rotate(Vector3.up, -pointerDeltaX * sensitivity, Space.World);
+        currentInstance.transform.Rotate(
+            Vector3.up,
+            -pointerDeltaX * sensitivity,
+            Space.World
+        );
     }
 
     public void FrameCurrent()
     {
-        if (currentInstance == null || previewCamera == null)
+        if (
+            currentInstance == null
+            || previewCamera == null
+        )
         {
             return;
         }
 
-        Renderer[] renderers = currentInstance.GetComponentsInChildren<Renderer>(true);
+        Renderer[] renderers =
+            currentInstance
+                .GetComponentsInChildren<Renderer>(
+                    true
+                );
 
         if (renderers.Length == 0)
             return;
@@ -232,80 +267,84 @@ public class MenuPreviewStage : MonoBehaviour
             }
             else
             {
-                bounds.Encapsulate(renderer.bounds);
+                bounds.Encapsulate(
+                    renderer.bounds
+                );
             }
         }
 
         if (!hasBounds)
             return;
 
-        Vector3 target = bounds.center;
+        Vector3 target =
+            bounds.center;
 
-        float distanceMultiplier = 1f;
+        float distanceMultiplier =
+            1f;
 
         if (currentSettings != null)
         {
-            target += currentSettings.cameraTargetOffset;
+            target +=
+                currentSettings.cameraTargetOffset;
 
-            distanceMultiplier = currentSettings.cameraDistanceMultiplier;
+            distanceMultiplier =
+                currentSettings.cameraDistanceMultiplier;
         }
 
-        float verticalFov = previewCamera.fieldOfView * Mathf.Deg2Rad;
+        float verticalFov =
+            previewCamera.fieldOfView
+            * Mathf.Deg2Rad;
 
-        float horizontalFov = 2f * Mathf.Atan(Mathf.Tan(verticalFov * 0.5f) * previewCamera.aspect);
+        float horizontalFov =
+            2f
+            * Mathf.Atan(
+                Mathf.Tan(verticalFov * 0.5f)
+                * previewCamera.aspect
+            );
 
         float verticalDistance =
-            bounds.extents.y / Mathf.Max(0.001f, Mathf.Tan(verticalFov * 0.5f));
+            bounds.extents.y
+            / Mathf.Max(
+                0.001f,
+                Mathf.Tan(verticalFov * 0.5f)
+            );
 
         float horizontalDistance =
-            bounds.extents.x / Mathf.Max(0.001f, Mathf.Tan(horizontalFov * 0.5f));
+            bounds.extents.x
+            / Mathf.Max(
+                0.001f,
+                Mathf.Tan(horizontalFov * 0.5f)
+            );
 
-        float distance = Mathf.Max(verticalDistance, horizontalDistance);
+        float distance =
+            Mathf.Max(
+                verticalDistance,
+                horizontalDistance
+            );
 
-        distance += bounds.extents.z;
+        distance +=
+            bounds.extents.z;
 
-        distance *= framingPadding * distanceMultiplier;
+        distance *=
+            framingPadding
+            * distanceMultiplier;
 
-        distance = Mathf.Max(distance, 0.25f);
+        distance =
+            Mathf.Max(
+                distance,
+                0.25f
+            );
 
-        previewCamera.transform.position = target + Vector3.back * distance;
+        previewCamera.transform.position =
+            target
+            + Vector3.back * distance;
 
-        previewCamera.transform.rotation = Quaternion.LookRotation(
-            target - previewCamera.transform.position,
-            Vector3.up
-        );
+        previewCamera.transform.rotation =
+            Quaternion.LookRotation(
+                target
+                    - previewCamera.transform.position,
+                Vector3.up
+            );
     }
 
-    // =====================================================
-    // WEAPON ALIGNMENT
-    // =====================================================
-
-    private void AlignGripToSocket(Transform weapon, Transform gripPoint, Transform weaponSocket)
-    {
-        Quaternion rotationDelta = weaponSocket.rotation * Quaternion.Inverse(gripPoint.rotation);
-
-        weapon.rotation = rotationDelta * weapon.rotation;
-
-        Vector3 positionDelta = weaponSocket.position - gripPoint.position;
-
-        weapon.position += positionDelta;
-
-        weapon.SetParent(weaponSocket, true);
-    }
-
-    private Transform FindChildByName(Transform parent, string childName)
-    {
-        foreach (Transform child in parent)
-        {
-            if (child.name == childName)
-                return child;
-
-            Transform result = FindChildByName(child, childName);
-
-            if (result != null)
-                return result;
-        }
-
-        return null;
-    }
 }
