@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BreakableTargetPiece : MonoBehaviour
+public class BreakableTargetPiece : MonoBehaviour, IHitReaction
 {
     public BreakableTarget Target { get; private set; }
 
@@ -26,6 +26,26 @@ public class BreakableTargetPiece : MonoBehaviour
         originalLocalPosition = transform.localPosition;
         originalLocalRotation = transform.localRotation;
         originalLocalScale = transform.localScale;
+    }
+
+
+    public void ReceiveHit(
+        HitInfo hit
+    )
+    {
+        if (
+            IsBroken
+            || Target == null
+        )
+        {
+            return;
+        }
+
+        Target.BreakPiece(
+            this,
+            hit.Point,
+            hit.Direction
+        );
     }
 
     public bool PunchOut(

@@ -8,21 +8,72 @@ public class PlasmaImpactVFX : MonoBehaviour
     [SerializeField]
     private Color defaultColor = Color.magenta;
 
-    public void Play(Color? auraColor = null)
+    private bool playing;
+    private int startedFrame;
+
+    public void Play(
+        Color? auraColor = null
+    )
     {
         if (particles == null)
+        {
+            VfxPool.Release(
+                this
+            );
+
+            return;
+        }
+
+        Color color =
+            auraColor ?? defaultColor;
+
+        ParticleSystem.MainModule main =
+            particles.main;
+
+        main.startColor =
+            color;
+
+        particles.Stop(
+            true,
+            ParticleSystemStopBehavior.StopEmittingAndClear
+        );
+
+        particles.Play(
+            true
+        );
+
+        playing = true;
+        startedFrame = Time.frameCount;
+    }
+
+    private void Update()
+    {
+        if (!playing)
             return;
 
-        Color color = auraColor ?? defaultColor;
+        if (Time.frameCount <= startedFrame)
+            return;
 
-        ParticleSystem.MainModule main = particles.main;
-        main.startColor = color;
+        if (particles.IsAlive(true))
+            return;
 
-        particles.Play();
+        playing = false;
 
-        Destroy(
-            gameObject,
-            main.duration + main.startLifetime.constantMax
+        VfxPool.Release(
+            this
         );
+    }
+
+    private void OnDisable()
+    {
+        playing = false;
+
+        if (particles != null)
+        {
+            particles.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmittingAndClear
+            );
+        }
     }
 }

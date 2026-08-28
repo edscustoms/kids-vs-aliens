@@ -168,7 +168,9 @@ public class PlayerShooter : MonoBehaviour
 
         Vector3 hitNormal = Vector3.zero;
 
-        BreakableTargetPiece targetPiece = null;
+        IHitReaction hitReaction = null;
+
+        HitInfo hitInfo = default;
 
         // =================================================
         // MUZZLE WALL SAFETY
@@ -218,14 +220,18 @@ public class PlayerShooter : MonoBehaviour
 
             hitNormal = muzzleObstruction.normal;
 
-            targetPiece = muzzleObstruction.collider.GetComponentInParent<BreakableTargetPiece>();
+            hitInfo =
+                CreateHitInfo(
+                    hitPoint,
+                    hitNormal,
+                    direction
+                );
 
-            EnemyHealth enemy = muzzleObstruction.collider.GetComponentInParent<EnemyHealth>();
-
-            if (enemy != null)
-            {
-                enemy.TakeDamage(equippedWeapon.damage);
-            }
+            hitReaction =
+                CombatHitResolver.Resolve(
+                    muzzleObstruction.collider,
+                    hitInfo
+                );
         }
         // =================================================
         // NORMAL WEAPON RAY
@@ -253,17 +259,23 @@ public class PlayerShooter : MonoBehaviour
 
             hitNormal = hit.normal;
 
-            // Check if we hit a breakable practice target
-            // piece.
-            targetPiece = hit.collider.GetComponentInParent<BreakableTargetPiece>();
+            hitInfo =
+                CreateHitInfo(
+                    hitPoint,
+                    hitNormal,
+                    direction
+                );
 
-            // Gameplay enemy damage stays INSTANT.
-            EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
-
-            if (enemy != null)
-            {
-                enemy.TakeDamage(equippedWeapon.damage);
-            }
+            // Damage is resolved instantly.
+            //
+            // Optional physical reactions (for example the practice target
+            // punch-out) are returned so they can stay synchronized with
+            // the visual bolt reaching the impact point.
+            hitReaction =
+                CombatHitResolver.Resolve(
+                    hit.collider,
+                    hitInfo
+                );
         }
 
         // =================================================
@@ -280,10 +292,9 @@ public class PlayerShooter : MonoBehaviour
             {
                 SpawnImpactVFX(hitPoint, hitNormal, auraColor);
 
-                if (targetPiece != null && targetPiece.Target != null)
-                {
-                    targetPiece.Target.BreakPiece(targetPiece, hitPoint, direction);
-                }
+                hitReaction?.ReceiveHit(
+                    hitInfo
+                );
             };
         }
 
@@ -293,6 +304,23 @@ public class PlayerShooter : MonoBehaviour
         {
             StartCoroutine(Reload());
         }
+    }
+
+    private HitInfo CreateHitInfo(
+        Vector3 point,
+        Vector3 normal,
+        Vector3 direction
+    )
+    {
+        return new HitInfo(
+            equippedWeapon != null
+                ? equippedWeapon.damage
+                : 0f,
+            point,
+            normal,
+            direction,
+            gameObject
+        );
     }
 
     // =====================================================
@@ -398,42 +426,93 @@ public class PlayerShooter : MonoBehaviour
     // SHOT VFX
     // =====================================================
 
-    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor, System.Action onArrive)
+    private void SpawnShotVFX(
+        Vector3 start,
+        Vector3 end,
+        Color? auraColor,
+        System.Action onArrive
+    )
     {
         if (plasmaBoltPrefab == null)
+        {
+            // Gameplay must not depend on whether a visual prefab exists.
+            onArrive?.Invoke();
             return;
+        }
 
-        PlasmaBoltVFX bolt = Instantiate(plasmaBoltPrefab);
+        PlasmaBoltVFX bolt =
+            VfxPool.Spawn(
+                plasmaBoltPrefab,
+                start,
+                Quaternion.identity
+            );
 
-        bolt.Initialize(start, end, auraColor, onArrive);
+        if (bolt == null)
+        {
+            onArrive?.Invoke();
+            return;
+        }
+
+        bolt.Initialize(
+            start,
+            end,
+            auraColor,
+            onArrive
+        );
     }
 
-    private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
+    private void SpawnMuzzleVFX(
+        Vector3 position,
+        Vector3 direction,
+        Color? auraColor
+    )
     {
         if (plasmaMuzzlePrefab == null)
             return;
 
-        PlasmaMuzzleVFX muzzleVfx = Instantiate(
-            plasmaMuzzlePrefab,
-            position,
-            Quaternion.LookRotation(direction)
-        );
+        PlasmaMuzzleVFX muzzleVfx =
+            VfxPool.Spawn(
+                plasmaMuzzlePrefab,
+                position,
+                Quaternion.LookRotation(
+                    direction
+                )
+            );
 
-        muzzleVfx.Play(auraColor);
+        if (muzzleVfx != null)
+        {
+            muzzleVfx.Play(
+                auraColor
+            );
+        }
     }
 
-    private void SpawnImpactVFX(Vector3 position, Vector3 normal, Color? auraColor)
+    private void SpawnImpactVFX(
+        Vector3 position,
+        Vector3 normal,
+        Color? auraColor
+    )
     {
         if (plasmaImpactPrefab == null)
             return;
 
-        PlasmaImpactVFX impact = Instantiate(
-            plasmaImpactPrefab,
-            position + normal * 0.01f,
-            Quaternion.LookRotation(normal)
-        );
+        PlasmaImpactVFX impact =
+            VfxPool.Spawn(
+                plasmaImpactPrefab,
+                position
+                    + normal
+                    * 0.01f,
+                Quaternion.LookRotation(
+                    normal
+                )
+            );
 
-        impact.Play(auraColor);
+        if (impact != null)
+        {
+            impact.Play(
+                auraColor
+            );
+        }
     }
 
     // =====================================================

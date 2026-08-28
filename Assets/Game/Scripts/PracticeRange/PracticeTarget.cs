@@ -1061,9 +1061,25 @@ public class PracticeTarget : MonoBehaviour
 
 
         PlasmaBoltVFX bolt =
-            Instantiate(
-                plasmaBoltPrefab
+            VfxPool.Spawn(
+                plasmaBoltPrefab,
+                fireOrigin.position,
+                Quaternion.identity
             );
+
+
+        if (bolt == null)
+        {
+            if (
+                isHardcore &&
+                genuinelyHitPlayer
+            )
+            {
+                TryDealHardcoreDamage();
+            }
+
+            return;
+        }
 
 
         bolt.Initialize(

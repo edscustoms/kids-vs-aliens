@@ -16,6 +16,7 @@ public class PlasmaBoltVFX : MonoBehaviour
     private Color defaultColor = Color.magenta;
 
     private LineRenderer line;
+    private MaterialPropertyBlock propertyBlock;
 
     private Vector3 direction;
     private Vector3 target;
@@ -23,12 +24,16 @@ public class PlasmaBoltVFX : MonoBehaviour
     private float travelled;
 
     private Action onArrive;
+    private bool activeBolt;
 
     private void Awake()
     {
         line = GetComponent<LineRenderer>();
         line.positionCount = 2;
         line.useWorldSpace = true;
+
+        propertyBlock =
+            new MaterialPropertyBlock();
     }
 
     public void Initialize(
@@ -38,63 +43,141 @@ public class PlasmaBoltVFX : MonoBehaviour
         Action onArrive = null
     )
     {
-        direction = (end - start).normalized;
-        target = end;
+        direction =
+            (end - start).normalized;
 
-        totalDistance = Vector3.Distance(start, end);
+        target =
+            end;
+
+        totalDistance =
+            Vector3.Distance(
+                start,
+                end
+            );
+
         travelled = 0f;
 
-        transform.position = start;
+        transform.position =
+            start;
 
-        this.onArrive = onArrive;
+        this.onArrive =
+            onArrive;
 
-        SetColor(auraColor ?? defaultColor);
+        activeBolt = true;
+
+        SetColor(
+            auraColor ?? defaultColor
+        );
+
         UpdateLine();
+
+        // Very short / zero-length shots should still finish cleanly.
+        if (totalDistance <= 0.001f)
+        {
+            Arrive();
+        }
     }
 
     private void Update()
     {
-        float movement = speed * Time.deltaTime;
+        if (!activeBolt)
+            return;
 
-        travelled += movement;
+        float movement =
+            speed * Time.deltaTime;
+
+        travelled +=
+            movement;
 
         if (travelled >= totalDistance)
         {
-            transform.position = target;
+            transform.position =
+                target;
+
             UpdateLine();
+            Arrive();
 
-            onArrive?.Invoke();
-
-            Destroy(gameObject);
             return;
         }
 
-        transform.position += direction * movement;
+        transform.position +=
+            direction * movement;
 
         UpdateLine();
     }
 
-    private void UpdateLine()
+    private void Arrive()
     {
-        Vector3 head = transform.position;
+        if (!activeBolt)
+            return;
 
-        float currentLength = Mathf.Min(boltLength, travelled);
+        activeBolt = false;
 
-        Vector3 tail = head - direction * currentLength;
+        Action callback =
+            onArrive;
 
-        line.SetPosition(0, tail);
-        line.SetPosition(1, head);
+        onArrive = null;
+
+        callback?.Invoke();
+
+        VfxPool.Release(
+            this
+        );
     }
 
-    private void SetColor(Color color)
+    private void UpdateLine()
     {
-        MaterialPropertyBlock block = new();
+        Vector3 head =
+            transform.position;
 
-        line.GetPropertyBlock(block);
+        float currentLength =
+            Mathf.Min(
+                boltLength,
+                travelled
+            );
 
-        block.SetColor("_BaseColor", color);
-        block.SetColor("_EmissionColor", color * 6f);
+        Vector3 tail =
+            head
+            - direction
+            * currentLength;
 
-        line.SetPropertyBlock(block);
+        line.SetPosition(
+            0,
+            tail
+        );
+
+        line.SetPosition(
+            1,
+            head
+        );
+    }
+
+    private void SetColor(
+        Color color
+    )
+    {
+        line.GetPropertyBlock(
+            propertyBlock
+        );
+
+        propertyBlock.SetColor(
+            "_BaseColor",
+            color
+        );
+
+        propertyBlock.SetColor(
+            "_EmissionColor",
+            color * 6f
+        );
+
+        line.SetPropertyBlock(
+            propertyBlock
+        );
+    }
+
+    private void OnDisable()
+    {
+        activeBolt = false;
+        onArrive = null;
     }
 }

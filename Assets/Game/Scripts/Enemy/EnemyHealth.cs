@@ -1,34 +1,63 @@
 using System;
 using UnityEngine;
 
-public class EnemyHealth : MonoBehaviour
+public class EnemyHealth : MonoBehaviour, IDamageable
 {
-    [SerializeField] private float maxHealth = 30f;
+    [SerializeField]
+    private float maxHealth = 30f;
 
     private float currentHealth;
 
-    public float HealthNormalized => currentHealth / maxHealth;
+    public float HealthNormalized =>
+        currentHealth / maxHealth;
 
     public event Action OnHealthChanged;
 
     private void Awake()
     {
-        currentHealth = maxHealth;
+        currentHealth =
+            maxHealth;
     }
 
-    public void TakeDamage(float damage)
+    public void ReceiveDamage(
+        HitInfo hit
+    )
     {
-        currentHealth -= damage;
-        currentHealth = Mathf.Max(currentHealth, 0f);
+        TakeDamage(
+            hit.Damage
+        );
+    }
+
+    // Kept as a convenience/backward-compatible API for systems that
+    // already hold a direct EnemyHealth reference.
+    public void TakeDamage(
+        float damage
+    )
+    {
+        if (damage <= 0f)
+            return;
+
+        currentHealth -=
+            damage;
+
+        currentHealth =
+            Mathf.Max(
+                currentHealth,
+                0f
+            );
 
         OnHealthChanged?.Invoke();
 
         if (currentHealth <= 0f)
+        {
             Die();
+        }
     }
 
     private void Die()
     {
-        Destroy(gameObject);
+        Destroy(
+            gameObject
+        );
     }
 }
