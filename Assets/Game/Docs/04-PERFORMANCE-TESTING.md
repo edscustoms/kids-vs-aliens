@@ -34,6 +34,7 @@ Later test weaker phones.
 A ~10k triangle enemy is a completely reasonable starting point.
 
 Watch:
+
 - SkinnedMeshRenderer count
 - number of materials / draw calls
 - bones
@@ -53,12 +54,14 @@ Profile the complete encounter rather than optimizing meshes in isolation.
 ## Hot-loop rules
 
 Prefer:
+
 - cached arrays/buffers
 - `NonAlloc` physics calls where useful
 - pooled high-frequency VFX
 - avoiding recurring managed allocations in Update loops
 
 Already refactored examples:
+
 - PlasmaArc index buffer reuse
 - enemy `OverlapSphereNonAlloc`
 - plasma VFX pooling
@@ -72,6 +75,7 @@ Keep test scenes in the project if useful.
 Only include required scenes in the player build.
 
 Be intentional with:
+
 - `Resources`
 - `StreamingAssets`
 - Addressables / AssetBundles
@@ -83,6 +87,7 @@ Do not use `Resources` as a generic asset folder.
 ## Quick Editor smoke test
 
 ### Menu
+
 - [ ] Browse character
 - [ ] Browse weapon
 - [ ] SELECT
@@ -93,6 +98,7 @@ Do not use `Resources` as a generic asset folder.
 - [ ] PLAY uses selected loadout
 
 ### Player
+
 - [ ] Move
 - [ ] Sprint
 - [ ] Jump
@@ -102,6 +108,7 @@ Do not use `Resources` as a generic asset folder.
 - [ ] Weapon attached correctly
 
 ### Combat
+
 - [ ] Shoot
 - [ ] Muzzle VFX
 - [ ] Bolt VFX
@@ -112,6 +119,7 @@ Do not use `Resources` as a generic asset folder.
 - [ ] Low-cover shot still valid
 
 ### Aim
+
 - [ ] Acquire target
 - [ ] Sticky lock
 - [ ] Switch target
@@ -150,12 +158,55 @@ Before important milestones:
 
 Keep automated testing **small and high-value**.
 
-Best candidates:
-- loadout state
-- combat hit resolver
-- menu selection state
-- VFX pool reuse
-- future save/progression
-- future objective state logic
+### Run
 
-Do not try to unit-test “camera feels good” or “movement is fun”.
+```text
+Window
+→ General
+→ Test Runner
+→ EditMode
+→ Run All
+```
+
+Current tests are tagged with the `Core` category.
+
+### Protected core flows
+
+1. **Loadout state**
+   - selected character / weapon
+   - explicit `NONE` weapon
+   - reset back to scene defaults
+
+2. **Combat hit resolution**
+   - child collider → parent `IDamageable`
+   - damage dispatch
+   - delayed `IHitReaction`
+   - unsupported hit safety
+
+3. **VFX pooling**
+   - released instances are reused
+   - different prefabs remain in separate pools
+
+Detailed test notes live in:
+
+```text
+Assets/Game/Tests/README.md
+```
+
+### Maintenance rule
+
+Only add/change automated tests when:
+
+- a tested core contract intentionally changes,
+- a new reusable framework contract appears, or
+- a real important regression should never happen again.
+
+Do **not** create tests merely because a new class exists.
+
+Do not try to unit-test subjective gameplay such as:
+
+- movement feel
+- camera feel
+- aim-assist feel
+- animation quality
+- difficulty / level design.

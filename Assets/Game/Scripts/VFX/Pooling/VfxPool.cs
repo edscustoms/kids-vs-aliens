@@ -130,7 +130,15 @@ public static class VfxPool
 
         GameObject root = new GameObject("[VFX Pool]");
 
-        Object.DontDestroyOnLoad(root);
+        // Runtime pools survive scene loads.
+        // EditMode tests also exercise this class, where DontDestroyOnLoad
+        // should not be invoked because the game is not playing.
+        if (Application.isPlaying)
+        {
+            Object.DontDestroyOnLoad(
+                root
+            );
+        }
 
         poolRoot = root.transform;
     }
