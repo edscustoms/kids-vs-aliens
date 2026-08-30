@@ -65,6 +65,25 @@ namespace KidsVsAliens.Environment
         [SerializeField, HideInInspector] private MeshRenderer bottomRailRenderer;
         [SerializeField, HideInInspector] private MeshRenderer chainLinkRenderer;
 
+
+        public float FenceHeight => fenceHeight;
+        public float PoleSpacing => poleSpacing;
+        public float PoleExtensionAboveFence => poleExtensionAboveFence;
+        public float BottomClearance => bottomClearance;
+        public float MainPoleThickness => mainPoleThickness;
+        public FencePoleStyle PoleStyle => poleStyle;
+
+        public Material PoleMaterial => poleMaterial;
+        public Material ChainLinkMaterial => chainLinkMaterial;
+
+        public float CollisionThickness => collisionThickness;
+        public bool CollisionEnabled => collisionEnabled;
+
+        public Mesh RoundPoleMesh => roundPoleMesh;
+        public Mesh SquarePoleMesh => squarePoleMesh;
+        public Mesh RailMesh => railMesh;
+        public Mesh ChainLinkMesh => chainLinkMesh;
+
         private const float MinSpan = 0.05f;
 
         private void OnValidate()
