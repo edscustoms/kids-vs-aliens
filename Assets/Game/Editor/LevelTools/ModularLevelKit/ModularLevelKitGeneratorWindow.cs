@@ -10,26 +10,13 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
         private const string DefaultOutputFolder =
             "Assets/Game/Prefabs/Environment/GeneratedModularKit";
 
-        [SerializeField]
-        private string outputFolder = DefaultOutputFolder;
-
-        [SerializeField]
-        private float wallHeight = 2f;
-
-        [SerializeField]
-        private float wallThickness = 0.25f;
-
-        [SerializeField]
-        private float elevationHeight = 0.5f;
-
-        [SerializeField]
-        private float cornerArmLength = 1f;
-
-        [SerializeField]
-        private Material wallMaterial;
-
-        [SerializeField]
-        private Material floorMaterial;
+        [SerializeField] private string outputFolder = DefaultOutputFolder;
+        [SerializeField] private float wallHeight = 2f;
+        [SerializeField] private float wallThickness = 0.25f;
+        [SerializeField] private float elevationHeight = 0.5f;
+        [SerializeField] private float cornerArmLength = 1f;
+        [SerializeField] private Material wallMaterial;
+        [SerializeField] private Material floorMaterial;
 
         private Material fallbackMaterial;
 
@@ -45,10 +32,9 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             EditorGUILayout.LabelField("Starter Modular Level Kit", EditorStyles.boldLabel);
 
             EditorGUILayout.HelpBox(
-                "Generates exact greybox modules with Snap_* connection points. "
-                    + "V9 adds exposed-boundary selection snapping for parented chunks, loose multi-selections and 1x1 floors.",
-                MessageType.Info
-            );
+                "Generates exact greybox modules with Snap_* connection points. " +
+                "V9 adds exposed-boundary selection snapping for parented chunks, loose multi-selections and 1x1 floors.",
+                MessageType.Info);
 
             outputFolder = EditorGUILayout.TextField("Output Folder", outputFolder);
             wallHeight = EditorGUILayout.FloatField("Wall Height", wallHeight);
@@ -56,21 +42,11 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             elevationHeight = EditorGUILayout.FloatField("Elevation Height", elevationHeight);
             cornerArmLength = EditorGUILayout.FloatField("Corner Arm Length", cornerArmLength);
 
-            wallMaterial = (Material)
-                EditorGUILayout.ObjectField(
-                    "Optional Wall Material",
-                    wallMaterial,
-                    typeof(Material),
-                    false
-                );
+            wallMaterial = (Material)EditorGUILayout.ObjectField(
+                "Optional Wall Material", wallMaterial, typeof(Material), false);
 
-            floorMaterial = (Material)
-                EditorGUILayout.ObjectField(
-                    "Optional Floor Material",
-                    floorMaterial,
-                    typeof(Material),
-                    false
-                );
+            floorMaterial = (Material)EditorGUILayout.ObjectField(
+                "Optional Floor Material", floorMaterial, typeof(Material), false);
 
             EditorGUILayout.Space(8);
 
@@ -80,18 +56,12 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
 
         private void Generate()
         {
-            if (
-                wallHeight <= 0f
-                || wallThickness <= 0f
-                || elevationHeight <= 0f
-                || cornerArmLength <= 0f
-            )
+            if (wallHeight <= 0f || wallThickness <= 0f || elevationHeight <= 0f || cornerArmLength <= 0f)
             {
                 EditorUtility.DisplayDialog(
                     "Invalid Modular Kit Settings",
                     "Wall height, wall thickness, elevation height and corner arm length must be greater than zero.",
-                    "OK"
-                );
+                    "OK");
                 return;
             }
 
@@ -99,8 +69,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             fallbackMaterial = GetOrCreateFallbackMaterial();
 
             Material effectiveWallMaterial = wallMaterial != null ? wallMaterial : fallbackMaterial;
-            Material effectiveFloorMaterial =
-                floorMaterial != null ? floorMaterial : fallbackMaterial;
+            Material effectiveFloorMaterial = floorMaterial != null ? floorMaterial : fallbackMaterial;
 
             // Straight walls.
             CreateStraightWall("Wall_1m", 1f, effectiveWallMaterial);
@@ -137,17 +106,17 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
 
             EditorUtility.DisplayDialog(
                 "Modular Kit V9 Ready",
-                $"Generated / updated starter prefabs in:\n{outputFolder}\n\n",
-                "Nice"
-            );
+                $"Generated / updated starter prefabs in:\n{outputFolder}\n\n" +
+                "45/90 corners are now single continuous mitered meshes. " +
+                "The old V2 Corner_90_1m / Junction45_* assets can be deleted after removing any test instances.",
+                "Nice");
         }
 
         private void CreateStraightWall(
             string prefabName,
             float length,
             Material material,
-            float? customHeight = null
-        )
+            float? customHeight = null)
         {
             float height = customHeight ?? wallHeight;
             GameObject root = new GameObject(prefabName);
@@ -158,8 +127,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 new Vector3(0f, height * 0.5f, 0f),
                 new Vector3(length, height, wallThickness),
                 Quaternion.identity,
-                material
-            );
+                material);
 
             ApplyFadeLayerIfAvailable(visual);
 
@@ -167,15 +135,13 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 root.transform,
                 "Snap_Wall_A",
                 new Vector3(-length * 0.5f, 0f, 0f),
-                Quaternion.LookRotation(Vector3.left, Vector3.up)
-            );
+                Quaternion.LookRotation(Vector3.left, Vector3.up));
 
             CreateSocket(
                 root.transform,
                 "Snap_Wall_B",
                 new Vector3(length * 0.5f, 0f, 0f),
-                Quaternion.LookRotation(Vector3.right, Vector3.up)
-            );
+                Quaternion.LookRotation(Vector3.right, Vector3.up));
 
             SavePrefabAndDestroy(root);
         }
@@ -186,10 +152,8 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
 
             Vector2 incomingDirection = Vector2.right;
             float radians = turnDegrees * Mathf.Deg2Rad;
-            Vector2 outgoingDirection = new Vector2(
-                Mathf.Cos(radians),
-                Mathf.Sin(radians)
-            ).normalized;
+            Vector2 outgoingDirection =
+                new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
 
             Vector2 startCenter = -incomingDirection * cornerArmLength;
             Vector2 cornerCenter = Vector2.zero;
@@ -209,58 +173,63 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 cornerCenter + incomingLeft * half,
                 incomingDirection,
                 cornerCenter + outgoingLeft * half,
-                outgoingDirection
-            );
+                outgoingDirection);
 
             Vector2 miterRight = IntersectLines(
                 cornerCenter - incomingLeft * half,
                 incomingDirection,
                 cornerCenter - outgoingLeft * half,
-                outgoingDirection
-            );
+                outgoingDirection);
 
             // One continuous thick wall footprint.
             // The inside and outside corner are both true sharp miter intersections.
             // No overlapping wall blocks and no separate seam in the middle.
-            Vector2[] footprint = EnsureCounterClockwise(
-                new[] { startLeft, miterLeft, endLeft, endRight, miterRight, startRight }
-            );
+            Vector2[] footprint = EnsureCounterClockwise(new[]
+            {
+                startLeft,
+                miterLeft,
+                endLeft,
+                endRight,
+                miterRight,
+                startRight
+            });
 
-            Mesh mesh = BuildExtrudedPolygonMesh(footprint, wallHeight, wallHeight);
+            Mesh mesh = BuildExtrudedPolygonMesh(
+                footprint,
+                wallHeight,
+                wallHeight);
 
             mesh.name = $"{prefabName}_Mesh";
             Mesh meshAsset = SaveOrReplaceMeshAsset(
                 mesh,
-                $"{outputFolder}/{prefabName}_Mesh.asset"
-            );
+                $"{outputFolder}/{prefabName}_Mesh.asset");
 
             GameObject visual = CreateMeshObject(
                 "Visual",
                 root.transform,
                 meshAsset,
                 material,
-                true
-            );
+                true);
 
             ApplyFadeLayerIfAvailable(visual);
 
-            Vector3 socketAOut = new Vector3(-incomingDirection.x, 0f, -incomingDirection.y);
+            Vector3 socketAOut =
+                new Vector3(-incomingDirection.x, 0f, -incomingDirection.y);
 
-            Vector3 socketBOut = new Vector3(outgoingDirection.x, 0f, outgoingDirection.y);
+            Vector3 socketBOut =
+                new Vector3(outgoingDirection.x, 0f, outgoingDirection.y);
 
             CreateSocket(
                 root.transform,
                 "Snap_Wall_A",
                 new Vector3(startCenter.x, 0f, startCenter.y),
-                Quaternion.LookRotation(socketAOut, Vector3.up)
-            );
+                Quaternion.LookRotation(socketAOut, Vector3.up));
 
             CreateSocket(
                 root.transform,
                 "Snap_Wall_B",
                 new Vector3(endCenter.x, 0f, endCenter.y),
-                Quaternion.LookRotation(socketBOut, Vector3.up)
-            );
+                Quaternion.LookRotation(socketBOut, Vector3.up));
 
             SavePrefabAndDestroy(root);
         }
@@ -270,7 +239,11 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             return new Vector2(-direction.y, direction.x).normalized;
         }
 
-        private static Vector2 IntersectLines(Vector2 p, Vector2 r, Vector2 q, Vector2 s)
+        private static Vector2 IntersectLines(
+            Vector2 p,
+            Vector2 r,
+            Vector2 q,
+            Vector2 s)
         {
             float cross = Cross(r, s);
             if (Mathf.Abs(cross) < 0.00001f)
@@ -306,8 +279,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             float width,
             float depth,
             float topHeight,
-            Material material
-        )
+            Material material)
         {
             GameObject root = new GameObject(prefabName);
             const float slabThickness = 0.2f;
@@ -319,8 +291,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 new Vector3(0f, centerY, 0f),
                 new Vector3(width, slabThickness, depth),
                 Quaternion.identity,
-                material
-            );
+                material);
 
             CreateGroundEdgeSockets(root.transform, width, depth, topHeight);
             SavePrefabAndDestroy(root);
@@ -330,18 +301,14 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             string prefabName,
             float size,
             float topHeight,
-            Material material
-        )
+            Material material)
         {
             GameObject root = new GameObject(prefabName);
             const float slabThickness = 0.2f;
 
             Mesh mesh = BuildRightTrianglePrismMesh(size, topHeight, slabThickness);
             mesh.name = $"{prefabName}_Mesh";
-            Mesh meshAsset = SaveOrReplaceMeshAsset(
-                mesh,
-                $"{outputFolder}/{prefabName}_Mesh.asset"
-            );
+            Mesh meshAsset = SaveOrReplaceMeshAsset(mesh, $"{outputFolder}/{prefabName}_Mesh.asset");
 
             CreateMeshObject("Visual", root.transform, meshAsset, material, true);
 
@@ -351,22 +318,19 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 root.transform,
                 "Snap_Ground_South",
                 new Vector3(0f, topHeight, -half),
-                Quaternion.Euler(0f, 180f, 0f)
-            );
+                Quaternion.Euler(0f, 180f, 0f));
 
             CreateSocket(
                 root.transform,
                 "Snap_Ground_West",
                 new Vector3(-half, topHeight, 0f),
-                Quaternion.Euler(0f, -90f, 0f)
-            );
+                Quaternion.Euler(0f, -90f, 0f));
 
             CreateSocket(
                 root.transform,
                 "Snap_Ground_Diagonal",
                 new Vector3(0f, topHeight, 0f),
-                Quaternion.Euler(0f, 45f, 0f)
-            );
+                Quaternion.Euler(0f, 45f, 0f));
 
             SavePrefabAndDestroy(root);
         }
@@ -377,8 +341,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             float run,
             float rise,
             int stepCount,
-            Material material
-        )
+            Material material)
         {
             GameObject root = new GameObject(prefabName);
             float stepDepth = run / stepCount;
@@ -395,23 +358,20 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                     new Vector3(0f, height * 0.5f, z),
                     new Vector3(width, height, stepDepth),
                     Quaternion.identity,
-                    material
-                );
+                    material);
             }
 
             CreateSocket(
                 root.transform,
                 "Snap_Ground_Bottom",
                 new Vector3(0f, 0f, 0f),
-                Quaternion.Euler(0f, 180f, 0f)
-            );
+                Quaternion.Euler(0f, 180f, 0f));
 
             CreateSocket(
                 root.transform,
                 "Snap_Ground_Top",
                 new Vector3(0f, rise, run),
-                Quaternion.identity
-            );
+                Quaternion.identity);
 
             SavePrefabAndDestroy(root);
         }
@@ -421,17 +381,13 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             float width,
             float run,
             float rise,
-            Material material
-        )
+            Material material)
         {
             GameObject root = new GameObject(prefabName);
 
             Mesh mesh = BuildRampMesh(width, run, rise);
             mesh.name = $"{prefabName}_Mesh";
-            Mesh meshAsset = SaveOrReplaceMeshAsset(
-                mesh,
-                $"{outputFolder}/{prefabName}_Mesh.asset"
-            );
+            Mesh meshAsset = SaveOrReplaceMeshAsset(mesh, $"{outputFolder}/{prefabName}_Mesh.asset");
 
             CreateMeshObject("Visual", root.transform, meshAsset, material, true);
 
@@ -439,15 +395,13 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 root.transform,
                 "Snap_Ground_Bottom",
                 new Vector3(0f, 0f, 0f),
-                Quaternion.Euler(0f, 180f, 0f)
-            );
+                Quaternion.Euler(0f, 180f, 0f));
 
             CreateSocket(
                 root.transform,
                 "Snap_Ground_Top",
                 new Vector3(0f, rise, run),
-                Quaternion.identity
-            );
+                Quaternion.identity);
 
             SavePrefabAndDestroy(root);
         }
@@ -468,39 +422,32 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
 
             // Split vertices per face so RecalculateNormals produces HARD / flat edges.
             AddQuad(vertices, triangles, frontLeft, frontRight, backRightBottom, backLeftBottom); // bottom
-            AddQuad(vertices, triangles, frontLeft, backLeftTop, backRightTop, frontRight); // slope/top
-            AddQuad(
-                vertices,
-                triangles,
-                backLeftBottom,
-                backRightBottom,
-                backRightTop,
-                backLeftTop
-            ); // back
+            AddQuad(vertices, triangles, frontLeft, backLeftTop, backRightTop, frontRight);       // slope/top
+            AddQuad(vertices, triangles, backLeftBottom, backRightBottom, backRightTop, backLeftTop); // back
 
             AddTriangle(vertices, triangles, frontLeft, backLeftBottom, backLeftTop); // left side
             AddTriangle(vertices, triangles, frontRight, backRightTop, backRightBottom); // right side
 
-            Mesh mesh = new Mesh { vertices = vertices.ToArray(), triangles = triangles.ToArray() };
+            Mesh mesh = new Mesh
+            {
+                vertices = vertices.ToArray(),
+                triangles = triangles.ToArray()
+            };
 
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
         }
 
-        private static Mesh BuildRightTrianglePrismMesh(
-            float size,
-            float topHeight,
-            float thickness
-        )
+        private static Mesh BuildRightTrianglePrismMesh(float size, float topHeight, float thickness)
         {
             float half = size * 0.5f;
 
             Vector2[] polygon =
             {
                 new Vector2(-half, -half),
-                new Vector2(half, -half),
-                new Vector2(-half, half),
+                new Vector2( half, -half),
+                new Vector2(-half,  half)
             };
 
             return BuildExtrudedPolygonMesh(polygon, topHeight, thickness);
@@ -509,8 +456,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
         private static Mesh BuildExtrudedPolygonMesh(
             IReadOnlyList<Vector2> polygon,
             float topY,
-            float thickness
-        )
+            float thickness)
         {
             int count = polygon.Count;
             float bottomY = topY - thickness;
@@ -564,7 +510,11 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 AddQuad(vertices, triangles, topA, topB, bottomB, bottomA);
             }
 
-            Mesh mesh = new Mesh { vertices = vertices.ToArray(), triangles = triangles.ToArray() };
+            Mesh mesh = new Mesh
+            {
+                vertices = vertices.ToArray(),
+                triangles = triangles.ToArray()
+            };
 
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
@@ -610,16 +560,19 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                     {
                         int testIndex = remaining[j];
 
-                        if (
-                            testIndex == previousIndex
-                            || testIndex == currentIndex
-                            || testIndex == nextIndex
-                        )
+                        if (testIndex == previousIndex ||
+                            testIndex == currentIndex ||
+                            testIndex == nextIndex)
                         {
                             continue;
                         }
 
-                        if (PointInsideTriangle(polygon[testIndex], a, b, c, epsilon))
+                        if (PointInsideTriangle(
+                                polygon[testIndex],
+                                a,
+                                b,
+                                c,
+                                epsilon))
                         {
                             containsOtherPoint = true;
                             break;
@@ -641,9 +594,8 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 if (!clippedEar)
                 {
                     Debug.LogError(
-                        "Modular Level Kit: failed to triangulate a generated polygon. "
-                            + "The polygon may be self-intersecting."
-                    );
+                        "Modular Level Kit: failed to triangulate a generated polygon. " +
+                        "The polygon may be self-intersecting.");
                     break;
                 }
             }
@@ -663,14 +615,15 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Vector2 a,
             Vector2 b,
             Vector2 c,
-            float epsilon
-        )
+            float epsilon)
         {
             float ab = Cross(b - a, point - a);
             float bc = Cross(c - b, point - b);
             float ca = Cross(a - c, point - c);
 
-            return ab >= -epsilon && bc >= -epsilon && ca >= -epsilon;
+            return ab >= -epsilon &&
+                   bc >= -epsilon &&
+                   ca >= -epsilon;
         }
 
         private static void AddQuad(
@@ -679,8 +632,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Vector3 a,
             Vector3 b,
             Vector3 c,
-            Vector3 d
-        )
+            Vector3 d)
         {
             int start = vertices.Count;
             vertices.Add(a);
@@ -702,8 +654,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             List<int> triangles,
             Vector3 a,
             Vector3 b,
-            Vector3 c
-        )
+            Vector3 c)
         {
             int start = vertices.Count;
             vertices.Add(a);
@@ -721,8 +672,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Vector3 localPosition,
             Vector3 localScale,
             Quaternion localRotation,
-            Material material
-        )
+            Material material)
         {
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.name = name;
@@ -742,8 +692,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Transform parent,
             Mesh mesh,
             Material material,
-            bool addCollider
-        )
+            bool addCollider)
         {
             GameObject gameObject = new GameObject(name);
             gameObject.transform.SetParent(parent, false);
@@ -775,11 +724,12 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 shader = Shader.Find("Standard");
 
             if (shader == null)
-                throw new System.InvalidOperationException(
-                    "Could not find a usable Lit shader for the greybox fallback material."
-                );
+                throw new System.InvalidOperationException("Could not find a usable Lit shader for the greybox fallback material.");
 
-            Material material = new Material(shader) { name = "M_GreyboxFallback" };
+            Material material = new Material(shader)
+            {
+                name = "M_GreyboxFallback"
+            };
 
             Color grey = new Color(0.55f, 0.56f, 0.58f, 1f);
             if (material.HasProperty("_BaseColor"))
@@ -795,8 +745,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Transform parent,
             string name,
             Vector3 localPosition,
-            Quaternion localRotation
-        )
+            Quaternion localRotation)
         {
             GameObject socket = new GameObject(name);
             socket.transform.SetParent(parent, false);
@@ -809,8 +758,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Transform root,
             float width,
             float depth,
-            float topHeight
-        )
+            float topHeight)
         {
             // Primary center sockets stay exactly where they were.
             // Additional target slots are generated every 0.5 m, but only far enough
@@ -829,8 +777,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 new Vector3(0f, topHeight, depth * 0.5f),
                 Vector3.right,
                 width,
-                Quaternion.identity
-            );
+                Quaternion.identity);
 
             CreateGroundEdgeSocketLine(
                 root,
@@ -838,8 +785,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 new Vector3(0f, topHeight, -depth * 0.5f),
                 Vector3.right,
                 width,
-                Quaternion.Euler(0f, 180f, 0f)
-            );
+                Quaternion.Euler(0f, 180f, 0f));
 
             CreateGroundEdgeSocketLine(
                 root,
@@ -847,8 +793,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 new Vector3(width * 0.5f, topHeight, 0f),
                 Vector3.forward,
                 depth,
-                Quaternion.Euler(0f, 90f, 0f)
-            );
+                Quaternion.Euler(0f, 90f, 0f));
 
             CreateGroundEdgeSocketLine(
                 root,
@@ -856,8 +801,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 new Vector3(-width * 0.5f, topHeight, 0f),
                 Vector3.forward,
                 depth,
-                Quaternion.Euler(0f, -90f, 0f)
-            );
+                Quaternion.Euler(0f, -90f, 0f));
         }
 
         private static void CreateGroundEdgeSocketLine(
@@ -866,32 +810,36 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             Vector3 center,
             Vector3 localTangent,
             float edgeLength,
-            Quaternion localRotation
-        )
+            Quaternion localRotation)
         {
             const float smallestFloorModule = 1f;
             const float slotStep = 0.5f;
 
             // Primary moving socket.
-            CreateSocket(root, $"Snap_Ground_{edgeName}", center, localRotation);
+            CreateSocket(
+                root,
+                $"Snap_Ground_{edgeName}",
+                center,
+                localRotation);
 
-            float maxOffset = Mathf.Max(0f, (edgeLength - smallestFloorModule) * 0.5f);
+            float maxOffset =
+                Mathf.Max(0f, (edgeLength - smallestFloorModule) * 0.5f);
 
-            for (float offset = slotStep; offset <= maxOffset + 0.0001f; offset += slotStep)
+            for (float offset = slotStep;
+                 offset <= maxOffset + 0.0001f;
+                 offset += slotStep)
             {
                 CreateSocket(
                     root,
                     $"Snap_Ground_{edgeName}_Slot_P{FormatOffset(offset)}",
                     center + localTangent * offset,
-                    localRotation
-                );
+                    localRotation);
 
                 CreateSocket(
                     root,
                     $"Snap_Ground_{edgeName}_Slot_M{FormatOffset(offset)}",
                     center - localTangent * offset,
-                    localRotation
-                );
+                    localRotation);
             }
         }
 
@@ -910,9 +858,8 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             else
             {
                 Debug.LogWarning(
-                    "Modular Kit Generator: layer 'FadeWhenBlockingPlayer' was not found. "
-                        + "Generated wall visuals were left on Default."
-                );
+                    "Modular Kit Generator: layer 'FadeWhenBlockingPlayer' was not found. " +
+                    "Generated wall visuals were left on Default.");
             }
         }
 

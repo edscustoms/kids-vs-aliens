@@ -510,3 +510,71 @@ Fixed `CS0844` in `ModularSnapWindow` caused by a local variable shadowing
 the serialized `targetObjects` field.
 
 No prefab regeneration is required.
+
+
+## V10 — shared target + axis alignment + surface snapping
+
+The window now uses one stored target for multiple editor operations.
+
+### Set the target
+
+Selection method does not matter.
+
+You can use:
+- Scene box selection;
+- Shift-selection;
+- Hierarchy selection;
+- one parent;
+- multiple loose objects.
+
+Then click:
+
+`Set Target From Selection`
+
+### Align X / Y / Z
+
+Select the objects that should move and click:
+
+- `Align X`
+- `Align Y`
+- `Align Z`
+
+The moving top-level roots are aligned to the average world pivot position of the
+stored target roots.
+
+For generated floor modules, `Align Y` is especially useful because the prefab root
+represents the floor's logical top elevation.
+
+### Snap Bottom To Target Surface
+
+Use this for poles, crates, props, rails, etc.
+
+Workflow:
+
+```text
+1. Select floor/reference surface.
+2. Set Target From Selection.
+3. Select one or many objects that should sit on it.
+4. Snap Bottom To Target Surface.
+```
+
+For each moving root the tool:
+- calculates the real combined Renderer bounds (Collider fallback);
+- uses the object's X/Z bounds center;
+- raycasts downward against the stored target Colliders;
+- moves the object only in world Y until its real bottom touches the hit surface.
+
+This means the object's pivot does NOT need to be at its feet/base.
+
+It already works with sloped Collider surfaces for vertical placement, but it does not
+rotate the object to match the target normal. Normal-orientation can be added later if
+actual level building needs it.
+
+If the stored target has no Collider, a flat Renderer-bounds top fallback is used when
+the moving object's X/Z center lies inside the target bounds.
+
+### APK / runtime cost
+
+Everything remains under `Assets/Game/Editor/...`.
+
+The alignment and surface tools are editor-only and do not compile into player builds.

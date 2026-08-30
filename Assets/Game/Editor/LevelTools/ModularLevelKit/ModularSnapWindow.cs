@@ -36,11 +36,14 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
         private void OnGUI()
         {
             EditorGUILayout.Space(6);
+
             EditorGUILayout.LabelField(
-                "Modular Level Snapping",
+                "Modular Level Builder",
                 EditorStyles.boldLabel);
 
+            DrawTargetSection();
             DrawBoundarySelectionSection();
+            DrawAlignmentSurfaceSection();
             DrawSocketSection();
             DrawDisplaySection();
 
@@ -50,19 +53,19 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 SceneView.lastActiveSceneView?.FrameSelected();
         }
 
-        private void DrawBoundarySelectionSection()
+        private void DrawTargetSection()
         {
             EditorGUILayout.HelpBox(
-                "Main workflow for floors / level chunks:\n" +
-                "1) Select the TARGET chunk/pieces and Set Target.\n" +
-                "2) Select the MOVING chunk/pieces.\n" +
-                "3) Roughly place them near the edge you want.\n" +
-                "4) Snap Moving Selection To Target.\n\n" +
-                "Works with one prefab, a parent group, or multiple loose selected pieces.",
+                "Shared target workflow:\n" +
+                "1) Select the reference/target however you want.\n" +
+                "2) Set Target From Selection.\n" +
+                "3) Select the objects that should move however you want.\n" +
+                "4) Run Boundary Snap / Align / Surface Snap.\n\n" +
+                "Box select, Shift-select and Hierarchy selection all work.",
                 MessageType.Info);
 
             EditorGUILayout.LabelField(
-                "Boundary / Chunk Snap",
+                "Target",
                 EditorStyles.boldLabel);
 
             using (new EditorGUILayout.HorizontalScope())
@@ -95,6 +98,18 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             EditorGUILayout.LabelField(
                 targetText,
                 EditorStyles.miniBoldLabel);
+        }
+
+        private void DrawBoundarySelectionSection()
+        {
+            EditorGUILayout.Space(10);
+
+            EditorGUILayout.LabelField(
+                "Boundary / Chunk Snap",
+                EditorStyles.boldLabel);
+
+            List<GameObject> resolvedTargets =
+                ResolveTargetObjects();
 
             using (new EditorGUI.DisabledScope(
                        resolvedTargets.Count == 0 ||
@@ -102,21 +117,73 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             {
                 if (GUILayout.Button(
                         "Snap Moving Selection To Target",
-                        GUILayout.Height(36)))
+                        GUILayout.Height(32)))
                 {
                     SnapCurrentSelectionToTarget();
                 }
             }
 
             EditorGUILayout.LabelField(
-                "The tool uses the ACTUAL exposed floor boundary, not the group's rectangular bounds. " +
-                "It snaps exposed-edge midpoint → exposed-edge midpoint.",
+                "Uses the actual exposed floor boundary. Good for floor chunks, parent groups or multiple loose selected floor pieces.",
+                EditorStyles.wordWrappedMiniLabel);
+        }
+
+        private void DrawAlignmentSurfaceSection()
+        {
+            EditorGUILayout.Space(10);
+
+            EditorGUILayout.LabelField(
+                "Align / Surface",
+                EditorStyles.boldLabel);
+
+            List<GameObject> resolvedTargets =
+                ResolveTargetObjects();
+
+            bool disabled =
+                resolvedTargets.Count == 0 ||
+                Selection.gameObjects.Length == 0;
+
+            using (new EditorGUI.DisabledScope(disabled))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Align X"))
+                    {
+                        AlignCurrentSelection(
+                            ModularAlignmentUtility.WorldAxis.X);
+                    }
+
+                    if (GUILayout.Button("Align Y"))
+                    {
+                        AlignCurrentSelection(
+                            ModularAlignmentUtility.WorldAxis.Y);
+                    }
+
+                    if (GUILayout.Button("Align Z"))
+                    {
+                        AlignCurrentSelection(
+                            ModularAlignmentUtility.WorldAxis.Z);
+                    }
+                }
+
+                if (GUILayout.Button(
+                        "Snap Bottom To Target Surface",
+                        GUILayout.Height(32)))
+                {
+                    SnapCurrentSelectionBottomToSurface();
+                }
+            }
+
+            EditorGUILayout.LabelField(
+                "Align X/Y/Z aligns world pivots to the stored target reference. " +
+                "Bottom Surface uses actual object bounds + target collider surface, so poles/props sit on the ground instead of placing their pivot on it.",
                 EditorStyles.wordWrappedMiniLabel);
         }
 
         private void DrawSocketSection()
         {
             EditorGUILayout.Space(12);
+
             EditorGUILayout.LabelField(
                 "Socket Snap",
                 EditorStyles.boldLabel);
@@ -148,6 +215,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
         private void DrawDisplaySection()
         {
             EditorGUILayout.Space(12);
+
             EditorGUILayout.LabelField(
                 "Scene Display",
                 EditorStyles.boldLabel);
@@ -186,14 +254,13 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             if (selected == null || selected.Length == 0)
             {
                 ShowNotification(
-                    new GUIContent("Select target pieces or a target parent first."));
+                    new GUIContent(
+                        "Select target pieces or a target parent first."));
                 return;
             }
 
-            List<GameObject> topLevel =
+            targetObjects =
                 ModularSnapUtility.GetTopLevelObjects(selected);
-
-            targetObjects = topLevel;
 
             ShowNotification(
                 new GUIContent(
@@ -213,12 +280,14 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             return new List<GameObject>(targetObjects);
         }
 
-        private void SnapCurrentSelectionToTarget()
+        private bool TryGetMovingAndTarget(
+            out List<GameObject> moving,
+            out List<GameObject> target)
         {
-            List<GameObject> target =
+            target =
                 ResolveTargetObjects();
 
-            List<GameObject> moving =
+            moving =
                 ModularSnapUtility.GetTopLevelObjects(
                     Selection.gameObjects);
 
@@ -226,25 +295,26 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
             {
                 ShowNotification(
                     new GUIContent("Target is not set."));
-                return;
+                return false;
             }
 
             if (moving.Count == 0)
             {
                 ShowNotification(
-                    new GUIContent("Select the moving chunk/pieces."));
-                return;
+                    new GUIContent(
+                        "Select the object(s) that should move."));
+                return false;
             }
 
-            var targetSet =
-                new HashSet<GameObject>(target);
+            return true;
+        }
 
-            if (moving.Any(
-                    go => targetSet.Contains(go)))
+        private void SnapCurrentSelectionToTarget()
+        {
+            if (!TryGetMovingAndTarget(
+                    out List<GameObject> moving,
+                    out List<GameObject> target))
             {
-                ShowNotification(
-                    new GUIContent(
-                        "Moving selection contains a stored target object. Select only the pieces you want to move."));
                 return;
             }
 
@@ -260,6 +330,58 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
 
             ShowNotification(
                 new GUIContent("Boundary snap complete."));
+
+            SceneView.RepaintAll();
+        }
+
+        private void AlignCurrentSelection(
+            ModularAlignmentUtility.WorldAxis axis)
+        {
+            if (!TryGetMovingAndTarget(
+                    out List<GameObject> moving,
+                    out List<GameObject> target))
+            {
+                return;
+            }
+
+            if (!ModularAlignmentUtility.AlignSelectionToTargetPivot(
+                    moving,
+                    target,
+                    axis,
+                    out string message))
+            {
+                ShowNotification(
+                    new GUIContent(message));
+                return;
+            }
+
+            ShowNotification(
+                new GUIContent(message));
+
+            SceneView.RepaintAll();
+        }
+
+        private void SnapCurrentSelectionBottomToSurface()
+        {
+            if (!TryGetMovingAndTarget(
+                    out List<GameObject> moving,
+                    out List<GameObject> target))
+            {
+                return;
+            }
+
+            if (!ModularAlignmentUtility.SnapBottomToTargetSurface(
+                    moving,
+                    target,
+                    out string message))
+            {
+                ShowNotification(
+                    new GUIContent(message));
+                return;
+            }
+
+            ShowNotification(
+                new GUIContent(message));
 
             SceneView.RepaintAll();
         }
@@ -383,8 +505,6 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
                 if (selected == null)
                     continue;
 
-                // Direct children only: selecting a whole room/chunk does not
-                // explode the Scene view with every descendant socket.
                 foreach (Transform child in selected.transform)
                 {
                     if (!ModularSnapUtility.IsSocket(child))
