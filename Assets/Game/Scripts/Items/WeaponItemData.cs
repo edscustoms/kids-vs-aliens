@@ -3,7 +3,7 @@ using UnityEngine;
 public enum WeaponFireMode
 {
     SemiAuto,
-    Automatic
+    Automatic,
 }
 
 [CreateAssetMenu(fileName = "NewWeapon", menuName = "Game/Items/Weapon")]
@@ -26,4 +26,11 @@ public class WeaponItemData : ItemData
 
     [Header("Animation")]
     public WeaponAnimationStyle animationStyle;
+
+    [Header("Knowledge Requirement")]
+    [Tooltip(
+        "Optional. When assigned, the player cannot equip/use this weapon "
+            + "until this skill has been acquired."
+    )]
+    public SkillData requiredSkill;
 }

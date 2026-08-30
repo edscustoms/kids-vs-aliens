@@ -11,11 +11,27 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField]
     private int maxSlots = 5;
 
+    [SerializeField]
+    private PlayerSkillState playerSkillState;
+
     private readonly List<ItemData> items = new();
 
     public IReadOnlyList<ItemData> Items => items;
 
     public event Action OnInventoryChanged;
+
+    private void Awake()
+    {
+        if (playerEquipment == null)
+        {
+            playerEquipment = GetComponent<PlayerEquipment>();
+        }
+
+        if (playerSkillState == null)
+        {
+            playerSkillState = GetComponent<PlayerSkillState>();
+        }
+    }
 
     public void AddItem(ItemData item)
     {
@@ -42,7 +58,11 @@ public class PlayerInventory : MonoBehaviour
         switch (item.itemType)
         {
             case ItemType.Weapon:
-                playerEquipment.EquipWeapon((WeaponItemData)item);
+                TryEquipWeapon(item as WeaponItemData);
+                break;
+
+            case ItemType.KnowledgeBook:
+                UseKnowledgeBook(index, item as KnowledgeBookItemData);
                 break;
 
             case ItemType.Consumable:
@@ -51,6 +71,68 @@ public class PlayerInventory : MonoBehaviour
             default:
                 break;
         }
+    }
+
+    private void TryEquipWeapon(WeaponItemData weapon)
+    {
+        if (weapon == null)
+            return;
+
+        SkillData requiredSkill = weapon.requiredSkill;
+
+        if (requiredSkill != null)
+        {
+            bool hasRequiredSkill =
+                playerSkillState != null && playerSkillState.HasSkill(requiredSkill);
+
+            if (!hasRequiredSkill)
+            {
+                // POC message only.
+                // Later route this through the generic player messaging UI.
+                Debug.Log($"KNOWLEDGE REQUIRED: {requiredSkill.DisplayName}", this);
+
+                return;
+            }
+        }
+
+        playerEquipment.EquipWeapon(weapon);
+    }
+
+    private void UseKnowledgeBook(int index, KnowledgeBookItemData book)
+    {
+        if (book == null || book.skill == null)
+        {
+            Debug.LogWarning("Knowledge book has no SkillData assigned.", this);
+
+            return;
+        }
+
+        if (playerSkillState == null)
+        {
+            Debug.LogWarning("PlayerSkillState is missing on the player.", this);
+
+            return;
+        }
+
+        if (playerSkillState.HasSkill(book.skill))
+        {
+            Debug.Log($"Skill already acquired: {book.skill.DisplayName}", this);
+
+            // Do not consume duplicate books yet.
+            // We can later decide whether duplicates give XP.
+            return;
+        }
+
+        if (!playerSkillState.UnlockSkill(book.skill))
+            return;
+
+        items.RemoveAt(index);
+
+        OnInventoryChanged?.Invoke();
+
+        // Temporary POC presentation.
+        // Later this routes through the game's messaging/hologram UI.
+        Debug.Log($"KNOWLEDGE ACQUIRED: {book.skill.DisplayName}", this);
     }
 
     public void DropItem(int index)

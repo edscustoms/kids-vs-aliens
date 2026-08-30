@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using KidsVsAliens.Environment;
 using UnityEngine;
 
@@ -59,7 +60,7 @@ namespace KidsVsAliens.Environment
 
         [SerializeField]
         [Min(0f)]
-        private float groundOffset = 0.2f;
+        private float groundOffset = 0.20f;
 
         [SerializeField]
         [Min(0.1f)]
@@ -218,14 +219,29 @@ namespace KidsVsAliens.Environment
 
             Vector3 right = Vector3.Cross(Vector3.up, outward).normalized;
 
+            List<GameObject> availableLoot = new List<GameObject>();
+
+            foreach (GameObject prefab in possibleLootPrefabs)
+            {
+                if (prefab != null && !availableLoot.Contains(prefab))
+                {
+                    availableLoot.Add(prefab);
+                }
+            }
+
+            lootCount = Mathf.Min(lootCount, availableLoot.Count);
+
+            List<Vector3> placedLootPositions = new List<Vector3>();
+
             for (int i = 0; i < lootCount; i++)
             {
-                GameObject prefab = possibleLootPrefabs[
-                    Random.Range(0, possibleLootPrefabs.Length)
-                ];
+                int randomIndex = Random.Range(0, availableLoot.Count);
 
-                if (prefab == null)
-                    continue;
+                GameObject prefab = availableLoot[randomIndex];
+
+                // Pick without replacement:
+                // one configured prefab can only be chosen once per chest opening.
+                availableLoot.RemoveAt(randomIndex);
 
                 float lateral = CalculateLateralOffset(i, lootCount);
 
@@ -235,7 +251,11 @@ namespace KidsVsAliens.Environment
 
                 candidate = EnsureOutsideChest(candidate, outward);
 
+                candidate = EnsureLootSpacing(candidate, placedLootPositions, right, player);
+
                 Vector3 groundPoint = FindGroundPoint(candidate);
+
+                placedLootPositions.Add(groundPoint);
 
                 Quaternion rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
@@ -352,6 +372,95 @@ namespace KidsVsAliens.Environment
             }
 
             return candidate;
+        }
+
+        private Vector3 EnsureLootSpacing(
+            Vector3 candidate,
+            IReadOnlyList<Vector3> placedPositions,
+            Vector3 right,
+            Transform player
+        )
+        {
+            if (placedPositions == null || placedPositions.Count == 0 || itemSpacing <= 0f)
+            {
+                return candidate;
+            }
+
+            if (right.sqrMagnitude < 0.001f)
+                right = Vector3.right;
+
+            right.Normalize();
+
+            Vector3 baseCandidate = candidate;
+
+            // Search nearby lateral slots.
+            // This happens AFTER player/chest correction because those
+            // corrections can otherwise move two different loot slots
+            // onto the same final position.
+            const int maxSteps = 8;
+
+            for (int step = 0; step <= maxSteps; step++)
+            {
+                if (step == 0)
+                {
+                    if (IsLootPositionValid(baseCandidate, placedPositions, player))
+                    {
+                        return baseCandidate;
+                    }
+
+                    continue;
+                }
+
+                Vector3 positive = baseCandidate + right * (itemSpacing * step);
+
+                if (IsLootPositionValid(positive, placedPositions, player))
+                {
+                    return positive;
+                }
+
+                Vector3 negative = baseCandidate - right * (itemSpacing * step);
+
+                if (IsLootPositionValid(negative, placedPositions, player))
+                {
+                    return negative;
+                }
+            }
+
+            // Very defensive fallback for an unusually crowded placement.
+            return baseCandidate + right * (itemSpacing * (placedPositions.Count + 1));
+        }
+
+        private bool IsLootPositionValid(
+            Vector3 candidate,
+            IReadOnlyList<Vector3> placedPositions,
+            Transform player
+        )
+        {
+            foreach (Vector3 placed in placedPositions)
+            {
+                Vector3 delta = candidate - placed;
+
+                delta.y = 0f;
+
+                if (delta.sqrMagnitude < itemSpacing * itemSpacing)
+                {
+                    return false;
+                }
+            }
+
+            if (player != null && minimumPlayerClearance > 0f)
+            {
+                Vector3 playerDelta = candidate - player.position;
+
+                playerDelta.y = 0f;
+
+                if (playerDelta.sqrMagnitude < minimumPlayerClearance * minimumPlayerClearance)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private Vector3 FindGroundPoint(Vector3 candidate)

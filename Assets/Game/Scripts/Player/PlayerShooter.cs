@@ -16,6 +16,9 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlayerCharacter playerCharacter;
 
+    [SerializeField]
+    private PlayerSkillState playerSkillState;
+
     [Header("Shot VFX")]
     [SerializeField]
     private PlasmaBoltVFX plasmaBoltPrefab;
@@ -72,6 +75,12 @@ public class PlayerShooter : MonoBehaviour
         {
             playerCharacter = GetComponent<PlayerCharacter>();
         }
+
+        if (playerSkillState == null)
+        {
+            playerSkillState =
+                GetComponent<PlayerSkillState>();
+        }
     }
 
     // =====================================================
@@ -125,6 +134,12 @@ public class PlayerShooter : MonoBehaviour
         if (!wantsToShoot)
             return;
 
+        // Knowledge gate:
+        // the weapon may still be equipped/visible, but cannot fire
+        // until its optional required skill has been acquired.
+        if (!CanUseEquippedWeapon())
+            return;
+
         if (Time.time < nextFireTime)
             return;
 
@@ -141,6 +156,22 @@ public class PlayerShooter : MonoBehaviour
     // =====================================================
     // SHOOTING
     // =====================================================
+
+    private bool CanUseEquippedWeapon()
+    {
+        if (equippedWeapon == null)
+            return false;
+
+        SkillData requiredSkill =
+            equippedWeapon.requiredSkill;
+
+        if (requiredSkill == null)
+            return true;
+
+        return playerSkillState != null &&
+               playerSkillState.HasSkill(
+                   requiredSkill);
+    }
 
     private void Shoot()
     {
