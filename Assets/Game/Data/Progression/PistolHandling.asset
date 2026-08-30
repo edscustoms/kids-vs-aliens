@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b204195a5570ac40a19b6a7553602b7, type: 3}
   m_Name: PistolHandling
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  id: 
-  displayName: 
+  id: pistol_handling
+  displayName: Pistol Handling
   description: 
   startingLevel: 1
   xpPerLevel: 100

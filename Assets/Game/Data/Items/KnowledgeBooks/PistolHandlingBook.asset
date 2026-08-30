@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8ea03696ae9dfa41864e8ef35a954e6, type: 3}
   m_Name: PistolHandlingBook
   m_EditorClassIdentifier: Assembly-CSharp::KnowledgeBookItemData
-  itemName: 
-  itemType: 0
+  itemName: Pistol Handling Knowledge
+  itemType: 4
   icon: {fileID: 0}
-  worldPrefab: {fileID: 0}
-  skill: {fileID: 0}
+  worldPrefab: {fileID: 1049318778344171827, guid: a3bf2f3d7a8e6d841ab23094a36293ca, type: 3}
+  skill: {fileID: 11400000, guid: 43103a442e5f3e149b2a468065a892c7, type: 2}
   rarity: 0
