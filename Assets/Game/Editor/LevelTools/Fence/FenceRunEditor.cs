@@ -17,8 +17,7 @@ namespace KidsVsAliens.EditorTools.Fence
             EditorGUILayout.Space(8);
 
             EditorGUILayout.HelpBox(
-                "New Section Length affects future extensions. Existing pole positions stay where they are. " +
-                "Height/material/style changes rebuild the whole run.",
+                "Pole Spacing is LIVE for the whole run. Changing it repositions all existing poles/segments while preserving turns, shared poles and topology.",
                 MessageType.Info);
 
             if (GUILayout.Button("Rebuild Fence Run"))

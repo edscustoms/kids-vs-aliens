@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace KidsVsAliens.Environment
 {
@@ -14,9 +14,10 @@ namespace KidsVsAliens.Environment
     public sealed class FenceRun : MonoBehaviour
     {
         [Header("Fence Run")]
+        [FormerlySerializedAs("newSectionLength")]
         [Min(0.25f)]
-        [Tooltip("Length used for NEW sections added to this run.")]
-        [SerializeField] private float newSectionLength = 2.0f;
+        [Tooltip("Global center-to-center spacing for every connected fence section.")]
+        [SerializeField] private float poleSpacing = 2.0f;
 
         [Min(0.25f)]
         [SerializeField] private float fenceHeight = 1.20f;
@@ -53,10 +54,15 @@ namespace KidsVsAliens.Environment
 
         [SerializeField, HideInInspector] private int nextNodeId;
 
-        private const float NodeMergeTolerance = 0.02f;
+        // Initial standalone fence is centered on the FenceRun root:
+        // Grid (0,0) -> -0.5 spacing on X
+        // Grid (1,0) -> +0.5 spacing on X
+        private static readonly Vector2 GridOriginOffset =
+            new Vector2(-0.5f, 0f);
+
         private const float MinSpan = 0.05f;
 
-        public float NewSectionLength => newSectionLength;
+        public float PoleSpacing => poleSpacing;
 
         private void OnValidate()
         {
@@ -69,7 +75,7 @@ namespace KidsVsAliens.Environment
         public void ConfigureFromSection(
             ConfigurableFenceSection source)
         {
-            newSectionLength = source.PoleSpacing;
+            poleSpacing = source.PoleSpacing;
             fenceHeight = source.FenceHeight;
             poleExtensionAboveFence = source.PoleExtensionAboveFence;
             bottomClearance = source.BottomClearance;
@@ -94,17 +100,17 @@ namespace KidsVsAliens.Environment
         {
             EnsureRoots();
 
-            float half = newSectionLength * 0.5f;
-
             FencePoleNode left =
                 GetOrCreateNode(
-                    new Vector3(-half, 0f, 0f));
+                    new Vector2Int(0, 0));
 
             FencePoleNode right =
                 GetOrCreateNode(
-                    new Vector3(half, 0f, 0f));
+                    new Vector2Int(1, 0));
 
-            return GetOrCreateSegment(left, right);
+            return GetOrCreateSegment(
+                left,
+                right);
         }
 
         public FenceRunSegment Extend(
@@ -118,6 +124,8 @@ namespace KidsVsAliens.Environment
             {
                 return null;
             }
+
+            EnsureGridCoordinates();
 
             count = Mathf.Max(1, count);
 
@@ -134,18 +142,17 @@ namespace KidsVsAliens.Environment
             if (endpoint == null || other == null)
                 return null;
 
-            Vector3 outward =
-                endpoint.transform.localPosition -
-                other.transform.localPosition;
+            Vector2Int outward =
+                endpoint.GridCoordinate -
+                other.GridCoordinate;
 
-            outward.y = 0f;
+            outward =
+                NormalizeCardinal(outward);
 
-            if (outward.sqrMagnitude <= Mathf.Epsilon)
+            if (outward == Vector2Int.zero)
                 return null;
 
-            outward.Normalize();
-
-            Vector3 stepDirection =
+            Vector2Int stepDirection =
                 ResolveDirection(
                     outward,
                     direction);
@@ -158,12 +165,13 @@ namespace KidsVsAliens.Environment
 
             for (int i = 0; i < count; i++)
             {
-                Vector3 nextPosition =
-                    current.transform.localPosition +
-                    stepDirection * newSectionLength;
+                Vector2Int nextCoordinate =
+                    current.GridCoordinate +
+                    stepDirection;
 
                 FencePoleNode next =
-                    GetOrCreateNode(nextPosition);
+                    GetOrCreateNode(
+                        nextCoordinate);
 
                 lastSegment =
                     GetOrCreateSegment(
@@ -173,12 +181,19 @@ namespace KidsVsAliens.Environment
                 current = next;
             }
 
+            RebuildAll();
+
             return lastSegment;
         }
 
         public void RebuildAll()
         {
             EnsureRoots();
+
+            if (!HasResources())
+                return;
+
+            EnsureGridCoordinates();
 
             FencePoleNode[] nodes =
                 polesRoot.GetComponentsInChildren<FencePoleNode>(true);
@@ -193,17 +208,45 @@ namespace KidsVsAliens.Environment
                 RebuildSegment(segment);
         }
 
-        private static Vector3 ResolveDirection(
-            Vector3 outward,
+        private static Vector2Int NormalizeCardinal(
+            Vector2Int direction)
+        {
+            if (Mathf.Abs(direction.x) >=
+                Mathf.Abs(direction.y))
+            {
+                if (direction.x == 0)
+                    return Vector2Int.zero;
+
+                return new Vector2Int(
+                    direction.x > 0 ? 1 : -1,
+                    0);
+            }
+
+            if (direction.y == 0)
+                return Vector2Int.zero;
+
+            return new Vector2Int(
+                0,
+                direction.y > 0 ? 1 : -1);
+        }
+
+        private static Vector2Int ResolveDirection(
+            Vector2Int outward,
             FenceExtendDirection direction)
         {
             switch (direction)
             {
+                // Local "up" on our X/Z builder plane = 90 degrees left.
                 case FenceExtendDirection.TurnUp:
-                    return Quaternion.Euler(0f, -90f, 0f) * outward;
+                    return new Vector2Int(
+                        -outward.y,
+                        outward.x);
 
+                // Local "down" = 90 degrees right.
                 case FenceExtendDirection.TurnDown:
-                    return Quaternion.Euler(0f, 90f, 0f) * outward;
+                    return new Vector2Int(
+                        outward.y,
+                        -outward.x);
 
                 default:
                     return outward;
@@ -211,10 +254,10 @@ namespace KidsVsAliens.Environment
         }
 
         private FencePoleNode GetOrCreateNode(
-            Vector3 localPosition)
+            Vector2Int gridCoordinate)
         {
             FencePoleNode existing =
-                FindNodeAt(localPosition);
+                FindNodeAt(gridCoordinate);
 
             if (existing != null)
                 return existing;
@@ -236,9 +279,6 @@ namespace KidsVsAliens.Environment
                 polesRoot,
                 false);
 
-            nodeObject.transform.localPosition =
-                localPosition;
-
             nodeObject.transform.localRotation =
                 Quaternion.identity;
 
@@ -248,7 +288,10 @@ namespace KidsVsAliens.Environment
             FencePoleNode node =
                 nodeObject.AddComponent<FencePoleNode>();
 
-            node.Initialize(nextNodeId);
+            node.Initialize(
+                nextNodeId,
+                gridCoordinate);
+
             nextNodeId++;
 
             nodeObject.AddComponent<MeshFilter>();
@@ -260,7 +303,7 @@ namespace KidsVsAliens.Environment
         }
 
         private FencePoleNode FindNodeAt(
-            Vector3 localPosition)
+            Vector2Int gridCoordinate)
         {
             if (polesRoot == null)
                 return null;
@@ -270,12 +313,14 @@ namespace KidsVsAliens.Environment
 
             foreach (FencePoleNode node in nodes)
             {
-                if (node == null)
+                if (node == null ||
+                    !node.HasGridCoordinate)
+                {
                     continue;
+                }
 
-                if (Vector3.Distance(
-                        node.transform.localPosition,
-                        localPosition) <= NodeMergeTolerance)
+                if (node.GridCoordinate ==
+                    gridCoordinate)
                 {
                     return node;
                 }
@@ -393,8 +438,11 @@ namespace KidsVsAliens.Environment
             MeshRenderer renderer =
                 node.GetComponent<MeshRenderer>();
 
-            if (filter == null || renderer == null)
+            if (filter == null ||
+                renderer == null)
+            {
                 return;
+            }
 
             Mesh selectedPole =
                 poleStyle == FencePoleStyle.Round
@@ -422,10 +470,16 @@ namespace KidsVsAliens.Environment
             float targetHeight =
                 Mathf.Max(
                     MinSpan,
-                    fenceHeight + poleExtensionAboveFence);
+                    fenceHeight +
+                    poleExtensionAboveFence);
 
             float scaleY =
-                targetHeight / sourceHeight;
+                targetHeight /
+                sourceHeight;
+
+            Vector3 gridPosition =
+                GridToLocalPosition(
+                    node.GridCoordinate);
 
             node.transform.localRotation =
                 Quaternion.identity;
@@ -436,14 +490,30 @@ namespace KidsVsAliens.Environment
                     scaleY,
                     1f);
 
-            Vector3 position =
-                node.transform.localPosition;
-
-            position.y =
-                -bounds.min.y * scaleY;
-
             node.transform.localPosition =
-                position;
+                new Vector3(
+                    gridPosition.x,
+                    -bounds.min.y * scaleY,
+                    gridPosition.z);
+        }
+
+        private Vector3 GridToLocalPosition(
+            Vector2Int coordinate)
+        {
+            float x =
+                (coordinate.x +
+                 GridOriginOffset.x) *
+                poleSpacing;
+
+            float z =
+                (coordinate.y +
+                 GridOriginOffset.y) *
+                poleSpacing;
+
+            return new Vector3(
+                x,
+                0f,
+                z);
         }
 
         private void RebuildSegment(
@@ -457,13 +527,12 @@ namespace KidsVsAliens.Environment
             }
 
             Vector3 a =
-                segment.NodeA.transform.localPosition;
+                GridToLocalPosition(
+                    segment.NodeA.GridCoordinate);
 
             Vector3 b =
-                segment.NodeB.transform.localPosition;
-
-            a.y = 0f;
-            b.y = 0f;
+                GridToLocalPosition(
+                    segment.NodeB.GridCoordinate);
 
             Vector3 delta =
                 b - a;
@@ -483,10 +552,17 @@ namespace KidsVsAliens.Environment
             root.localPosition =
                 (a + b) * 0.5f;
 
+            // Keep fence segments strictly horizontal.
+            //
+            // Quaternion.FromToRotation(Vector3.right, Vector3.left)
+            // has an ambiguous 180-degree solution and Unity can choose
+            // a Z-axis flip. That turns local +Y into -Y and places the
+            // whole fence section underneath the floor.
+            //
+            // Build the rotation from a horizontal forward vector instead,
+            // explicitly preserving Vector3.up.
             root.localRotation =
-                Quaternion.FromToRotation(
-                    Vector3.right,
-                    direction);
+                CreateHorizontalRotation(direction);
 
             root.localScale =
                 Vector3.one;
@@ -514,7 +590,8 @@ namespace KidsVsAliens.Environment
             float clearSpan =
                 Mathf.Max(
                     MinSpan,
-                    distance - mainPoleThickness);
+                    distance -
+                    mainPoleThickness);
 
             float railDiameter =
                 railMesh != null
@@ -530,12 +607,15 @@ namespace KidsVsAliens.Environment
                 railDiameter * 0.5f;
 
             float bottomRailY =
-                bottomClearance + railRadius;
+                bottomClearance +
+                railRadius;
 
             float topRailY =
                 Mathf.Max(
                     fenceHeight,
-                    bottomRailY + railDiameter + MinSpan);
+                    bottomRailY +
+                    railDiameter +
+                    MinSpan);
 
             FitHorizontal(
                 topRail,
@@ -550,18 +630,23 @@ namespace KidsVsAliens.Environment
                 bottomRailY);
 
             float chainBottom =
-                bottomRailY + railRadius;
+                bottomRailY +
+                railRadius;
 
             float chainTop =
-                topRailY - railRadius;
+                topRailY -
+                railRadius;
 
             float chainHeight =
                 Mathf.Max(
                     MinSpan,
-                    chainTop - chainBottom);
+                    chainTop -
+                    chainBottom);
 
             float chainCenterY =
-                (chainBottom + chainTop) * 0.5f;
+                (chainBottom +
+                 chainTop) *
+                0.5f;
 
             FitPanel(
                 chain,
@@ -582,10 +667,12 @@ namespace KidsVsAliens.Environment
             if (poleMaterial != null)
             {
                 if (topRenderer != null)
-                    topRenderer.sharedMaterial = poleMaterial;
+                    topRenderer.sharedMaterial =
+                        poleMaterial;
 
                 if (bottomRenderer != null)
-                    bottomRenderer.sharedMaterial = poleMaterial;
+                    bottomRenderer.sharedMaterial =
+                        poleMaterial;
             }
 
             if (chainLinkMaterial != null &&
@@ -606,7 +693,8 @@ namespace KidsVsAliens.Environment
                 float colliderHeight =
                     Mathf.Max(
                         MinSpan,
-                        fenceHeight + poleExtensionAboveFence);
+                        fenceHeight +
+                        poleExtensionAboveFence);
 
                 box.center =
                     new Vector3(
@@ -616,11 +704,100 @@ namespace KidsVsAliens.Environment
 
                 box.size =
                     new Vector3(
-                        distance + mainPoleThickness,
+                        distance +
+                        mainPoleThickness,
                         colliderHeight,
                         Mathf.Max(
                             0.01f,
                             collisionThickness));
+            }
+        }
+
+        private static Quaternion CreateHorizontalRotation(
+            Vector3 rightDirection)
+        {
+            rightDirection.y = 0f;
+
+            if (rightDirection.sqrMagnitude <= Mathf.Epsilon)
+                return Quaternion.identity;
+
+            rightDirection.Normalize();
+
+            // Unity basis:
+            // right = Cross(up, forward)
+            // therefore forward = Cross(right, up).
+            Vector3 forward =
+                Vector3.Cross(
+                    rightDirection,
+                    Vector3.up);
+
+            if (forward.sqrMagnitude <= Mathf.Epsilon)
+                return Quaternion.identity;
+
+            forward.Normalize();
+
+            return Quaternion.LookRotation(
+                forward,
+                Vector3.up);
+        }
+
+        private void EnsureGridCoordinates()
+        {
+            if (polesRoot == null)
+                return;
+
+            FencePoleNode[] nodes =
+                polesRoot.GetComponentsInChildren<FencePoleNode>(true);
+
+            // V2+ runs already have logical coordinates.
+            bool requiresMigration = false;
+
+            foreach (FencePoleNode node in nodes)
+            {
+                if (node != null &&
+                    !node.HasGridCoordinate)
+                {
+                    requiresMigration = true;
+                    break;
+                }
+            }
+
+            if (!requiresMigration)
+                return;
+
+            // Upgrade Smart Fence V1 runs in-place.
+            // V1 was centered with the first poles at +/- spacing/2.
+            float safeSpacing =
+                Mathf.Max(
+                    0.25f,
+                    poleSpacing);
+
+            foreach (FencePoleNode node in nodes)
+            {
+                if (node == null ||
+                    node.HasGridCoordinate)
+                {
+                    continue;
+                }
+
+                Vector3 oldPosition =
+                    node.transform.localPosition;
+
+                int gridX =
+                    Mathf.RoundToInt(
+                        oldPosition.x /
+                        safeSpacing +
+                        0.5f);
+
+                int gridZ =
+                    Mathf.RoundToInt(
+                        oldPosition.z /
+                        safeSpacing);
+
+                node.SetGridCoordinate(
+                    new Vector2Int(
+                        gridX,
+                        gridZ));
             }
         }
 
@@ -630,8 +807,11 @@ namespace KidsVsAliens.Environment
             float targetLength,
             float centerY)
         {
-            if (target == null || mesh == null)
+            if (target == null ||
+                mesh == null)
+            {
                 return;
+            }
 
             Bounds bounds =
                 mesh.bounds;
@@ -642,7 +822,8 @@ namespace KidsVsAliens.Environment
                     bounds.size.x);
 
             float scaleX =
-                targetLength / sourceLength;
+                targetLength /
+                sourceLength;
 
             target.localRotation =
                 Quaternion.identity;
@@ -655,8 +836,10 @@ namespace KidsVsAliens.Environment
 
             target.localPosition =
                 new Vector3(
-                    -bounds.center.x * scaleX,
-                    centerY - bounds.center.y,
+                    -bounds.center.x *
+                    scaleX,
+                    centerY -
+                    bounds.center.y,
                     -bounds.center.z);
         }
 
@@ -667,8 +850,11 @@ namespace KidsVsAliens.Environment
             float targetHeight,
             float centerY)
         {
-            if (target == null || mesh == null)
+            if (target == null ||
+                mesh == null)
+            {
                 return;
+            }
 
             Bounds bounds =
                 mesh.bounds;
@@ -696,8 +882,11 @@ namespace KidsVsAliens.Environment
 
             target.localPosition =
                 new Vector3(
-                    -bounds.center.x * scaleX,
-                    centerY - bounds.center.y * scaleY,
+                    -bounds.center.x *
+                    scaleX,
+                    centerY -
+                    bounds.center.y *
+                    scaleY,
                     -bounds.center.z);
         }
 

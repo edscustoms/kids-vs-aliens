@@ -26,11 +26,11 @@ namespace KidsVsAliens.EditorTools.Fence
                 EditorStyles.boldLabel);
 
             EditorGUILayout.LabelField(
-                $"New section length: {segment.Owner.NewSectionLength:0.##} m",
+                $"Pole spacing: {segment.Owner.PoleSpacing:0.##} m",
                 EditorStyles.miniLabel);
 
             EditorGUILayout.LabelField(
-                "Arrows are relative to the selected fence segment.",
+                "Arrows are projected into the CURRENT Scene view, so they show where the next section will visibly go on screen.",
                 EditorStyles.wordWrappedMiniLabel);
 
             count =
@@ -43,12 +43,12 @@ namespace KidsVsAliens.EditorTools.Fence
             DrawEndpointButtons(
                 segment,
                 true,
-                "Extend From LEFT / A Pole");
+                $"Extend From Pole {segment.NodeA.NodeId:000} (A)");
 
             DrawEndpointButtons(
                 segment,
                 false,
-                "Extend From RIGHT / B Pole");
+                $"Extend From Pole {segment.NodeB.NodeId:000} (B)");
         }
 
         private void DrawEndpointButtons(
@@ -62,12 +62,28 @@ namespace KidsVsAliens.EditorTools.Fence
                 label,
                 EditorStyles.miniBoldLabel);
 
+            string straightArrow =
+                SmartFenceEditorUtility.GetSegmentDirectionLabel(
+                    segment,
+                    fromNodeA,
+                    FenceExtendDirection.Straight);
+
+            string turnUpArrow =
+                SmartFenceEditorUtility.GetSegmentDirectionLabel(
+                    segment,
+                    fromNodeA,
+                    FenceExtendDirection.TurnUp);
+
+            string turnDownArrow =
+                SmartFenceEditorUtility.GetSegmentDirectionLabel(
+                    segment,
+                    fromNodeA,
+                    FenceExtendDirection.TurnDown);
+
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button(
-                        fromNodeA
-                            ? "← Straight"
-                            : "Straight →"))
+                        $"{straightArrow} Straight"))
                 {
                     SmartFenceEditorUtility.ExtendExisting(
                         segment,
@@ -78,7 +94,8 @@ namespace KidsVsAliens.EditorTools.Fence
                     GUIUtility.ExitGUI();
                 }
 
-                if (GUILayout.Button("↑ Turn"))
+                if (GUILayout.Button(
+                        $"{turnUpArrow} Turn"))
                 {
                     SmartFenceEditorUtility.ExtendExisting(
                         segment,
@@ -89,7 +106,8 @@ namespace KidsVsAliens.EditorTools.Fence
                     GUIUtility.ExitGUI();
                 }
 
-                if (GUILayout.Button("↓ Turn"))
+                if (GUILayout.Button(
+                        $"{turnDownArrow} Turn"))
                 {
                     SmartFenceEditorUtility.ExtendExisting(
                         segment,

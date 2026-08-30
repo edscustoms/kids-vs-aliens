@@ -6,11 +6,29 @@ namespace KidsVsAliens.Environment
     {
         [SerializeField, HideInInspector] private int nodeId;
 
-        public int NodeId => nodeId;
+        [SerializeField, HideInInspector]
+        private Vector2Int gridCoordinate;
 
-        public void Initialize(int id)
+        [SerializeField, HideInInspector]
+        private bool hasGridCoordinate;
+
+        public int NodeId => nodeId;
+        public Vector2Int GridCoordinate => gridCoordinate;
+        public bool HasGridCoordinate => hasGridCoordinate;
+
+        public void Initialize(
+            int id,
+            Vector2Int coordinate)
         {
             nodeId = id;
+            SetGridCoordinate(coordinate);
+        }
+
+        public void SetGridCoordinate(
+            Vector2Int coordinate)
+        {
+            gridCoordinate = coordinate;
+            hasGridCoordinate = true;
         }
     }
 }

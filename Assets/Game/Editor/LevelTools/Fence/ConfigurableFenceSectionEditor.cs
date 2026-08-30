@@ -60,14 +60,28 @@ namespace KidsVsAliens.EditorTools.Fence
                 label,
                 EditorStyles.miniBoldLabel);
 
+            string straightArrow =
+                SmartFenceEditorUtility.GetStandaloneDirectionLabel(
+                    section,
+                    fromLeft,
+                    FenceExtendDirection.Straight);
+
+            string turnUpArrow =
+                SmartFenceEditorUtility.GetStandaloneDirectionLabel(
+                    section,
+                    fromLeft,
+                    FenceExtendDirection.TurnUp);
+
+            string turnDownArrow =
+                SmartFenceEditorUtility.GetStandaloneDirectionLabel(
+                    section,
+                    fromLeft,
+                    FenceExtendDirection.TurnDown);
+
             using (new EditorGUILayout.HorizontalScope())
             {
-                string straight =
-                    fromLeft
-                        ? "← Straight"
-                        : "Straight →";
-
-                if (GUILayout.Button(straight))
+                if (GUILayout.Button(
+                        $"{straightArrow} Straight"))
                 {
                     SmartFenceEditorUtility.ConvertAndExtend(
                         section,
@@ -78,7 +92,8 @@ namespace KidsVsAliens.EditorTools.Fence
                     GUIUtility.ExitGUI();
                 }
 
-                if (GUILayout.Button("↑ Turn"))
+                if (GUILayout.Button(
+                        $"{turnUpArrow} Turn"))
                 {
                     SmartFenceEditorUtility.ConvertAndExtend(
                         section,
@@ -89,7 +104,8 @@ namespace KidsVsAliens.EditorTools.Fence
                     GUIUtility.ExitGUI();
                 }
 
-                if (GUILayout.Button("↓ Turn"))
+                if (GUILayout.Button(
+                        $"{turnDownArrow} Turn"))
                 {
                     SmartFenceEditorUtility.ConvertAndExtend(
                         section,
