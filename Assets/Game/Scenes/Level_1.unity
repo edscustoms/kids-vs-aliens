@@ -16790,7 +16790,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputModeController
   mobileControlsCanvas: {fileID: 1669976059}
-  editorMode: 0
+  editorMode: 1
 --- !u!4 &1616681319 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5945775497195348064, guid: 1dc33b286951dc140bf877e3138a613e, type: 3}
@@ -19186,6 +19186,10 @@ MonoBehaviour:
   mainCamera: {fileID: 1083865008}
   fadeWhenBlockingPlayer: {fileID: 0}
   desktopRotationSpeed: 20
+  desktopAimGraceTime: 0.15
+  desktopMouseDeltaThreshold: 0.25
+  movementFacingRotationSpeed: 8
+  movementFacingDeadZone: 0.1
   autoAimRange: 20
   mobileRotationSpeed: 5
   mobileNoTargetAimDistance: 50
