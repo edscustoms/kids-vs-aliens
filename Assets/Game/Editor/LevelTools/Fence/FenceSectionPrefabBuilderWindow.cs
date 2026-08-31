@@ -228,6 +228,13 @@ namespace KidsVsAliens.EditorTools.Fence
                 GameObject root =
                     new GameObject("PF_FenceSection");
 
+                // Fence V1 gameplay contract:
+                // - solid for movement
+                // - transparent to vision/auto-aim
+                // - transparent to weapon/projectile rays
+                root.AddComponent<VisionTransparentObstacle>();
+                root.AddComponent<ProjectilePassThroughObstacle>();
+
                 try
                 {
                     MeshFilter leftPole =

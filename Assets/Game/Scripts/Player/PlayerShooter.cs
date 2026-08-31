@@ -42,7 +42,14 @@ public class PlayerShooter : MonoBehaviour
     private bool shootWasPressed;
     private int shootMask;
 
-    private readonly RaycastHit[] muzzleSafetyHits = new RaycastHit[16];
+    private readonly RaycastHit[] muzzleSafetyHits =
+        new RaycastHit[16];
+
+    // Normal weapon rays need to collect multiple hits because projectile-
+    // transparent surfaces (for example chain-link fence barriers) may be
+    // physically in front of the real target.
+    private readonly RaycastHit[] weaponHits =
+        new RaycastHit[32];
 
     // =====================================================
     // INITIALIZATION
@@ -50,25 +57,31 @@ public class PlayerShooter : MonoBehaviour
 
     private void Awake()
     {
-        shootMask = ~LayerMask.GetMask("Player");
+        shootMask =
+            ~LayerMask.GetMask("Player");
 
-        input = GetComponent<StarterAssetsInputs>();
+        input =
+            GetComponent<StarterAssetsInputs>();
 
-        characterController = GetComponent<CharacterController>();
+        characterController =
+            GetComponent<CharacterController>();
 
         if (playerAim == null)
         {
-            playerAim = GetComponent<PlayerAim>();
+            playerAim =
+                GetComponent<PlayerAim>();
         }
 
         if (playerCharacter == null)
         {
-            playerCharacter = GetComponent<PlayerCharacter>();
+            playerCharacter =
+                GetComponent<PlayerCharacter>();
         }
 
         if (playerSkillState == null)
         {
-            playerSkillState = GetComponent<PlayerSkillState>();
+            playerSkillState =
+                GetComponent<PlayerSkillState>();
         }
     }
 
@@ -78,7 +91,8 @@ public class PlayerShooter : MonoBehaviour
 
     private void Update()
     {
-        if (equippedWeapon == null || muzzle == null)
+        if (equippedWeapon == null ||
+            muzzle == null)
         {
             return;
         }
@@ -86,21 +100,29 @@ public class PlayerShooter : MonoBehaviour
         if (isReloading)
             return;
 
-        bool shootPressed = input != null && input.shoot;
+        bool shootPressed =
+            input != null &&
+            input.shoot;
 
-        bool shootPressedThisFrame = shootPressed && !shootWasPressed;
+        bool shootPressedThisFrame =
+            shootPressed &&
+            !shootWasPressed;
 
-        shootWasPressed = shootPressed;
+        shootWasPressed =
+            shootPressed;
 
         bool wantsToShoot;
 
-        if (equippedWeapon.fireMode == WeaponFireMode.Automatic)
+        if (equippedWeapon.fireMode ==
+            WeaponFireMode.Automatic)
         {
-            wantsToShoot = shootPressed;
+            wantsToShoot =
+                shootPressed;
         }
         else
         {
-            wantsToShoot = shootPressedThisFrame;
+            wantsToShoot =
+                shootPressedThisFrame;
         }
 
         if (!wantsToShoot)
@@ -114,7 +136,8 @@ public class PlayerShooter : MonoBehaviour
 
         if (currentAmmo <= 0)
         {
-            StartCoroutine(Reload());
+            StartCoroutine(
+                Reload());
 
             return;
         }
@@ -131,12 +154,16 @@ public class PlayerShooter : MonoBehaviour
         if (equippedWeapon == null)
             return false;
 
-        SkillData requiredSkill = equippedWeapon.requiredSkill;
+        SkillData requiredSkill =
+            equippedWeapon.requiredSkill;
 
         if (requiredSkill == null)
             return true;
 
-        return playerSkillState != null && playerSkillState.HasSkill(requiredSkill);
+        return
+            playerSkillState != null &&
+            playerSkillState.HasSkill(
+                requiredSkill);
     }
 
     private void Shoot()
@@ -144,84 +171,117 @@ public class PlayerShooter : MonoBehaviour
         if (playerAim == null)
             return;
 
-        if (!playerAim.TryGetShotAimPoint(muzzle.position, out Vector3 shotAimPoint))
+        if (!playerAim.TryGetShotAimPoint(
+                muzzle.position,
+                out Vector3 shotAimPoint))
         {
             return;
         }
 
         currentAmmo--;
 
-        nextFireTime = Time.time + 1f / equippedWeapon.fireRate;
+        nextFireTime =
+            Time.time +
+            1f /
+            equippedWeapon.fireRate;
 
-        Vector3 direction = (shotAimPoint - muzzle.position).normalized;
+        Vector3 direction =
+            (shotAimPoint -
+             muzzle.position).normalized;
 
-        Vector3 endPoint = muzzle.position + direction * equippedWeapon.range;
+        Vector3 endPoint =
+            muzzle.position +
+            direction *
+            equippedWeapon.range;
 
-        Color? auraColor = GetAuraColor();
+        Color? auraColor =
+            GetAuraColor();
 
         bool didHit = false;
 
-        Vector3 hitPoint = Vector3.zero;
+        Vector3 hitPoint =
+            Vector3.zero;
 
-        Vector3 hitNormal = Vector3.zero;
+        Vector3 hitNormal =
+            Vector3.zero;
 
-        Collider hitCollider = null;
+        Collider hitCollider =
+            null;
 
-        HitInfo hitInfo = default;
+        HitInfo hitInfo =
+            default;
 
         // =================================================
         // MUZZLE WALL SAFETY
         // =================================================
 
-        if (TryGetMuzzleObstruction(out RaycastHit muzzleObstruction))
+        if (TryGetMuzzleObstruction(
+                out RaycastHit muzzleObstruction))
         {
             didHit = true;
 
-            endPoint = muzzleObstruction.point;
+            endPoint =
+                muzzleObstruction.point;
 
-            hitPoint = muzzleObstruction.point;
+            hitPoint =
+                muzzleObstruction.point;
 
-            hitNormal = muzzleObstruction.normal;
+            hitNormal =
+                muzzleObstruction.normal;
 
-            hitCollider = muzzleObstruction.collider;
+            hitCollider =
+                muzzleObstruction.collider;
 
-            hitInfo = CreateHitInfo(hitPoint, hitNormal, direction);
+            hitInfo =
+                CreateHitInfo(
+                    hitPoint,
+                    hitNormal,
+                    direction);
         }
+
         // =================================================
         // NORMAL WEAPON RAY
         // =================================================
 
         else if (
-            Physics.Raycast(
+            TryGetFirstWeaponHit(
                 muzzle.position,
                 direction,
-                out RaycastHit hit,
                 equippedWeapon.range,
-                shootMask,
-                QueryTriggerInteraction.Ignore
-            )
-        )
+                out RaycastHit hit))
         {
             didHit = true;
 
-            endPoint = hit.point;
+            endPoint =
+                hit.point;
 
-            hitPoint = hit.point;
+            hitPoint =
+                hit.point;
 
-            hitNormal = hit.normal;
+            hitNormal =
+                hit.normal;
 
-            hitCollider = hit.collider;
+            hitCollider =
+                hit.collider;
 
-            hitInfo = CreateHitInfo(hitPoint, hitNormal, direction);
+            hitInfo =
+                CreateHitInfo(
+                    hitPoint,
+                    hitNormal,
+                    direction);
         }
 
         // =================================================
         // VFX
         // =================================================
 
-        SpawnMuzzleVFX(muzzle.position, direction, auraColor);
+        SpawnMuzzleVFX(
+            muzzle.position,
+            direction,
+            auraColor);
 
-        System.Action onArrive = null;
+        System.Action onArrive =
+            null;
 
         if (didHit)
         {
@@ -238,130 +298,235 @@ public class PlayerShooter : MonoBehaviour
             // Hit animation
             // Death animation
             // all on the same visual frame.
-            Collider committedCollider = hitCollider;
+            Collider committedCollider =
+                hitCollider;
 
-            HitInfo committedHit = hitInfo;
+            HitInfo committedHit =
+                hitInfo;
 
-            Vector3 committedPoint = hitPoint;
+            Vector3 committedPoint =
+                hitPoint;
 
-            Vector3 committedNormal = hitNormal;
+            Vector3 committedNormal =
+                hitNormal;
 
             onArrive = () =>
             {
-                SpawnImpactVFX(committedPoint, committedNormal, auraColor);
+                SpawnImpactVFX(
+                    committedPoint,
+                    committedNormal,
+                    auraColor);
 
-                IHitReaction reaction = CombatHitResolver.Resolve(committedCollider, committedHit);
+                IHitReaction reaction =
+                    CombatHitResolver.Resolve(
+                        committedCollider,
+                        committedHit);
 
-                reaction?.ReceiveHit(committedHit);
+                reaction?.ReceiveHit(
+                    committedHit);
             };
         }
 
-        SpawnShotVFX(muzzle.position, endPoint, auraColor, onArrive);
+        SpawnShotVFX(
+            muzzle.position,
+            endPoint,
+            auraColor,
+            onArrive);
 
         if (currentAmmo <= 0)
         {
-            StartCoroutine(Reload());
+            StartCoroutine(
+                Reload());
         }
     }
 
-    private HitInfo CreateHitInfo(Vector3 point, Vector3 normal, Vector3 direction)
+    private HitInfo CreateHitInfo(
+        Vector3 point,
+        Vector3 normal,
+        Vector3 direction)
     {
         return new HitInfo(
-            equippedWeapon != null ? equippedWeapon.damage : 0f,
+            equippedWeapon != null
+                ? equippedWeapon.damage
+                : 0f,
             point,
             normal,
             direction,
-            gameObject
-        );
+            gameObject);
     }
 
     // =====================================================
     // MUZZLE OBSTRUCTION
     // =====================================================
 
-    private bool TryGetMuzzleObstruction(out RaycastHit closestHit)
+    private bool TryGetMuzzleObstruction(
+        out RaycastHit closestHit)
     {
-        closestHit = default;
+        closestHit =
+            default;
 
         if (muzzle == null)
             return false;
 
-        Vector3 bodyOrigin = GetShotSafetyOrigin();
+        Vector3 bodyOrigin =
+            GetShotSafetyOrigin();
 
-        Vector3 toMuzzle = muzzle.position - bodyOrigin;
+        Vector3 toMuzzle =
+            muzzle.position -
+            bodyOrigin;
 
-        float distance = toMuzzle.magnitude;
+        float distance =
+            toMuzzle.magnitude;
 
         if (distance <= 0.001f)
             return false;
 
-        Vector3 direction = toMuzzle / distance;
+        Vector3 direction =
+            toMuzzle /
+            distance;
 
-        int hitCount = Physics.RaycastNonAlloc(
-            bodyOrigin,
-            direction,
+        int hitCount =
+            Physics.RaycastNonAlloc(
+                bodyOrigin,
+                direction,
+                muzzleSafetyHits,
+                distance,
+                shootMask,
+                QueryTriggerInteraction.Ignore);
+
+        return TryFindClosestProjectileBlockingHit(
             muzzleSafetyHits,
-            distance,
-            shootMask,
-            QueryTriggerInteraction.Ignore
-        );
+            hitCount,
+            out closestHit);
+    }
 
-        bool foundHit = false;
+    private bool TryGetFirstWeaponHit(
+        Vector3 origin,
+        Vector3 direction,
+        float distance,
+        out RaycastHit closestHit)
+    {
+        int hitCount =
+            Physics.RaycastNonAlloc(
+                origin,
+                direction,
+                weaponHits,
+                distance,
+                shootMask,
+                QueryTriggerInteraction.Ignore);
 
-        float closestDistance = Mathf.Infinity;
+        return TryFindClosestProjectileBlockingHit(
+            weaponHits,
+            hitCount,
+            out closestHit);
+    }
 
-        for (int i = 0; i < hitCount; i++)
+    private bool TryFindClosestProjectileBlockingHit(
+        RaycastHit[] hits,
+        int hitCount,
+        out RaycastHit closestHit)
+    {
+        closestHit =
+            default;
+
+        bool foundHit =
+            false;
+
+        float closestDistance =
+            Mathf.Infinity;
+
+        // RaycastNonAlloc results are not sorted.
+        // Ignore player-owned geometry and explicitly projectile-transparent
+        // surfaces, then choose the nearest real blocker.
+        for (int i = 0;
+             i < hitCount;
+             i++)
         {
-            RaycastHit hit = muzzleSafetyHits[i];
+            RaycastHit hit =
+                hits[i];
 
             if (hit.collider == null)
                 continue;
 
-            if (IsPlayerOwnedCollider(hit.collider))
+            if (IsPlayerOwnedCollider(
+                    hit.collider))
             {
                 continue;
             }
 
-            if (hit.distance >= closestDistance)
+            if (IsProjectilePassThrough(
+                    hit.collider))
             {
                 continue;
             }
 
-            closestDistance = hit.distance;
+            if (hit.distance >=
+                closestDistance)
+            {
+                continue;
+            }
 
-            closestHit = hit;
+            closestDistance =
+                hit.distance;
 
-            foundHit = true;
+            closestHit =
+                hit;
+
+            foundHit =
+                true;
         }
 
         return foundHit;
+    }
+
+    private static bool IsProjectilePassThrough(
+        Collider collider)
+    {
+        return
+            collider != null &&
+            collider.GetComponentInParent<
+                ProjectilePassThroughObstacle>() != null;
     }
 
     private Vector3 GetShotSafetyOrigin()
     {
         if (characterController != null)
         {
-            return characterController.bounds.center;
+            return
+                characterController
+                    .bounds
+                    .center;
         }
 
-        return transform.position + Vector3.up;
+        return
+            transform.position +
+            Vector3.up;
     }
 
-    private bool IsPlayerOwnedCollider(Collider collider)
+    private bool IsPlayerOwnedCollider(
+        Collider collider)
     {
         if (collider == null)
             return false;
 
-        Transform hitTransform = collider.transform;
+        Transform hitTransform =
+            collider.transform;
 
-        return hitTransform == transform || hitTransform.IsChildOf(transform);
+        return
+            hitTransform == transform ||
+            hitTransform.IsChildOf(
+                transform);
     }
 
     // =====================================================
     // SHOT VFX
     // =====================================================
 
-    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor, System.Action onArrive)
+    private void SpawnShotVFX(
+        Vector3 start,
+        Vector3 end,
+        Color? auraColor,
+        System.Action onArrive)
     {
         if (plasmaBoltPrefab == null)
         {
@@ -370,7 +535,11 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
-        PlasmaBoltVFX bolt = VfxPool.Spawn(plasmaBoltPrefab, start, Quaternion.identity);
+        PlasmaBoltVFX bolt =
+            VfxPool.Spawn(
+                plasmaBoltPrefab,
+                start,
+                Quaternion.identity);
 
         if (bolt == null)
         {
@@ -378,40 +547,56 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
-        bolt.Initialize(start, end, auraColor, onArrive);
+        bolt.Initialize(
+            start,
+            end,
+            auraColor,
+            onArrive);
     }
 
-    private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
+    private void SpawnMuzzleVFX(
+        Vector3 position,
+        Vector3 direction,
+        Color? auraColor)
     {
         if (plasmaMuzzlePrefab == null)
             return;
 
-        PlasmaMuzzleVFX muzzleVfx = VfxPool.Spawn(
-            plasmaMuzzlePrefab,
-            position,
-            Quaternion.LookRotation(direction)
-        );
+        PlasmaMuzzleVFX muzzleVfx =
+            VfxPool.Spawn(
+                plasmaMuzzlePrefab,
+                position,
+                Quaternion.LookRotation(
+                    direction));
 
         if (muzzleVfx != null)
         {
-            muzzleVfx.Play(auraColor);
+            muzzleVfx.Play(
+                auraColor);
         }
     }
 
-    private void SpawnImpactVFX(Vector3 position, Vector3 normal, Color? auraColor)
+    private void SpawnImpactVFX(
+        Vector3 position,
+        Vector3 normal,
+        Color? auraColor)
     {
         if (plasmaImpactPrefab == null)
             return;
 
-        PlasmaImpactVFX impact = VfxPool.Spawn(
-            plasmaImpactPrefab,
-            position + normal * 0.01f,
-            Quaternion.LookRotation(normal)
-        );
+        PlasmaImpactVFX impact =
+            VfxPool.Spawn(
+                plasmaImpactPrefab,
+                position +
+                normal *
+                0.01f,
+                Quaternion.LookRotation(
+                    normal));
 
         if (impact != null)
         {
-            impact.Play(auraColor);
+            impact.Play(
+                auraColor);
         }
     }
 
@@ -421,9 +606,13 @@ public class PlayerShooter : MonoBehaviour
 
     private Color? GetAuraColor()
     {
-        if (playerCharacter != null && playerCharacter.ActiveVisual != null)
+        if (playerCharacter != null &&
+            playerCharacter.ActiveVisual != null)
         {
-            return playerCharacter.ActiveVisual.AuraColor;
+            return
+                playerCharacter
+                    .ActiveVisual
+                    .AuraColor;
         }
 
         return null;
@@ -438,44 +627,60 @@ public class PlayerShooter : MonoBehaviour
         if (isReloading)
             yield break;
 
-        isReloading = true;
+        isReloading =
+            true;
 
-        yield return new WaitForSeconds(equippedWeapon.reloadTime);
+        yield return
+            new WaitForSeconds(
+                equippedWeapon.reloadTime);
 
-        currentAmmo = equippedWeapon.magazineSize;
+        currentAmmo =
+            equippedWeapon.magazineSize;
 
-        isReloading = false;
+        isReloading =
+            false;
     }
 
     // =====================================================
     // EQUIPMENT
     // =====================================================
 
-    public void EquipWeapon(WeaponItemData weapon, Transform weaponMuzzle)
+    public void EquipWeapon(
+        WeaponItemData weapon,
+        Transform weaponMuzzle)
     {
         StopAllCoroutines();
 
-        equippedWeapon = weapon;
+        equippedWeapon =
+            weapon;
 
-        muzzle = weaponMuzzle;
+        muzzle =
+            weaponMuzzle;
 
-        currentAmmo = weapon.magazineSize;
+        currentAmmo =
+            weapon.magazineSize;
 
-        isReloading = false;
+        isReloading =
+            false;
 
-        nextFireTime = 0f;
+        nextFireTime =
+            0f;
     }
 
     public void UnequipWeapon()
     {
         StopAllCoroutines();
 
-        equippedWeapon = null;
+        equippedWeapon =
+            null;
 
-        muzzle = null;
+        muzzle =
+            null;
 
-        currentAmmo = 0;
+        currentAmmo =
+            0;
 
-        isReloading = false;
+        isReloading =
+            false;
     }
 }

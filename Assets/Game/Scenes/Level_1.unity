@@ -4404,6 +4404,7 @@ GameObject:
   - component: {fileID: 409071820}
   - component: {fileID: 409071819}
   - component: {fileID: 409071821}
+  - component: {fileID: 409071822}
   m_Layer: 0
   m_Name: PF_FenceSection_Run
   m_TagString: Untagged
@@ -4469,6 +4470,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 027e1991d53587f4cada5416faacc3a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VisionTransparentObstacle
+--- !u!114 &409071822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409071818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aad934bdc2f546b429030050c1d13585, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectilePassThroughObstacle
 --- !u!4 &418998006 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5945775497195348064, guid: 1dc33b286951dc140bf877e3138a613e, type: 3}

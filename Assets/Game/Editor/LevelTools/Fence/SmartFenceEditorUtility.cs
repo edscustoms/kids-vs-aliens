@@ -238,6 +238,11 @@ namespace KidsVsAliens.EditorTools.Fence
             FenceRun run =
                 runObject.AddComponent<FenceRun>();
 
+            // The standalone section is destroyed below, so copy the fence
+            // pass-through gameplay contract onto the new run root.
+            runObject.AddComponent<VisionTransparentObstacle>();
+            runObject.AddComponent<ProjectilePassThroughObstacle>();
+
             run.ConfigureFromSection(section);
 
             FenceRunSegment initial =
