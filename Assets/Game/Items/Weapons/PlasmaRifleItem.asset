@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b556c58fed134c347bdec1c67d466f8e, type: 3}
+  m_Name: PlasmaRifleItem
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
+  itemName: Plasma Rifle
+  itemType: 0
+  icon: {fileID: 0}
+  worldPrefab: {fileID: 3195579424107535968, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+  equippedPrefab: {fileID: 3195579424107535968, guid: 74262d2e0832a29468a677bdf85cff94, type: 3}
+  damage: 8
+  range: 25
+  fireRate: 15
+  magazineSize: 50
+  reloadTime: 1.6
+  fireMode: 1
+  animationStyle: 2
+  requiredSkill: {fileID: 11400000, guid: a83f5a0e4cb792b46bf779932755bbcf, type: 2}

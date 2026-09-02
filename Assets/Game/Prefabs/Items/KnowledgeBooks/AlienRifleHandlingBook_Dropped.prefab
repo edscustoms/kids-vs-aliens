@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 9087649719611407412}
   - component: {fileID: 620903069339959700}
   m_Layer: 0
-  m_Name: AlienKnowledgeBook_Dropped
+  m_Name: AlienRifleHandlingBook_Dropped
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -62,7 +62,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 026c000d0eba0814398720bc28882036, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupItem
-  item: {fileID: 11400000, guid: a34bf4ed7ea49ba48874dd5452c46cb8, type: 2}
+  item: {fileID: 11400000, guid: 7467f643af61ac94a9a028866b1e9a68, type: 2}
 --- !u!135 &620903069339959700
 SphereCollider:
   m_ObjectHideFlags: 0
