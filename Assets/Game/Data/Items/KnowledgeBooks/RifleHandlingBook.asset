@@ -15,6 +15,6 @@ MonoBehaviour:
   itemName: RifleHandlingBook
   itemType: 4
   icon: {fileID: 0}
-  worldPrefab: {fileID: 0}
+  worldPrefab: {fileID: 1049318778344171827, guid: 8ac6dd248a129be419eb921f03ee2042, type: 3}
   skill: {fileID: 11400000, guid: a83f5a0e4cb792b46bf779932755bbcf, type: 2}
   rarity: 0
