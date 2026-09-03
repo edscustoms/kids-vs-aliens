@@ -19,6 +19,13 @@ public class PlayerEquipment : MonoBehaviour
     public WeaponItemData EquippedWeapon =>
         equippedWeapon;
 
+    public WeaponInstance EquippedWeaponInstance =>
+        equippedWeaponInstance;
+
+    public bool IsEquippedWeaponVisible =>
+        equippedWeaponInstance != null &&
+        equippedWeaponInstance.gameObject.activeSelf;
+
     public event Action<WeaponItemData>
         EquippedWeaponChanged;
 
@@ -133,6 +140,16 @@ public class PlayerEquipment : MonoBehaviour
         EquippedWeaponChanged?.Invoke(
             null
         );
+    }
+
+    public void SetEquippedWeaponVisible(
+        bool visible)
+    {
+        if (equippedWeaponInstance == null)
+            return;
+
+        equippedWeaponInstance.gameObject.SetActive(
+            visible);
     }
 
     private void ClearEquippedWeapon()

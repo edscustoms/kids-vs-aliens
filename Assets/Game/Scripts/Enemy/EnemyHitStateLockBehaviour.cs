@@ -21,7 +21,8 @@ public sealed class EnemyHitStateLockBehaviour :
     {
         CacheReferences(animator);
 
-        motor?.SetMovementLocked(
+        motor?.SetMovementLock(
+            EnemyMovementLockReason.HitReaction,
             true);
     }
 
@@ -38,7 +39,8 @@ public sealed class EnemyHitStateLockBehaviour :
             return;
         }
 
-        motor?.SetMovementLocked(
+        motor?.SetMovementLock(
+            EnemyMovementLockReason.HitReaction,
             false);
     }
 

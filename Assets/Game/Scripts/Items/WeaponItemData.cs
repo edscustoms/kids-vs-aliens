@@ -29,8 +29,8 @@ public class WeaponItemData : ItemData
 
     [Header("Knowledge Requirement")]
     [Tooltip(
-        "Optional. When assigned, the player cannot equip/use this weapon "
-            + "until this skill has been acquired."
+        "Optional. The weapon can be carried and equipped without this skill, "
+            + "but its primary action cannot be used until the skill is acquired."
     )]
     public SkillData requiredSkill;
 }

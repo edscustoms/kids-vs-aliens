@@ -33,7 +33,10 @@ public class WeaponInstance : MonoBehaviour
             return false;
         }
 
-        AlignGripToSocket(transform, gripPoint, characterVisual.WeaponSocket);
+        GripAttachmentUtility.AlignGripToSocket(
+            transform,
+            gripPoint,
+            characterVisual.WeaponSocket);
 
         if (plasmaCoreSetup != null)
         {
@@ -78,23 +81,6 @@ public class WeaponInstance : MonoBehaviour
         }
 
         return instance;
-    }
-
-    private static void AlignGripToSocket(
-        Transform weaponRoot,
-        Transform gripPoint,
-        Transform weaponSocket
-    )
-    {
-        Quaternion rotationDelta = weaponSocket.rotation * Quaternion.Inverse(gripPoint.rotation);
-
-        weaponRoot.rotation = rotationDelta * weaponRoot.rotation;
-
-        Vector3 positionDelta = weaponSocket.position - gripPoint.position;
-
-        weaponRoot.position += positionDelta;
-
-        weaponRoot.SetParent(weaponSocket, true);
     }
 
 #if UNITY_EDITOR

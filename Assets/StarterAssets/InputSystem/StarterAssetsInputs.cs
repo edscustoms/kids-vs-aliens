@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -13,6 +14,9 @@ namespace StarterAssets
         public bool jump;
         public bool sprint;
         public bool shoot;
+
+        public event Action<bool> ShootStateChanged;
+        public event Action ShootCanceled;
 
         [Header("Movement Settings")]
         public bool analogMovement;
@@ -78,11 +82,32 @@ namespace StarterAssets
 
         public void ShootInput(bool newShootState)
         {
+            if (shoot == newShootState)
+                return;
+
             shoot = newShootState;
+
+            ShootStateChanged?.Invoke(
+                newShootState);
+        }
+
+        public void CancelShootInput()
+        {
+            shoot = false;
+
+            // Cancellation is deliberately separate from a normal false
+            // state. In grenade mode, false means throw while cancellation
+            // means restore the weapon without consuming the grenade.
+            ShootCanceled?.Invoke();
         }
 
         private void OnApplicationFocus(bool hasFocus)
         {
+            if (!hasFocus)
+            {
+                CancelShootInput();
+            }
+
             SetCursorState(cursorLocked);
         }
 

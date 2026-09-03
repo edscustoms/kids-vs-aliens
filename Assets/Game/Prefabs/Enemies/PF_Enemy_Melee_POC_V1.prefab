@@ -160,6 +160,7 @@ GameObject:
   - component: {fileID: 7676337906857629290}
   - component: {fileID: 2548324995309850426}
   - component: {fileID: -6000875430851412830}
+  - component: {fileID: 6083274154826145926}
   m_Layer: 7
   m_Name: PF_Enemy_Melee_POC_V1
   m_TagString: Untagged
@@ -301,6 +302,7 @@ MonoBehaviour:
   wanderTravelTimeout: 12
   investigatePointWaitRange: {x: 0.6, y: 1.4}
   investigateTotalTimeout: 10
+  incomingShotInvestigationDistance: 4
 --- !u!114 &-3440267864038469949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -438,6 +440,8 @@ MonoBehaviour:
   navMeshSampleRadius: 0.75
   minimumPointSpacing: 0.75
   maximumAttempts: 28
+  directionalAnchorSampleRadius: 1
+  directionalAnchorAttempts: 4
 --- !u!114 &2548324995309850426
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -455,6 +459,9 @@ MonoBehaviour:
   navMeshAgent: {fileID: 1580997625706422861}
   deathTrigger: Die
   deathStateName: Death
+  interruptibleTriggers:
+  - Hit
+  - MeleeAttack
   deathStateEnterTimeout: 1.5
   corpseHoldDuration: 3
   fadeDuration: 1.5
@@ -473,8 +480,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHitReaction
   health: {fileID: 8979953149220263264}
+  motor: {fileID: 0}
+  brain: {fileID: 0}
   animator: {fileID: 6382055156304853518}
-  hitTrigger: Hit
+  hitStatePath: Base Layer.Hit
+  transitionDuration: 0.02
+--- !u!114 &6083274154826145926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3628672886102332991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 401f6e7e4ea59e0fd7b8ff27432817b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyStunReceiver
+  motor: {fileID: 8701154889001052288}
+  health: {fileID: 8979953149220263264}
 --- !u!1 &4804427550619487590
 GameObject:
   m_ObjectHideFlags: 0

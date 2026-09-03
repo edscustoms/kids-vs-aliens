@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f01b02fae831f37304a47cf0e173567, type: 3}
+  m_Name: ElectricGrenade
+  m_EditorClassIdentifier: Assembly-CSharp::GrenadeItemData
+  itemName: Electric Grenade
+  itemType: 5
+  icon: {fileID: 3929929841529130924, guid: 26d6e8f9953ffe049b8bb0bb469233e8, type: 2}
+  worldPrefab: {fileID: 3437191248755424876, guid: 623a55577f9179c44a6b9efbaa51a301, type: 3}
+  heldPrefab: {fileID: 5810175723713211018, guid: 1b67724eb9374de4081cfe230ef11e6e, type: 3}
+  stowedPrefab: {fileID: 7471493378860789015, guid: 949ee03152419af4ba05991a020c8bff, type: 3}
+  thrownPrefab: {fileID: 7032939991366865019, guid: 16e8b39b0ab392a40a41cac23d4de30f, type: 3}
+  requiredSkill: {fileID: 11400000, guid: 75084ba52cac8634ba9b947bcb1d3f35, type: 2}
+  maxChargeTime: 1.25
+  minThrowSpeed: 4.5
+  maxThrowSpeed: 12
+  upwardBias: 0.35
+  activationMode: 0
+  fuseTime: 1.4
+  effectData: {fileID: 11400000, guid: a7f2e0a2aa557de4aa8c7d65f1aa395f, type: 2}
+  inertRecoveryDelay: 2
+  maxInertLifetime: 7

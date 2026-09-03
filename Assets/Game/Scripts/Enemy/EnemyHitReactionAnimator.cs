@@ -80,7 +80,8 @@ public sealed class EnemyHitReactionAnimator : MonoBehaviour
             (health == null ||
              !health.IsDead))
         {
-            motor.SetMovementLocked(
+            motor.SetMovementLock(
+                EnemyMovementLockReason.HitReaction,
                 false);
         }
     }
@@ -108,7 +109,8 @@ public sealed class EnemyHitReactionAnimator : MonoBehaviour
 
     private IEnumerator RunHitReaction()
     {
-        motor?.SetMovementLocked(
+        motor?.SetMovementLock(
+            EnemyMovementLockReason.HitReaction,
             true);
 
         animator.ResetTrigger(
@@ -176,7 +178,8 @@ public sealed class EnemyHitReactionAnimator : MonoBehaviour
         if (health == null ||
             !health.IsDead)
         {
-            motor?.SetMovementLocked(
+            motor?.SetMovementLock(
+                EnemyMovementLockReason.HitReaction,
                 false);
         }
 

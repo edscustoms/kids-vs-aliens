@@ -35,11 +35,14 @@ public class PlayerShooter : MonoBehaviour
 
     private StarterAssetsInputs input;
     private CharacterController characterController;
+    private PlayerPrimaryActionRouter primaryActionRouter;
 
     private float nextFireTime;
     private int currentAmmo;
     private bool isReloading;
+    private bool triggerHeld;
     private bool shootWasPressed;
+    private bool fireBlocked;
     private int shootMask;
 
     private readonly RaycastHit[] muzzleSafetyHits =
@@ -62,6 +65,9 @@ public class PlayerShooter : MonoBehaviour
 
         input =
             GetComponent<StarterAssetsInputs>();
+
+        primaryActionRouter =
+            GetComponent<PlayerPrimaryActionRouter>();
 
         characterController =
             GetComponent<CharacterController>();
@@ -91,6 +97,23 @@ public class PlayerShooter : MonoBehaviour
 
     private void Update()
     {
+        bool shootPressed =
+            primaryActionRouter != null &&
+            primaryActionRouter.isActiveAndEnabled
+                ? triggerHeld
+                : input != null &&
+                  input.shoot;
+
+        bool shootPressedThisFrame =
+            shootPressed &&
+            !shootWasPressed;
+
+        shootWasPressed =
+            shootPressed;
+
+        if (fireBlocked)
+            return;
+
         if (equippedWeapon == null ||
             muzzle == null)
         {
@@ -99,17 +122,6 @@ public class PlayerShooter : MonoBehaviour
 
         if (isReloading)
             return;
-
-        bool shootPressed =
-            input != null &&
-            input.shoot;
-
-        bool shootPressedThisFrame =
-            shootPressed &&
-            !shootWasPressed;
-
-        shootWasPressed =
-            shootPressed;
 
         bool wantsToShoot;
 
@@ -645,6 +657,24 @@ public class PlayerShooter : MonoBehaviour
     // EQUIPMENT
     // =====================================================
 
+    public void SetTriggerHeld(
+        bool held)
+    {
+        triggerHeld = held;
+    }
+
+    public void SetFireBlocked(
+        bool blocked)
+    {
+        fireBlocked = blocked;
+
+        if (!blocked)
+            return;
+
+        triggerHeld = false;
+        shootWasPressed = false;
+    }
+
     public void EquipWeapon(
         WeaponItemData weapon,
         Transform weaponMuzzle)
@@ -681,6 +711,12 @@ public class PlayerShooter : MonoBehaviour
             0;
 
         isReloading =
+            false;
+
+        triggerHeld =
+            false;
+
+        shootWasPressed =
             false;
     }
 }

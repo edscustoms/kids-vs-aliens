@@ -4,16 +4,23 @@ public class PickupItem : MonoBehaviour
 {
     [SerializeField] private ItemData item;
 
+    private bool collected;
+
     private void OnTriggerEnter(Collider other)
     {
+        if (collected)
+            return;
+
         PlayerInventory inventory =
             other.GetComponent<PlayerInventory>();
 
         if (inventory == null)
             return;
 
-        inventory.AddItem(item);
+        if (!inventory.TryAddItem(item))
+            return;
 
+        collected = true;
         Destroy(gameObject);
     }
 }

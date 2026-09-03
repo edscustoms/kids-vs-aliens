@@ -18,6 +18,24 @@ public class PlayerInventory : MonoBehaviour
 
     public IReadOnlyList<ItemData> Items => items;
 
+    public int GrenadeCount
+    {
+        get
+        {
+            int count = 0;
+
+            for (int i = 0;
+                 i < items.Count;
+                 i++)
+            {
+                if (items[i] is GrenadeItemData)
+                    count++;
+            }
+
+            return count;
+        }
+    }
+
     public event Action OnInventoryChanged;
 
     private void Awake()
@@ -33,19 +51,67 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    public void AddItem(ItemData item)
+    public bool TryAddItem(ItemData item)
     {
         if (item == null)
-            return;
+            return false;
 
         if (items.Count >= maxSlots)
-        {
-            return;
-        }
+            return false;
 
         items.Add(item);
 
         OnInventoryChanged?.Invoke();
+
+        return true;
+    }
+
+    // Kept for compatibility with any scene event or external POC script
+    // that still calls the original void API. Pickups use TryAddItem so they
+    // can remain in the world when capacity is full.
+    public void AddItem(ItemData item)
+    {
+        TryAddItem(item);
+    }
+
+    public bool HasGrenade(
+        GrenadeItemData grenade)
+    {
+        return grenade != null &&
+               items.Contains(grenade);
+    }
+
+    public GrenadeItemData GetFirstGrenade()
+    {
+        for (int i = 0;
+             i < items.Count;
+             i++)
+        {
+            if (items[i] is GrenadeItemData grenade)
+                return grenade;
+        }
+
+        return null;
+    }
+
+    public bool TryConsumeGrenade(
+        GrenadeItemData grenade)
+    {
+        if (grenade == null)
+            return false;
+
+        int index =
+            items.IndexOf(
+                grenade);
+
+        if (index < 0)
+            return false;
+
+        items.RemoveAt(index);
+
+        OnInventoryChanged?.Invoke();
+
+        return true;
     }
 
     public void UseItem(int index)
@@ -77,23 +143,6 @@ public class PlayerInventory : MonoBehaviour
     {
         if (weapon == null)
             return;
-
-        SkillData requiredSkill = weapon.requiredSkill;
-
-        if (requiredSkill != null)
-        {
-            bool hasRequiredSkill =
-                playerSkillState != null && playerSkillState.HasSkill(requiredSkill);
-
-            if (!hasRequiredSkill)
-            {
-                // POC message only.
-                // Later route this through the generic player messaging UI.
-                Debug.Log($"KNOWLEDGE REQUIRED: {requiredSkill.DisplayName}", this);
-
-                return;
-            }
-        }
 
         playerEquipment.EquipWeapon(weapon);
     }

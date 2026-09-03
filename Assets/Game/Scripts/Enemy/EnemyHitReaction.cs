@@ -78,7 +78,8 @@ public sealed class EnemyHitReaction :
 
         // Lock immediately, before Animator evaluation, so EnemyBrain cannot
         // start the investigation one frame before Hit actually enters.
-        motor?.SetMovementLocked(
+        motor?.SetMovementLock(
+            EnemyMovementLockReason.HitReaction,
             true);
 
         animator.CrossFadeInFixedTime(

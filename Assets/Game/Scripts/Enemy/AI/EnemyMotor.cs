@@ -36,10 +36,15 @@ public sealed class EnemyMotor : MonoBehaviour
     private float faceTurnSpeed = 540f;
 
     private NavMeshAgent agent;
-    private bool movementLocked;
+    private EnemyMovementLockReason movementLocks;
 
     public NavMeshAgent Agent => agent;
-    public bool MovementLocked => movementLocked;
+    public bool MovementLocked =>
+        movementLocks !=
+        EnemyMovementLockReason.None;
+
+    public EnemyMovementLockReason MovementLocks =>
+        movementLocks;
 
     public Vector3 Velocity =>
         agent != null
@@ -102,7 +107,7 @@ public sealed class EnemyMotor : MonoBehaviour
     public bool SetDestination(
         Vector3 destination)
     {
-        if (movementLocked ||
+        if (MovementLocked ||
             !IsReady)
         {
             return false;
@@ -132,7 +137,7 @@ public sealed class EnemyMotor : MonoBehaviour
     public void FacePosition(
         Vector3 worldPosition)
     {
-        if (movementLocked)
+        if (MovementLocked)
             return;
 
         Vector3 direction =
@@ -157,10 +162,23 @@ public sealed class EnemyMotor : MonoBehaviour
                 Time.deltaTime);
     }
 
-    public void SetMovementLocked(
+    public void SetMovementLock(
+        EnemyMovementLockReason reason,
         bool locked)
     {
-        movementLocked = locked;
+        if (reason == EnemyMovementLockReason.None)
+            return;
+
+        if (locked)
+        {
+            movementLocks |=
+                reason;
+        }
+        else
+        {
+            movementLocks &=
+                ~reason;
+        }
 
         if (locked)
         {
