@@ -44,6 +44,14 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     private bool weaponWasVisible;
     private bool isCommittingThrow;
 
+    // Grenade mode temporarily publishes a presentation-only
+    // EquippedWeaponChanged notification so the existing animation path
+    // can switch to Unarmed without actually unequipping the gun.
+    //
+    // Ignore our own notification here; real weapon changes must still
+    // cancel grenade mode normally.
+    private bool isChangingWeaponPresentation;
+
     public bool IsGrenadeSelected => state != GrenadeState.Idle;
 
     public bool IsCharging => state == GrenadeState.Charging;
@@ -84,6 +92,8 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void Start()
     {
+        // Component Awake ordering is not guaranteed. Refresh after
+        // PlayerCharacter has had a chance to spawn its active visual.
         RefreshOwnerColliders();
     }
 
@@ -119,8 +129,6 @@ public sealed class PlayerGrenadeController : MonoBehaviour
         ChargeChanged?.Invoke(Charge01);
     }
 
-    // Temporary compatibility while GrenadeSlotUI still exists.
-    // Remove this too once GrenadeSlotUI.cs is deleted.
     public bool SelectFirstAvailableGrenade()
     {
         return inventory != null && SelectGrenade(inventory.GetFirstGrenade());
@@ -170,7 +178,12 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
         weaponWasVisible = equipment != null && equipment.IsEquippedWeaponVisible;
 
-        equipment?.SetEquippedWeaponVisible(false);
+        // IMPORTANT:
+        // Hide the gun WITHOUT unequipping it, then publish a presentation
+        // change of null. Existing weapon-animation handling therefore sees
+        // "no presented weapon" and falls back to Unarmed while ammo/reload
+        // state remain untouched.
+        SetWeaponPresentationVisible(false);
 
         shooter?.SetFireBlocked(true);
 
@@ -281,6 +294,9 @@ public sealed class PlayerGrenadeController : MonoBehaviour
         {
             Debug.LogError($"{selectedGrenade.name}: prepared grenade failed to launch.", this);
 
+            // Preparation validated the launch state, so reaching this branch
+            // indicates a prefab/runtime programming error. Do not create a
+            // duplicate inventory item after the consumed instance exists.
             Destroy(instance.gameObject);
 
             ExitGrenadeMode(true);
@@ -320,7 +336,9 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
         if (restoreWeapon && weaponWasVisible)
         {
-            equipment?.SetEquippedWeaponVisible(true);
+            // Restore BOTH the same weapon GameObject and the weapon's
+            // animation presentation. No re-equip = no ammo/reload reset.
+            SetWeaponPresentationVisible(true);
         }
 
         weaponWasVisible = false;
@@ -340,6 +358,8 @@ public sealed class PlayerGrenadeController : MonoBehaviour
             && (inventory == null || !inventory.HasGrenade(selectedGrenade))
         )
         {
+            // A successful throw consumes before exiting the mode. Let that
+            // synchronous path finish without treating it as cancellation.
             if (!isCommittingThrow)
             {
                 ExitGrenadeMode(true);
@@ -349,11 +369,19 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void HandleEquippedWeaponChanged(WeaponItemData weapon)
     {
+        // Do not let our temporary animation/presentation notification
+        // cancel the grenade we just selected.
+        if (isChangingWeaponPresentation)
+            return;
+
         if (!IsGrenadeSelected)
             return;
 
         ExitGrenadeMode(false);
 
+        // This is a REAL equipment change. The equipment system already
+        // published the new weapon for animation, so only ensure its visual
+        // is visible here.
         equipment?.SetEquippedWeaponVisible(true);
     }
 
@@ -367,22 +395,49 @@ public sealed class PlayerGrenadeController : MonoBehaviour
         RefreshOwnerColliders();
     }
 
+    private void SetWeaponPresentationVisible(bool visible)
+    {
+        if (equipment == null)
+            return;
+
+        isChangingWeaponPresentation = true;
+
+        try
+        {
+            equipment.SetEquippedWeaponPresentationVisible(visible);
+        }
+        finally
+        {
+            isChangingWeaponPresentation = false;
+        }
+    }
+
     private void CacheReferences()
     {
         if (inventory == null)
+        {
             inventory = GetComponent<PlayerInventory>();
+        }
 
         if (equipment == null)
+        {
             equipment = GetComponent<PlayerEquipment>();
+        }
 
         if (shooter == null)
+        {
             shooter = GetComponent<PlayerShooter>();
+        }
 
         if (skillState == null)
+        {
             skillState = GetComponent<PlayerSkillState>();
+        }
 
         if (playerCharacter == null)
+        {
             playerCharacter = GetComponent<PlayerCharacter>();
+        }
     }
 
     private void RefreshOwnerColliders()

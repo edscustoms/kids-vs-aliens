@@ -107,6 +107,7 @@ GameObject:
   - component: {fileID: 2632624706866770829}
   - component: {fileID: 9001732684566680475}
   - component: {fileID: 1280362352989790952}
+  - component: {fileID: 6478660154843644344}
   - component: {fileID: 7677505079217979306}
   m_Layer: 0
   m_Name: CoreEnergy
@@ -187,6 +188,29 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &6478660154843644344
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7713851386195629212}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &7677505079217979306
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,7 +295,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}
       propertyPath: m_Name
-      value: ElectricGrenade_Dropped
+      value: ElectricGrenade_MenuItem
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -282,20 +306,14 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3483250546234936039}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: -7724153076918858442}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: -3587828412368779565}
+      addedObject: {fileID: -6627462433097990209}
   m_SourcePrefab: {fileID: 100100000, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}
 --- !u!1 &5991218057356359889 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}
   m_PrefabInstance: {fileID: 6909784915801048448}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &3483250546234936039
+--- !u!114 &-6627462433097990209
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -304,46 +322,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 5991218057356359889}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d2a608c6d55cc574a9875e5e5e0f13b7, type: 3}
+  m_Script: {fileID: 11500000, guid: 453d826fbed10164f8d17391bca75190, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WorldItemFloat
-  rotationSpeed: 80
-  bobHeight: 0.15
-  bobSpeed: 2
---- !u!135 &-7724153076918858442
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5991218057356359889}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-3587828412368779565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5991218057356359889}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 026c000d0eba0814398720bc28882036, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PickupItem
-  item: {fileID: 11400000, guid: 92e2ba6e5eb8dc84ab05d1933af0f3c7, type: 2}
+  m_EditorClassIdentifier: Assembly-CSharp::MenuPreviewSettings
+  localOffset: {x: 0, y: 0, z: 0}
+  localEulerAngles: {x: -90, y: 0, z: 0}
+  scaleMultiplier: 1
+  cameraTargetOffset: {x: 0, y: 0, z: 0}
+  cameraDistanceMultiplier: 1.3
+  rotationSensitivity: 0.25
 --- !u!4 &6372247917009429099 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e3ab27242971f9c42ad47dbd54e27bb1, type: 3}

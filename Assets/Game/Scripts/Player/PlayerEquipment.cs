@@ -16,25 +16,20 @@ public class PlayerEquipment : MonoBehaviour
     private WeaponInstance equippedWeaponInstance;
     private WeaponItemData equippedWeapon;
 
-    public WeaponItemData EquippedWeapon =>
-        equippedWeapon;
+    public WeaponItemData EquippedWeapon => equippedWeapon;
 
-    public WeaponInstance EquippedWeaponInstance =>
-        equippedWeaponInstance;
+    public WeaponInstance EquippedWeaponInstance => equippedWeaponInstance;
 
     public bool IsEquippedWeaponVisible =>
-        equippedWeaponInstance != null &&
-        equippedWeaponInstance.gameObject.activeSelf;
+        equippedWeaponInstance != null && equippedWeaponInstance.gameObject.activeSelf;
 
-    public event Action<WeaponItemData>
-        EquippedWeaponChanged;
+    public event Action<WeaponItemData> EquippedWeaponChanged;
 
     private void Awake()
     {
         if (playerCharacter == null)
         {
-            playerCharacter =
-                GetComponent<PlayerCharacter>();
+            playerCharacter = GetComponent<PlayerCharacter>();
         }
     }
 
@@ -42,16 +37,13 @@ public class PlayerEquipment : MonoBehaviour
     {
         // If a menu loadout exists, SelectedWeapon may intentionally be null
         // because the player selected NONE.
-        WeaponItemData weaponToEquip =
-            PlayerLoadoutState.IsInitialized
-                ? PlayerLoadoutState.SelectedWeapon
-                : startingWeapon;
+        WeaponItemData weaponToEquip = PlayerLoadoutState.IsInitialized
+            ? PlayerLoadoutState.SelectedWeapon
+            : startingWeapon;
 
         if (weaponToEquip != null)
         {
-            EquipWeapon(
-                weaponToEquip
-            );
+            EquipWeapon(weaponToEquip);
         }
         else
         {
@@ -59,16 +51,12 @@ public class PlayerEquipment : MonoBehaviour
         }
     }
 
-    public bool IsEquipped(
-        ItemData item
-    )
+    public bool IsEquipped(ItemData item)
     {
         return equippedWeapon == item;
     }
 
-    public void EquipWeapon(
-        WeaponItemData weapon
-    )
+    public void EquipWeapon(WeaponItemData weapon)
     {
         if (weapon == null)
             return;
@@ -79,77 +67,73 @@ public class PlayerEquipment : MonoBehaviour
             || !playerCharacter.ActiveVisual.HasWeaponSocket
         )
         {
-            Debug.LogError(
-                "Active character has no WeaponSocket!"
-            );
+            Debug.LogError("Active character has no WeaponSocket!");
             return;
         }
 
         ClearEquippedWeapon();
 
-        WeaponInstance newInstance =
-            WeaponInstance.SpawnAttached(
-                weapon,
-                playerCharacter.ActiveVisual
-            );
+        WeaponInstance newInstance = WeaponInstance.SpawnAttached(
+            weapon,
+            playerCharacter.ActiveVisual
+        );
 
         if (newInstance == null)
         {
-            EquippedWeaponChanged?.Invoke(
-                null
-            );
+            EquippedWeaponChanged?.Invoke(null);
             return;
         }
 
         if (newInstance.Muzzle == null)
         {
-            Debug.LogError(
-                $"Weapon {weapon.itemName} has no Muzzle assigned on WeaponInstance!"
-            );
+            Debug.LogError($"Weapon {weapon.itemName} has no Muzzle assigned on WeaponInstance!");
 
-            Destroy(
-                newInstance.gameObject
-            );
+            Destroy(newInstance.gameObject);
 
-            EquippedWeaponChanged?.Invoke(
-                null
-            );
+            EquippedWeaponChanged?.Invoke(null);
             return;
         }
 
-        equippedWeapon =
-            weapon;
+        equippedWeapon = weapon;
 
-        equippedWeaponInstance =
-            newInstance;
+        equippedWeaponInstance = newInstance;
 
-        playerShooter.EquipWeapon(
-            weapon,
-            equippedWeaponInstance.Muzzle
-        );
+        playerShooter.EquipWeapon(weapon, equippedWeaponInstance.Muzzle);
 
-        EquippedWeaponChanged?.Invoke(
-            equippedWeapon
-        );
+        EquippedWeaponChanged?.Invoke(equippedWeapon);
     }
 
     public void UnequipWeapon()
     {
         ClearEquippedWeapon();
 
-        EquippedWeaponChanged?.Invoke(
-            null
-        );
+        EquippedWeaponChanged?.Invoke(null);
     }
 
-    public void SetEquippedWeaponVisible(
-        bool visible)
+    public void SetEquippedWeaponVisible(bool visible)
     {
         if (equippedWeaponInstance == null)
             return;
 
-        equippedWeaponInstance.gameObject.SetActive(
-            visible);
+        equippedWeaponInstance.gameObject.SetActive(visible);
+    }
+
+    /// <summary>
+    /// Temporarily changes only the PRESENTED weapon state.
+    ///
+    /// The actual equipped weapon and WeaponInstance stay intact, so ammo,
+    /// reload state and the existing shooter state are preserved.
+    ///
+    /// Passing false publishes null through EquippedWeaponChanged so the
+    /// existing character animation path can fall back to Unarmed.
+    /// Passing true publishes the real equipped weapon again so its
+    /// animation style is restored.
+    /// </summary>
+    public void SetEquippedWeaponPresentationVisible(bool visible)
+    {
+        SetEquippedWeaponVisible(visible);
+
+        EquippedWeaponChanged?.Invoke(visible ? equippedWeapon : null);
     }
 
     private void ClearEquippedWeapon()
@@ -158,9 +142,7 @@ public class PlayerEquipment : MonoBehaviour
 
         if (equippedWeaponInstance != null)
         {
-            Destroy(
-                equippedWeaponInstance.gameObject
-            );
+            Destroy(equippedWeaponInstance.gameObject);
         }
 
         equippedWeaponInstance = null;

@@ -24,7 +24,9 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
             playerCharacter = GetComponent<PlayerCharacter>();
 
         if (grenadeController == null)
+        {
             grenadeController = GetComponent<PlayerGrenadeController>();
+        }
     }
 
     private void OnEnable()
@@ -41,10 +43,8 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
 
         if (grenadeController != null)
         {
-            grenadeController.GrenadeSelectionChanged += HandleGrenadeSelectionChanged;
+            grenadeController.GrenadeSelectionChanged += HandleSelectionChanged;
         }
-
-        Refresh();
     }
 
     private void Start()
@@ -66,7 +66,7 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
 
         if (grenadeController != null)
         {
-            grenadeController.GrenadeSelectionChanged -= HandleGrenadeSelectionChanged;
+            grenadeController.GrenadeSelectionChanged -= HandleSelectionChanged;
         }
 
         ClearVisuals();
@@ -88,26 +88,27 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
             return;
         }
 
-        bool skippedHeldGrenade = false;
+        GrenadeItemData selected =
+            grenadeController != null && grenadeController.IsGrenadeSelected
+                ? grenadeController.SelectedGrenade
+                : null;
+
+        bool skippedSelectedOccurrence = false;
+
         int socketIndex = 0;
 
         for (int i = 0; i < inventory.Items.Count && socketIndex < sockets.Count; i++)
         {
             GrenadeItemData grenade = inventory.Items[i] as GrenadeItemData;
 
+            // Grenades live in the normal shared inventory.
+            // Ignore weapons, books, consumables, etc.
             if (grenade == null)
                 continue;
 
-            // The held grenade represents one real inventory occurrence,
-            // so don't also show that same occurrence on the belt.
-            if (
-                !skippedHeldGrenade
-                && grenadeController != null
-                && grenadeController.IsGrenadeSelected
-                && grenade == grenadeController.SelectedGrenade
-            )
+            if (!skippedSelectedOccurrence && grenade == selected)
             {
-                skippedHeldGrenade = true;
+                skippedSelectedOccurrence = true;
                 continue;
             }
 
@@ -126,18 +127,16 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
                 if (!grip.AttachTo(sockets[socketIndex]))
                 {
                     Destroy(visual);
-
                     socketIndex++;
                     continue;
                 }
             }
             else
             {
+                // Keep the stowed prefab's authored local transform.
+                // The carry socket decides WHERE the grenade slot is on the character;
+                // the stowed prefab decides HOW this grenade type sits in that slot.
                 visual.transform.SetParent(sockets[socketIndex], false);
-
-                visual.transform.localPosition = Vector3.zero;
-
-                visual.transform.localRotation = Quaternion.identity;
             }
 
             spawnedVisuals.Add(visual);
@@ -151,7 +150,7 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
         Refresh();
     }
 
-    private void HandleGrenadeSelectionChanged(bool selected)
+    private void HandleSelectionChanged(bool selected)
     {
         Refresh();
     }

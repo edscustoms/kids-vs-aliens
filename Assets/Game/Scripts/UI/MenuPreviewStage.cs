@@ -257,8 +257,14 @@ public class MenuPreviewStage : MonoBehaviour
 
         foreach (Renderer renderer in renderers)
         {
-            if (!renderer.enabled)
+            if (
+                renderer == null
+                || !renderer.enabled
+                || !IsFramingRenderer(renderer)
+            )
+            {
                 continue;
+            }
 
             if (!hasBounds)
             {
@@ -274,7 +280,14 @@ public class MenuPreviewStage : MonoBehaviour
         }
 
         if (!hasBounds)
+        {
+            Debug.LogWarning(
+                $"Menu preview '{currentInstance.name}' has no MeshRenderer or SkinnedMeshRenderer to frame.",
+                currentInstance
+            );
+
             return;
+        }
 
         Vector3 target =
             bounds.center;
@@ -347,4 +360,18 @@ public class MenuPreviewStage : MonoBehaviour
             );
     }
 
+    private static bool IsFramingRenderer(
+        Renderer renderer
+    )
+    {
+        // Only real model geometry should influence preview camera framing.
+        //
+        // Runtime electric arcs are LineRenderers. If included, their bounds
+        // can become much larger than the grenade itself and push the preview
+        // camera far away, making the grenade appear as a tiny dot.
+        //
+        // Particle/trail effects are ignored for the same reason.
+        return renderer is MeshRenderer
+            || renderer is SkinnedMeshRenderer;
+    }
 }

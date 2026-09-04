@@ -15,7 +15,7 @@ MonoBehaviour:
   id: granade_electric
   displayName: Electric Granade
   type: 2
-  previewPrefab: {fileID: 3437191248755424876, guid: 623a55577f9179c44a6b9efbaa51a301, type: 3}
+  previewPrefab: {fileID: 5991218057356359889, guid: 79382d9338f2d914280c8cfaba14082c, type: 3}
   clearsSlot: 0
   characterPrefab: {fileID: 0}
   weaponItemData: {fileID: 0}

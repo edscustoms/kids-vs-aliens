@@ -15,9 +15,9 @@ MonoBehaviour:
   itemName: Electric Grenade
   itemType: 5
   icon: {fileID: 3929929841529130924, guid: 26d6e8f9953ffe049b8bb0bb469233e8, type: 2}
-  worldPrefab: {fileID: 3437191248755424876, guid: 623a55577f9179c44a6b9efbaa51a301, type: 3}
-  heldPrefab: {fileID: 5810175723713211018, guid: 1b67724eb9374de4081cfe230ef11e6e, type: 3}
-  stowedPrefab: {fileID: 7471493378860789015, guid: 949ee03152419af4ba05991a020c8bff, type: 3}
+  worldPrefab: {fileID: 5991218057356359889, guid: d7093383cb5ff764e942d8c3bdbe6e9a, type: 3}
+  heldPrefab: {fileID: 5991218057356359889, guid: 2b65c06ce19d22244a16d80121d45a76, type: 3}
+  stowedPrefab: {fileID: 2796787319284186848, guid: b7e8e8cce0e426d4397119be2aeab798, type: 3}
   thrownPrefab: {fileID: 7032939991366865019, guid: 16e8b39b0ab392a40a41cac23d4de30f, type: 3}
   requiredSkill: {fileID: 11400000, guid: 75084ba52cac8634ba9b947bcb1d3f35, type: 2}
   maxChargeTime: 1.25
