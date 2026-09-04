@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5a9cef5e2c5d39489430b005f136d07, type: 3}
+  m_Name: Granade_Electric
+  m_EditorClassIdentifier: Assembly-CSharp::MenuPreviewItem
+  id: granade_electric
+  displayName: Electric Granade
+  type: 2
+  previewPrefab: {fileID: 3437191248755424876, guid: 623a55577f9179c44a6b9efbaa51a301, type: 3}
+  clearsSlot: 0
+  characterPrefab: {fileID: 0}
+  weaponItemData: {fileID: 0}

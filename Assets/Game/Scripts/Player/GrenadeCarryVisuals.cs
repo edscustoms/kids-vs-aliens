@@ -10,8 +10,10 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
     [SerializeField]
     private PlayerCharacter playerCharacter;
 
-    private readonly List<GameObject> spawnedVisuals =
-        new List<GameObject>(3);
+    [SerializeField]
+    private PlayerGrenadeController grenadeController;
+
+    private readonly List<GameObject> spawnedVisuals = new List<GameObject>(3);
 
     private void Awake()
     {
@@ -21,22 +23,28 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
         if (playerCharacter == null)
             playerCharacter = GetComponent<PlayerCharacter>();
 
+        if (grenadeController == null)
+            grenadeController = GetComponent<PlayerGrenadeController>();
     }
 
     private void OnEnable()
     {
         if (inventory != null)
         {
-            inventory.OnInventoryChanged +=
-                Refresh;
+            inventory.OnInventoryChanged += Refresh;
         }
 
         if (playerCharacter != null)
         {
-            playerCharacter.CharacterChanged +=
-                HandleCharacterChanged;
+            playerCharacter.CharacterChanged += HandleCharacterChanged;
         }
 
+        if (grenadeController != null)
+        {
+            grenadeController.GrenadeSelectionChanged += HandleGrenadeSelectionChanged;
+        }
+
+        Refresh();
     }
 
     private void Start()
@@ -48,14 +56,17 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
     {
         if (inventory != null)
         {
-            inventory.OnInventoryChanged -=
-                Refresh;
+            inventory.OnInventoryChanged -= Refresh;
         }
 
         if (playerCharacter != null)
         {
-            playerCharacter.CharacterChanged -=
-                HandleCharacterChanged;
+            playerCharacter.CharacterChanged -= HandleCharacterChanged;
+        }
+
+        if (grenadeController != null)
+        {
+            grenadeController.GrenadeSelectionChanged -= HandleGrenadeSelectionChanged;
         }
 
         ClearVisuals();
@@ -65,98 +76,95 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
     {
         ClearVisuals();
 
-        if (inventory == null ||
-            playerCharacter == null ||
-            playerCharacter.ActiveVisual == null)
+        if (inventory == null || playerCharacter == null || playerCharacter.ActiveVisual == null)
         {
             return;
         }
 
-        IReadOnlyList<Transform> sockets =
-            playerCharacter.ActiveVisual.GrenadeCarrySockets;
+        IReadOnlyList<Transform> sockets = playerCharacter.ActiveVisual.GrenadeCarrySockets;
 
-        if (sockets == null ||
-            sockets.Count == 0)
+        if (sockets == null || sockets.Count == 0)
         {
             return;
         }
 
+        bool skippedHeldGrenade = false;
         int socketIndex = 0;
 
-        for (int i = 0;
-             i < inventory.Items.Count &&
-             socketIndex < sockets.Count;
-             i++)
+        for (int i = 0; i < inventory.Items.Count && socketIndex < sockets.Count; i++)
         {
-            GrenadeItemData grenade =
-                inventory.Items[i] as GrenadeItemData;
+            GrenadeItemData grenade = inventory.Items[i] as GrenadeItemData;
 
             if (grenade == null)
                 continue;
 
-            if (grenade.stowedPrefab == null ||
-                sockets[socketIndex] == null)
+            // The held grenade represents one real inventory occurrence,
+            // so don't also show that same occurrence on the belt.
+            if (
+                !skippedHeldGrenade
+                && grenadeController != null
+                && grenadeController.IsGrenadeSelected
+                && grenade == grenadeController.SelectedGrenade
+            )
+            {
+                skippedHeldGrenade = true;
+                continue;
+            }
+
+            if (grenade.stowedPrefab == null || sockets[socketIndex] == null)
             {
                 socketIndex++;
                 continue;
             }
 
-            GameObject visual =
-                Instantiate(
-                    grenade.stowedPrefab);
+            GameObject visual = Instantiate(grenade.stowedPrefab);
 
-            HeldItemGrip grip =
-                visual.GetComponent<HeldItemGrip>();
+            HeldItemGrip grip = visual.GetComponent<HeldItemGrip>();
 
             if (grip != null)
             {
-                if (!grip.AttachTo(
-                        sockets[socketIndex]))
+                if (!grip.AttachTo(sockets[socketIndex]))
                 {
                     Destroy(visual);
+
                     socketIndex++;
                     continue;
                 }
             }
             else
             {
-                visual.transform.SetParent(
-                    sockets[socketIndex],
-                    false);
+                visual.transform.SetParent(sockets[socketIndex], false);
 
-                visual.transform.localPosition =
-                    Vector3.zero;
+                visual.transform.localPosition = Vector3.zero;
 
-                visual.transform.localRotation =
-                    Quaternion.identity;
+                visual.transform.localRotation = Quaternion.identity;
             }
 
-            spawnedVisuals.Add(
-                visual);
+            spawnedVisuals.Add(visual);
 
             socketIndex++;
         }
     }
 
-    private void HandleCharacterChanged(
-        CharacterVisual character)
+    private void HandleCharacterChanged(CharacterVisual character)
+    {
+        Refresh();
+    }
+
+    private void HandleGrenadeSelectionChanged(bool selected)
     {
         Refresh();
     }
 
     private void ClearVisuals()
     {
-        for (int i = 0;
-             i < spawnedVisuals.Count;
-             i++)
+        for (int i = 0; i < spawnedVisuals.Count; i++)
         {
             if (spawnedVisuals[i] != null)
             {
-                spawnedVisuals[i].SetActive(
-                    false);
+                spawnedVisuals[i].SetActive(false);
 
-                Destroy(
-                    spawnedVisuals[i]);
+                Destroy(spawnedVisuals[i]);
             }
         }
 

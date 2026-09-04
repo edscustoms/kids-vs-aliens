@@ -14,6 +14,9 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField]
     private PlayerSkillState playerSkillState;
 
+    [SerializeField]
+    private PlayerGrenadeController playerGrenadeController;
+
     private readonly List<ItemData> items = new();
 
     public IReadOnlyList<ItemData> Items => items;
@@ -24,9 +27,7 @@ public class PlayerInventory : MonoBehaviour
         {
             int count = 0;
 
-            for (int i = 0;
-                 i < items.Count;
-                 i++)
+            for (int i = 0; i < items.Count; i++)
             {
                 if (items[i] is GrenadeItemData)
                     count++;
@@ -41,14 +42,13 @@ public class PlayerInventory : MonoBehaviour
     private void Awake()
     {
         if (playerEquipment == null)
-        {
             playerEquipment = GetComponent<PlayerEquipment>();
-        }
 
         if (playerSkillState == null)
-        {
             playerSkillState = GetComponent<PlayerSkillState>();
-        }
+
+        if (playerGrenadeController == null)
+            playerGrenadeController = GetComponent<PlayerGrenadeController>();
     }
 
     public bool TryAddItem(ItemData item)
@@ -66,26 +66,19 @@ public class PlayerInventory : MonoBehaviour
         return true;
     }
 
-    // Kept for compatibility with any scene event or external POC script
-    // that still calls the original void API. Pickups use TryAddItem so they
-    // can remain in the world when capacity is full.
     public void AddItem(ItemData item)
     {
         TryAddItem(item);
     }
 
-    public bool HasGrenade(
-        GrenadeItemData grenade)
+    public bool HasGrenade(GrenadeItemData grenade)
     {
-        return grenade != null &&
-               items.Contains(grenade);
+        return grenade != null && items.Contains(grenade);
     }
 
     public GrenadeItemData GetFirstGrenade()
     {
-        for (int i = 0;
-             i < items.Count;
-             i++)
+        for (int i = 0; i < items.Count; i++)
         {
             if (items[i] is GrenadeItemData grenade)
                 return grenade;
@@ -94,15 +87,12 @@ public class PlayerInventory : MonoBehaviour
         return null;
     }
 
-    public bool TryConsumeGrenade(
-        GrenadeItemData grenade)
+    public bool TryConsumeGrenade(GrenadeItemData grenade)
     {
         if (grenade == null)
             return false;
 
-        int index =
-            items.IndexOf(
-                grenade);
+        int index = items.IndexOf(grenade);
 
         if (index < 0)
             return false;
@@ -127,14 +117,15 @@ public class PlayerInventory : MonoBehaviour
                 TryEquipWeapon(item as WeaponItemData);
                 break;
 
+            case ItemType.Grenade:
+                TrySelectGrenade(item as GrenadeItemData);
+                break;
+
             case ItemType.KnowledgeBook:
                 UseKnowledgeBook(index, item as KnowledgeBookItemData);
                 break;
 
             case ItemType.Consumable:
-                break;
-
-            default:
                 break;
         }
     }
@@ -144,7 +135,22 @@ public class PlayerInventory : MonoBehaviour
         if (weapon == null)
             return;
 
+        if (playerGrenadeController != null && playerGrenadeController.IsGrenadeSelected)
+        {
+            playerGrenadeController.CancelThrow();
+        }
+
         playerEquipment.EquipWeapon(weapon);
+    }
+
+    private void TrySelectGrenade(GrenadeItemData grenade)
+    {
+        if (grenade == null || playerGrenadeController == null)
+        {
+            return;
+        }
+
+        playerGrenadeController.SelectGrenade(grenade);
     }
 
     private void UseKnowledgeBook(int index, KnowledgeBookItemData book)
@@ -167,8 +173,6 @@ public class PlayerInventory : MonoBehaviour
         {
             Debug.Log($"Skill already acquired: {book.skill.DisplayName}", this);
 
-            // Do not consume duplicate books yet.
-            // We can later decide whether duplicates give XP.
             return;
         }
 
@@ -179,8 +183,6 @@ public class PlayerInventory : MonoBehaviour
 
         OnInventoryChanged?.Invoke();
 
-        // Temporary POC presentation.
-        // Later this routes through the game's messaging/hologram UI.
         Debug.Log($"KNOWLEDGE ACQUIRED: {book.skill.DisplayName}", this);
     }
 
@@ -194,11 +196,10 @@ public class PlayerInventory : MonoBehaviour
         if (item.worldPrefab == null)
         {
             Debug.LogWarning($"{item.itemName} has no world prefab.");
+
             return;
         }
 
-        // If we're dropping the item currently in our hand,
-        // unequip it first.
         if (playerEquipment.IsEquipped(item))
         {
             playerEquipment.UnequipWeapon();
