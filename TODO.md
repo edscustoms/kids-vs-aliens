@@ -10,6 +10,23 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+Current override — 5 Sep 2026: Knowledge + Feedback + Pause V1 implementation and
+review fixes are complete in code. Final compilation and all 43 Core EditMode tests
+passed (0 failures, 0 skipped). Finish acceptance in the existing Unity project:
+
+- Open GamePoc and run Tools > Kids VS Aliens > Setup > Knowledge Feedback & Pause V1.
+- Inspect and save the gameplay scene manually; repeat for intended gameplay scenes.
+- Playtest Amy/Granny Knowledge overlays, feedback and nested manual pause ownership.
+- Verify Held/Charging grenade pause/resume, fresh FIRE, ammo/equipment preservation.
+- Verify preview rendering/lighting and menu framing; test safe-area/mobile input on device.
+- After hand-tuning UI, checkpoint before setup reruns: generated visual defaults are reapplied.
+
+Details and remaining acceptance checklist: Assets/Game/Docs/07-GAMEPLAY-PRESENTATION.md.
+Knowledge presentation V1 now precedes the older roadmap below. The existing repo
+already has grenade gameplay; do not rebuild it from the historical goals below.
+
+PRIOR ROADMAP / FOLLOW-UP GOALS
+
 1. Grenade V1 — NEXT
 
 Build a reusable grenade foundation from the existing project architecture.

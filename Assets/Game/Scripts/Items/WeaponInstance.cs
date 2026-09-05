@@ -33,10 +33,7 @@ public class WeaponInstance : MonoBehaviour
             return false;
         }
 
-        GripAttachmentUtility.AlignGripToSocket(
-            transform,
-            gripPoint,
-            characterVisual.WeaponSocket);
+        GripAttachmentUtility.AlignGripToSocket(transform, gripPoint, characterVisual.WeaponSocket);
 
         if (plasmaCoreSetup != null)
         {
@@ -48,7 +45,8 @@ public class WeaponInstance : MonoBehaviour
 
     public static WeaponInstance SpawnAttached(
         WeaponItemData weaponData,
-        CharacterVisual characterVisual
+        CharacterVisual characterVisual,
+        Transform stagingParent = null
     )
     {
         if (weaponData == null)
@@ -60,7 +58,9 @@ public class WeaponInstance : MonoBehaviour
             return null;
         }
 
-        GameObject weaponObject = Instantiate(weaponData.equippedPrefab);
+        // Optional inactive parent lets visual previews configure their instance
+        // before activation. Existing gameplay/menu callers retain their flow.
+        GameObject weaponObject = Instantiate(weaponData.equippedPrefab, stagingParent);
 
         WeaponInstance instance = weaponObject.GetComponent<WeaponInstance>();
 

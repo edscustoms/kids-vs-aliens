@@ -7,7 +7,7 @@ public enum EnemyBrainState
     Chase,
     Attack,
     Investigate,
-    Dead
+    Dead,
 }
 
 /// <summary>
@@ -44,13 +44,11 @@ public sealed class EnemyBrain : MonoBehaviour
 
     [Header("Dynamic chase")]
     [SerializeField]
-    private Vector2 chaseRepathIntervalRange =
-        new Vector2(0.15f, 0.35f);
+    private Vector2 chaseRepathIntervalRange = new Vector2(0.15f, 0.35f);
 
     [Header("Idle")]
     [SerializeField]
-    private Vector2 idleWaitRange =
-        new Vector2(1.8f, 4.5f);
+    private Vector2 idleWaitRange = new Vector2(1.8f, 4.5f);
 
     [SerializeField, Range(0f, 1f)]
     private float wanderChance = 0.70f;
@@ -60,16 +58,15 @@ public sealed class EnemyBrain : MonoBehaviour
 
     [Header("Investigation")]
     [SerializeField]
-    private Vector2 investigatePointWaitRange =
-        new Vector2(0.6f, 1.4f);
+    private Vector2 investigatePointWaitRange = new Vector2(0.6f, 1.4f);
 
     [SerializeField, Min(1f)]
     private float investigateTotalTimeout = 10f;
 
     [Header("Incoming shot investigation")]
     [Tooltip(
-        "How far the enemy initially moves in the direction the shot came from. " +
-        "This is directional knowledge only; it does not use the shooter's position."
+        "How far the enemy initially moves in the direction the shot came from. "
+            + "This is directional knowledge only; it does not use the shooter's position."
     )]
     [SerializeField, Min(0.5f)]
     private float incomingShotInvestigationDistance = 4f;
@@ -106,34 +103,30 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void Update()
     {
-        if (actor == null ||
-            !actor.IsAlive)
+        // Decisions can apply immediate melee damage even when no game time
+        // advances. Keep this Update-driven simulation asleep during pause.
+        if (Time.timeScale <= 0f)
+            return;
+        if (actor == null || !actor.IsAlive)
         {
             EnterDead();
             return;
         }
 
         // If Amy is actually visible, real perception always wins.
-        if (perception != null &&
-            perception.HasTarget &&
-            perception.CanSeeTarget)
+        if (perception != null && perception.HasTarget && perception.CanSeeTarget)
         {
             incomingShotPending = false;
 
-            SyncActorTarget(
-                perception.Target);
+            SyncActorTarget(perception.Target);
 
-            if (meleeAttack != null &&
-                meleeAttack.CanAttack(
-                    perception.Target))
+            if (meleeAttack != null && meleeAttack.CanAttack(perception.Target))
             {
-                UpdateAttack(
-                    perception.Target);
+                UpdateAttack(perception.Target);
             }
             else
             {
-                UpdateChase(
-                    perception.Target);
+                UpdateChase(perception.Target);
             }
 
             return;
@@ -144,8 +137,7 @@ public sealed class EnemyBrain : MonoBehaviour
         // reaction animation has actually finished.
         if (incomingShotPending)
         {
-            if (motor != null &&
-                motor.MovementLocked)
+            if (motor != null && motor.MovementLocked)
             {
                 return;
             }
@@ -160,17 +152,13 @@ public sealed class EnemyBrain : MonoBehaviour
 
         // Existing target, but LOS is lost:
         // investigate its last known position.
-        if (perception != null &&
-            perception.HasTarget)
+        if (perception != null && perception.HasTarget)
         {
-            SyncActorTarget(
-                perception.Target);
+            SyncActorTarget(perception.Target);
 
-            if (State !=
-                EnemyBrainState.Investigate)
+            if (State != EnemyBrainState.Investigate)
             {
-                BeginInvestigation(
-                    perception.LastKnownPosition);
+                BeginInvestigation(perception.LastKnownPosition);
             }
 
             UpdateInvestigation();
@@ -178,8 +166,7 @@ public sealed class EnemyBrain : MonoBehaviour
         }
 
         // Directional investigation has no target object at all.
-        if (State ==
-            EnemyBrainState.Investigate)
+        if (State == EnemyBrainState.Investigate)
         {
             UpdateInvestigation();
             return;
@@ -196,45 +183,41 @@ public sealed class EnemyBrain : MonoBehaviour
     /// Investigation later uses the opposite direction to move toward
     /// where the shot came from.
     /// </summary>
-    public void QueueIncomingShotInvestigation(
-        Vector3 incomingShotDirection)
+    public void QueueIncomingShotInvestigation(Vector3 incomingShotDirection)
     {
-        if (actor != null &&
-            !actor.IsAlive)
+        if (actor != null && !actor.IsAlive)
         {
             return;
         }
 
         incomingShotDirection.y = 0f;
 
-        if (incomingShotDirection.sqrMagnitude <=
-            0.0001f)
+        if (incomingShotDirection.sqrMagnitude <= 0.0001f)
         {
             return;
         }
 
-        pendingIncomingShotDirection =
-            incomingShotDirection.normalized;
+        pendingIncomingShotDirection = incomingShotDirection.normalized;
 
-        incomingShotPending =
-            true;
+        incomingShotPending = true;
     }
 
     private bool BeginIncomingShotInvestigation()
     {
-        incomingShotPending =
-            false;
+        incomingShotPending = false;
 
         if (investigationPlanner == null)
             return false;
 
-        Vector3 towardShotSource =
-            -pendingIncomingShotDirection;
+        Vector3 towardShotSource = -pendingIncomingShotDirection;
 
-        if (!investigationPlanner.TryGetDirectionalAnchor(
+        if (
+            !investigationPlanner.TryGetDirectionalAnchor(
                 towardShotSource,
                 incomingShotInvestigationDistance,
-                out Vector3 anchor))
+                out Vector3 anchor
+            )
+        )
         {
             return false;
         }
@@ -243,98 +226,69 @@ public sealed class EnemyBrain : MonoBehaviour
         perception?.ForgetTarget();
         actor?.ClearCurrentTarget();
 
-        BeginInvestigation(
-            anchor);
+        BeginInvestigation(anchor);
 
         return true;
     }
 
-    private void UpdateChase(
-        Transform target)
+    private void UpdateChase(Transform target)
     {
-        if (State !=
-            EnemyBrainState.Chase)
+        if (State != EnemyBrainState.Chase)
         {
-            State =
-                EnemyBrainState.Chase;
+            State = EnemyBrainState.Chase;
 
-            nextChaseRepathTime =
-                0f;
+            nextChaseRepathTime = 0f;
 
-            approachPlanner?.SetTarget(
-                target);
+            approachPlanner?.SetTarget(target);
         }
 
-        if (Time.time <
-            nextChaseRepathTime)
+        if (Time.time < nextChaseRepathTime)
         {
             return;
         }
 
-        Vector3 destination =
-            target.position;
+        Vector3 destination = target.position;
 
         if (approachPlanner != null)
         {
-            approachPlanner.TryGetChasePosition(
-                target,
-                out destination);
+            approachPlanner.TryGetChasePosition(target, out destination);
         }
 
-        motor?.SetDestination(
-            destination);
+        motor?.SetDestination(destination);
 
-        nextChaseRepathTime =
-            Time.time +
-            GetRandomRange(
-                chaseRepathIntervalRange,
-                0.05f);
+        nextChaseRepathTime = Time.time + GetRandomRange(chaseRepathIntervalRange, 0.05f);
     }
 
-    private void UpdateAttack(
-        Transform target)
+    private void UpdateAttack(Transform target)
     {
-        if (State !=
-            EnemyBrainState.Attack)
+        if (State != EnemyBrainState.Attack)
         {
-            State =
-                EnemyBrainState.Attack;
+            State = EnemyBrainState.Attack;
 
             motor?.Stop();
         }
 
-        motor?.FacePosition(
-            target.position);
+        motor?.FacePosition(target.position);
 
-        meleeAttack?.TryAttack(
-            target);
+        meleeAttack?.TryAttack(target);
     }
 
-    private void BeginInvestigation(
-        Vector3 anchor)
+    private void BeginInvestigation(Vector3 anchor)
     {
-        State =
-            EnemyBrainState.Investigate;
+        State = EnemyBrainState.Investigate;
 
         approachPlanner?.ClearTarget();
 
-        investigationAnchor =
-            anchor;
+        investigationAnchor = anchor;
 
-        investigateGiveUpTime =
-            Time.time +
-            investigateTotalTimeout;
+        investigateGiveUpTime = Time.time + investigateTotalTimeout;
 
-        waitingAtInvestigationPoint =
-            false;
+        waitingAtInvestigationPoint = false;
 
-        investigationPlanner?.BuildSearch(
-            investigationAnchor);
+        investigationPlanner?.BuildSearch(investigationAnchor);
 
         // First move to the actual investigation anchor.
-        if (motor != null &&
-            motor.SetDestination(
-                investigationAnchor))
+        if (motor != null && motor.SetDestination(investigationAnchor))
         {
             return;
         }
@@ -344,8 +298,7 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void UpdateInvestigation()
     {
-        if (Time.time >=
-            investigateGiveUpTime)
+        if (Time.time >= investigateGiveUpTime)
         {
             FinishInvestigation();
             return;
@@ -359,17 +312,14 @@ public sealed class EnemyBrain : MonoBehaviour
 
         if (waitingAtInvestigationPoint)
         {
-            if (Time.time <
-                investigateWaitUntil)
+            if (Time.time < investigateWaitUntil)
             {
-                motor.FacePosition(
-                    investigationAnchor);
+                motor.FacePosition(investigationAnchor);
 
                 return;
             }
 
-            waitingAtInvestigationPoint =
-                false;
+            waitingAtInvestigationPoint = false;
 
             MoveToNextInvestigationPoint();
             return;
@@ -380,25 +330,19 @@ public sealed class EnemyBrain : MonoBehaviour
 
         motor.Stop();
 
-        waitingAtInvestigationPoint =
-            true;
+        waitingAtInvestigationPoint = true;
 
-        investigateWaitUntil =
-            Time.time +
-            GetRandomRange(
-                investigatePointWaitRange,
-                0.05f);
+        investigateWaitUntil = Time.time + GetRandomRange(investigatePointWaitRange, 0.05f);
     }
 
     private void MoveToNextInvestigationPoint()
     {
-        if (investigationPlanner != null &&
-            investigationPlanner.TryGetNextPoint(
-                out Vector3 nextPoint))
+        if (
+            investigationPlanner != null
+            && investigationPlanner.TryGetNextPoint(out Vector3 nextPoint)
+        )
         {
-            if (motor != null &&
-                motor.SetDestination(
-                    nextPoint))
+            if (motor != null && motor.SetDestination(nextPoint))
             {
                 return;
             }
@@ -420,13 +364,9 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void UpdateIdleOrWander()
     {
-        if (State ==
-            EnemyBrainState.Wander)
+        if (State == EnemyBrainState.Wander)
         {
-            if (motor == null ||
-                motor.HasReachedDestination ||
-                Time.time >=
-                wanderGiveUpTime)
+            if (motor == null || motor.HasReachedDestination || Time.time >= wanderGiveUpTime)
             {
                 EnterIdle();
             }
@@ -434,37 +374,25 @@ public sealed class EnemyBrain : MonoBehaviour
             return;
         }
 
-        if (State !=
-            EnemyBrainState.Idle)
+        if (State != EnemyBrainState.Idle)
         {
             EnterIdle();
         }
 
-        if (Time.time <
-            nextIdleDecisionTime)
+        if (Time.time < nextIdleDecisionTime)
         {
             return;
         }
 
-        bool shouldWander =
-            wanderPlanner != null &&
-            Random.value <
-                wanderChance;
+        bool shouldWander = wanderPlanner != null && Random.value < wanderChance;
 
-        if (shouldWander &&
-            wanderPlanner.TryGetRandomPoint(
-                out Vector3 destination))
+        if (shouldWander && wanderPlanner.TryGetRandomPoint(out Vector3 destination))
         {
-            if (motor != null &&
-                motor.SetDestination(
-                    destination))
+            if (motor != null && motor.SetDestination(destination))
             {
-                State =
-                    EnemyBrainState.Wander;
+                State = EnemyBrainState.Wander;
 
-                wanderGiveUpTime =
-                    Time.time +
-                    wanderTravelTimeout;
+                wanderGiveUpTime = Time.time + wanderTravelTimeout;
 
                 return;
             }
@@ -475,8 +403,7 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void EnterIdle()
     {
-        State =
-            EnemyBrainState.Idle;
+        State = EnemyBrainState.Idle;
 
         motor?.Stop();
 
@@ -485,45 +412,36 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void EnterDead()
     {
-        if (State ==
-            EnemyBrainState.Dead)
+        if (State == EnemyBrainState.Dead)
         {
             return;
         }
 
-        incomingShotPending =
-            false;
+        incomingShotPending = false;
 
-        State =
-            EnemyBrainState.Dead;
+        State = EnemyBrainState.Dead;
 
         motor?.Stop();
 
         approachPlanner?.ClearTarget();
     }
 
-    private void SyncActorTarget(
-        Transform target)
+    private void SyncActorTarget(Transform target)
     {
-        if (actor != null &&
-            actor.CurrentTarget != target)
+        if (actor != null && actor.CurrentTarget != target)
         {
-            actor.SetCurrentTarget(
-                target);
+            actor.SetCurrentTarget(target);
         }
 
-        if (State !=
-            EnemyBrainState.Investigate)
+        if (State != EnemyBrainState.Investigate)
         {
-            approachPlanner?.SetTarget(
-                target);
+            approachPlanner?.SetTarget(target);
         }
     }
 
     private void ClearTargetState()
     {
-        if (actor != null &&
-            actor.CurrentTarget != null)
+        if (actor != null && actor.CurrentTarget != null)
         {
             actor.ClearCurrentTarget();
         }
@@ -533,65 +451,39 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void ScheduleNextIdleDecision()
     {
-        nextIdleDecisionTime =
-            Time.time +
-            GetRandomRange(
-                idleWaitRange,
-                0.05f);
+        nextIdleDecisionTime = Time.time + GetRandomRange(idleWaitRange, 0.05f);
     }
 
-    private static float GetRandomRange(
-        Vector2 range,
-        float minimum)
+    private static float GetRandomRange(Vector2 range, float minimum)
     {
-        float min =
-            Mathf.Max(
-                minimum,
-                Mathf.Min(
-                    range.x,
-                    range.y));
+        float min = Mathf.Max(minimum, Mathf.Min(range.x, range.y));
 
-        float max =
-            Mathf.Max(
-                min,
-                Mathf.Max(
-                    range.x,
-                    range.y));
+        float max = Mathf.Max(min, Mathf.Max(range.x, range.y));
 
-        return
-            Random.Range(
-                min,
-                max);
+        return Random.Range(min, max);
     }
 
     private void CacheReferences()
     {
         if (actor == null)
-            actor =
-                GetComponent<EnemyActor>();
+            actor = GetComponent<EnemyActor>();
 
         if (motor == null)
-            motor =
-                GetComponent<EnemyMotor>();
+            motor = GetComponent<EnemyMotor>();
 
         if (perception == null)
-            perception =
-                GetComponent<EnemyPerception>();
+            perception = GetComponent<EnemyPerception>();
 
         if (approachPlanner == null)
-            approachPlanner =
-                GetComponent<EnemyApproachPlanner>();
+            approachPlanner = GetComponent<EnemyApproachPlanner>();
 
         if (wanderPlanner == null)
-            wanderPlanner =
-                GetComponent<EnemyWanderPlanner>();
+            wanderPlanner = GetComponent<EnemyWanderPlanner>();
 
         if (investigationPlanner == null)
-            investigationPlanner =
-                GetComponent<EnemyInvestigationPlanner>();
+            investigationPlanner = GetComponent<EnemyInvestigationPlanner>();
 
         if (meleeAttack == null)
-            meleeAttack =
-                GetComponent<EnemyMeleeAttack>();
+            meleeAttack = GetComponent<EnemyMeleeAttack>();
     }
 }

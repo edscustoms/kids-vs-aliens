@@ -51,6 +51,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     // Ignore our own notification here; real weapon changes must still
     // cancel grenade mode normally.
     private bool isChangingWeaponPresentation;
+    private StarterAssets.StarterAssetsInputs input;
 
     public bool IsGrenadeSelected => state != GrenadeState.Idle;
 
@@ -68,6 +69,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void Awake()
     {
+        input = GetComponent<StarterAssets.StarterAssetsInputs>();
         CacheReferences();
         RefreshOwnerColliders();
     }
@@ -136,6 +138,8 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     public bool SelectGrenade(GrenadeItemData grenade)
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return false;
         if (
             grenade == null
             || inventory == null
@@ -196,6 +200,8 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     public bool BeginCharge()
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return false;
         if (state != GrenadeState.Held || selectedGrenade == null)
         {
             return false;
@@ -211,6 +217,8 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     public bool ReleaseThrow()
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return false;
         if (
             state != GrenadeState.Charging
             || selectedGrenade == null
@@ -304,7 +312,20 @@ public sealed class PlayerGrenadeController : MonoBehaviour
             return false;
         }
 
+        GrenadeItemData thrownGrenade = selectedGrenade;
         ExitGrenadeMode(true);
+
+        // Presentation cannot interrupt authoritative throw/selection cleanup.
+        if (!hasRequiredKnowledge)
+            GetComponent<PlayerFeedback>()
+                ?.Report(
+                    new GameplayFeedbackEvent(
+                        FeedbackCode.GrenadeThrownInert,
+                        thrownGrenade.requiredSkill,
+                        thrownGrenade,
+                        FeedbackAction.Throw
+                    )
+                );
 
         return true;
     }
@@ -312,6 +333,16 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     public void CancelThrow()
     {
         ExitGrenadeMode(true);
+    }
+
+    // Suspension cancels the gesture, not the selected inventory item.
+    public void CancelCharge()
+    {
+        if (state != GrenadeState.Charging)
+            return;
+        state = GrenadeState.Held;
+        chargeTime = 0f;
+        ChargeChanged?.Invoke(0f);
     }
 
     private void ExitGrenadeMode(bool restoreWeapon)

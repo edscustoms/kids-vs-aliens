@@ -15,6 +15,7 @@ MonoBehaviour:
   id: rifle_handling
   displayName: Rifle Handling
   description: 
+  tutorialData: {fileID: 11400000, guid: d600e93926fa66546a181f91c8a86901, type: 2}
   startingLevel: 1
   xpPerLevel: 100
   unlocks: []

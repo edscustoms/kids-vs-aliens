@@ -2,14 +2,16 @@ using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
-    [SerializeField] private PlayerCharacter playerCharacter;
-    [SerializeField] private PlayerEquipment playerEquipment;
+    [SerializeField]
+    private PlayerCharacter playerCharacter;
+
+    [SerializeField]
+    private PlayerEquipment playerEquipment;
 
     private CharacterController characterController;
-    private Animator animator;
+    private CharacterAnimatorDriver driver;
 
-    private WeaponAnimationStyle currentWeaponStyle =
-        WeaponAnimationStyle.Unarmed;
+    private WeaponAnimationStyle currentWeaponStyle = WeaponAnimationStyle.Unarmed;
 
     private void Awake()
     {
@@ -39,64 +41,43 @@ public class PlayerAnimation : MonoBehaviour
 
     private void OnCharacterChanged(CharacterVisual visual)
     {
-        animator = visual.Animator;
+        driver = new CharacterAnimatorDriver(visual.Animator, visual.AnimationActions);
 
         ApplyWeaponStyle();
     }
 
     private void OnEquippedWeaponChanged(WeaponItemData weapon)
     {
-        currentWeaponStyle = weapon != null
-            ? weapon.animationStyle
-            : WeaponAnimationStyle.Unarmed;
+        currentWeaponStyle = weapon != null ? weapon.animationStyle : WeaponAnimationStyle.Unarmed;
 
         ApplyWeaponStyle();
     }
 
     private void ApplyWeaponStyle()
     {
-        if (animator == null)
-            return;
-
-        animator.SetInteger(
-            "WeaponStyle",
-            (int)currentWeaponStyle
-        );
+        driver?.SetWeaponStyle(currentWeaponStyle);
     }
 
     private void Update()
     {
-        if (animator == null)
+        if (driver == null)
             return;
 
         Vector3 velocity = characterController.velocity;
         velocity.y = 0f;
 
-        Vector3 localVelocity =
-            transform.InverseTransformDirection(velocity);
+        Vector3 localVelocity = transform.InverseTransformDirection(velocity);
 
-        Vector2 movement = new(
-            localVelocity.x,
-            localVelocity.z
-        );
+        Vector2 movement = new(localVelocity.x, localVelocity.z);
 
         if (movement.sqrMagnitude > 0.01f)
             movement.Normalize();
         else
             movement = Vector2.zero;
 
-        animator.SetFloat(
-            "MoveX",
-            movement.x,
-            0.05f,
-            Time.deltaTime
-        );
-
-        animator.SetFloat(
-            "MoveY",
-            movement.y,
-            0.05f,
-            Time.deltaTime
-        );
+        driver.SetMovement(movement, Time.deltaTime);
     }
+
+    public bool TryPlayAction(CharacterActionId action) =>
+        driver != null && driver.TryPlayAction(action);
 }

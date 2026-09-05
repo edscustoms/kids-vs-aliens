@@ -12,10 +12,7 @@ public sealed class SkillUnlockDefinition
     public string displayName;
 }
 
-[CreateAssetMenu(
-    fileName = "NewSkill",
-    menuName = "Kids VS Aliens/Progression/Skill"
-)]
+[CreateAssetMenu(fileName = "NewSkill", menuName = "Kids VS Aliens/Progression/Skill")]
 public sealed class SkillData : ScriptableObject
 {
     [Header("Identity")]
@@ -29,13 +26,18 @@ public sealed class SkillData : ScriptableObject
     [SerializeField]
     private string description;
 
+    [Header("Optional tutorial presentation")]
+    [SerializeField]
+    private SkillTutorialData tutorialData;
+    public SkillTutorialData TutorialData => tutorialData;
+
     [Header("POC Progression")]
     [SerializeField, Min(1)]
     private int startingLevel = 1;
 
     [Tooltip(
-        "Temporary POC rule: every level costs the same amount of XP. " +
-        "We can replace the curve later without changing acquired skill data."
+        "Temporary POC rule: every level costs the same amount of XP. "
+            + "We can replace the curve later without changing acquired skill data."
     )]
     [SerializeField, Min(1)]
     private int xpPerLevel = 100;
@@ -45,10 +47,7 @@ public sealed class SkillData : ScriptableObject
     private List<SkillUnlockDefinition> unlocks = new();
 
     public string Id => id;
-    public string DisplayName =>
-        string.IsNullOrWhiteSpace(displayName)
-            ? name
-            : displayName;
+    public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
 
     public string Description => description;
     public int StartingLevel => startingLevel;
@@ -59,8 +58,7 @@ public sealed class SkillData : ScriptableObject
     {
         totalXp = Mathf.Max(0, totalXp);
 
-        return startingLevel +
-               totalXp / xpPerLevel;
+        return startingLevel + totalXp / xpPerLevel;
     }
 
     public int GetXpIntoCurrentLevel(int totalXp)
@@ -77,10 +75,7 @@ public sealed class SkillData : ScriptableObject
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            id = name
-                .Trim()
-                .ToLowerInvariant()
-                .Replace(" ", "_");
+            id = name.Trim().ToLowerInvariant().Replace(" ", "_");
         }
     }
 }

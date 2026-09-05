@@ -25,8 +25,7 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
 
         if (grenadeController == null)
         {
-            grenadeController =
-                GetComponent<PlayerGrenadeController>();
+            grenadeController = GetComponent<PlayerGrenadeController>();
         }
     }
 
@@ -34,37 +33,28 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
     {
         if (input != null)
         {
-            input.ShootStateChanged +=
-                HandleShootStateChanged;
+            input.ShootStateChanged += HandleShootStateChanged;
 
-            input.ShootCanceled +=
-                HandleShootCanceled;
+            input.ShootCanceled += HandleShootCanceled;
         }
 
         if (grenadeController != null)
         {
-            grenadeController.GrenadeSelectionChanged +=
-                HandleGrenadeSelectionChanged;
+            grenadeController.GrenadeSelectionChanged += HandleGrenadeSelectionChanged;
         }
     }
 
     private void Start()
     {
-        if (grenadeController != null &&
-            grenadeController.IsGrenadeSelected)
+        if (grenadeController != null && grenadeController.IsGrenadeSelected)
         {
-            awaitingNeutral =
-                input != null &&
-                input.shoot;
+            awaitingNeutral = input != null && input.shoot;
 
-            shooter?.SetTriggerHeld(
-                false);
+            shooter?.SetTriggerHeld(false);
         }
         else
         {
-            shooter?.SetTriggerHeld(
-                input != null &&
-                input.shoot);
+            shooter?.SetTriggerHeld(input != null && input.shoot);
         }
     }
 
@@ -72,35 +62,28 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
     {
         if (input != null)
         {
-            input.ShootStateChanged -=
-                HandleShootStateChanged;
+            input.ShootStateChanged -= HandleShootStateChanged;
 
-            input.ShootCanceled -=
-                HandleShootCanceled;
+            input.ShootCanceled -= HandleShootCanceled;
         }
 
         if (grenadeController != null)
         {
-            grenadeController.GrenadeSelectionChanged -=
-                HandleGrenadeSelectionChanged;
+            grenadeController.GrenadeSelectionChanged -= HandleGrenadeSelectionChanged;
         }
 
-        shooter?.SetTriggerHeld(
-            false);
+        shooter?.SetTriggerHeld(false);
 
         grenadeController?.CancelThrow();
 
         awaitingNeutral = false;
     }
 
-    private void HandleShootStateChanged(
-        bool pressed)
+    private void HandleShootStateChanged(bool pressed)
     {
-        if (grenadeController != null &&
-            grenadeController.IsGrenadeSelected)
+        if (grenadeController != null && grenadeController.IsGrenadeSelected)
         {
-            shooter?.SetTriggerHeld(
-                false);
+            shooter?.SetTriggerHeld(false);
 
             if (awaitingNeutral)
             {
@@ -124,33 +107,28 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
 
         awaitingNeutral = false;
 
-        shooter?.SetTriggerHeld(
-            pressed);
+        shooter?.SetTriggerHeld(pressed);
     }
 
     private void HandleShootCanceled()
     {
-        shooter?.SetTriggerHeld(
-            false);
+        shooter?.SetTriggerHeld(false);
 
         awaitingNeutral = false;
 
-        if (grenadeController != null &&
-            grenadeController.IsGrenadeSelected)
+        if (grenadeController != null && grenadeController.IsGrenadeSelected)
         {
-            grenadeController.CancelThrow();
+            if (input != null && input.GameplayInputBlocked)
+                grenadeController.CancelCharge();
+            else
+                grenadeController.CancelThrow();
         }
     }
 
-    private void HandleGrenadeSelectionChanged(
-        bool selected)
+    private void HandleGrenadeSelectionChanged(bool selected)
     {
-        shooter?.SetTriggerHeld(
-            false);
+        shooter?.SetTriggerHeld(false);
 
-        awaitingNeutral =
-            selected &&
-            input != null &&
-            input.shoot;
+        awaitingNeutral = selected && input != null && input.shoot;
     }
 }

@@ -3,6 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public enum InventoryAddFailure
+{
+    None,
+    InvalidItem,
+    Full,
+}
+
 public class PlayerInventory : MonoBehaviour
 {
     [SerializeField]
@@ -18,6 +25,7 @@ public class PlayerInventory : MonoBehaviour
     private PlayerGrenadeController playerGrenadeController;
 
     private readonly List<ItemData> items = new();
+    private StarterAssets.StarterAssetsInputs input;
 
     public IReadOnlyList<ItemData> Items => items;
 
@@ -41,6 +49,7 @@ public class PlayerInventory : MonoBehaviour
 
     private void Awake()
     {
+        input = GetComponent<StarterAssets.StarterAssetsInputs>();
         if (playerEquipment == null)
             playerEquipment = GetComponent<PlayerEquipment>();
 
@@ -51,13 +60,22 @@ public class PlayerInventory : MonoBehaviour
             playerGrenadeController = GetComponent<PlayerGrenadeController>();
     }
 
-    public bool TryAddItem(ItemData item)
+    public bool TryAddItem(ItemData item) => TryAddItem(item, out _);
+
+    public bool TryAddItem(ItemData item, out InventoryAddFailure failure)
     {
+        failure = InventoryAddFailure.None;
         if (item == null)
+        {
+            failure = InventoryAddFailure.InvalidItem;
             return false;
+        }
 
         if (items.Count >= maxSlots)
+        {
+            failure = InventoryAddFailure.Full;
             return false;
+        }
 
         items.Add(item);
 
@@ -106,6 +124,8 @@ public class PlayerInventory : MonoBehaviour
 
     public void UseItem(int index)
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return;
         if (index < 0 || index >= items.Count)
             return;
 
@@ -171,7 +191,15 @@ public class PlayerInventory : MonoBehaviour
 
         if (playerSkillState.HasSkill(book.skill))
         {
-            Debug.Log($"Skill already acquired: {book.skill.DisplayName}", this);
+            GetComponent<PlayerFeedback>()
+                ?.Report(
+                    new GameplayFeedbackEvent(
+                        FeedbackCode.KnowledgeAlreadyKnown,
+                        book.skill,
+                        book,
+                        FeedbackAction.Learn
+                    )
+                );
 
             return;
         }
@@ -182,12 +210,12 @@ public class PlayerInventory : MonoBehaviour
         items.RemoveAt(index);
 
         OnInventoryChanged?.Invoke();
-
-        Debug.Log($"KNOWLEDGE ACQUIRED: {book.skill.DisplayName}", this);
     }
 
     public void DropItem(int index)
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return;
         if (index < 0 || index >= items.Count)
             return;
 

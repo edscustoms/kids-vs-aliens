@@ -15,6 +15,7 @@ MonoBehaviour:
   id: pistol_handling
   displayName: Pistol Handling
   description: 
+  tutorialData: {fileID: 11400000, guid: 153729c5f2dde144588ad1b5058baece, type: 2}
   startingLevel: 1
   xpPerLevel: 100
   unlocks: []
