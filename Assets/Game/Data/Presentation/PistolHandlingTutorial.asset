@@ -20,5 +20,5 @@ MonoBehaviour:
   equipment: {fileID: 11400000, guid: 3765c3b1e078cf14487dc137ccde2ce1, type: 2}
   loop: 1
   loopDuration: 4
-  distanceMultiplier: 1.15
+  distanceMultiplier: 0.8
   targetOffset: {x: 0, y: 0, z: 0}

@@ -22,6 +22,12 @@ public static class GameplayPresentationSetup
     private const string LayerName = "KnowledgePreview";
     public const string LightweightRendererPath =
         "Assets/Game/Settings/Rendering/Mobile_Renderer.asset";
+
+    // Reuse the exact visual language already used by the main menu.
+    // GUIDs are stable inside this project even if the assets move folders.
+    private const string NeonPillGuid = "de2a5b71f7b0c8649ababb4456243334";
+    private const string NeonCircleGuid = "409fd95e15e45e347b7de10bf0d6ad1c";
+
     private static readonly Color Navy = Hex("130B2D");
     private static readonly Color Indigo = Hex("1F1149");
     private static readonly Color Violet = Hex("8B2BB4");
@@ -148,6 +154,9 @@ public static class GameplayPresentationSetup
         Scene scene = player.gameObject.scene;
         CreateInitialAssets();
         int layer = EnsurePreviewLayer();
+        Sprite neonPill = SpriteByGuid(NeonPillGuid, "NeonPill");
+        Sprite neonCircle = SpriteByGuid(NeonCircleGuid, "NeonCircle");
+
         GameObject root = scene.GetRootGameObjects().FirstOrDefault(go => go.name == RootName);
         if (root == null)
         {
@@ -185,29 +194,34 @@ public static class GameplayPresentationSetup
         );
         Reference(Component<GameplayPresentationLifetime>(root), "player", player);
 
-        RectTransform blocker = Panel(
-            root.transform,
-            "SuspensionInputBlocker",
-            new Color(Navy.r, Navy.g, Navy.b, 0.18f),
-            true
-        );
+        // Input-only blocker. Keep it visually transparent so suspension never
+        // tints the mobile HUD. Knowledge dimming is handled by a separate
+        // low-sorting canvas beneath the gameplay HUD.
+        RectTransform blocker = Panel(root.transform, "SuspensionInputBlocker", Color.clear, true);
         Stretch(blocker);
         blocker.SetAsFirstSibling();
         blocker.gameObject.SetActive(false);
         RectTransform safe = Child(root.transform, "SafeArea");
+        // SafeAreaPanel applies the real device cutout at runtime, but the generated
+        // scene must already look correct in Edit Mode instead of being a 100x100
+        // centered RectTransform.
+        Stretch(safe);
         Component<SafeAreaPanel>(safe.gameObject);
-        RectTransform feedbackView = Panel(
-            safe,
-            "Feedback",
-            new Color(Navy.r, Navy.g, Navy.b, 0.94f),
-            false
-        );
-        Fixed(feedbackView, new Vector2(0.5f, 1f), new Vector2(0, -110), new Vector2(760, 84));
-        Outline(feedbackView.gameObject, Violet);
-        RectTransform feedbackAccent = Panel(feedbackView, "Accent", Cyan, false);
-        Anchors(feedbackAccent, new Vector2(0, 0), new Vector2(0.009f, 1));
-        var message = Text(feedbackView, "Message", string.Empty, 30);
-        Anchors(message.rectTransform, new Vector2(0.04f, 0.08f), new Vector2(0.97f, 0.92f));
+
+        RectTransform feedbackView = Panel(safe, "Feedback", Color.white, false);
+        Fixed(feedbackView, new Vector2(0.5f, 0f), new Vector2(0, 190), new Vector2(700, 76));
+        StyleSprite(feedbackView, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.94f));
+        DisableOutline(feedbackView.gameObject);
+
+        // V1 used a separate cyan Accent strip. With NeonPill the sprite already
+        // provides the cyan/magenta edge, so the old Accent reads as a stray line.
+        Transform oldFeedbackAccent = feedbackView.Find("Accent");
+        if (oldFeedbackAccent != null)
+            Undo.DestroyObjectImmediate(oldFeedbackAccent.gameObject);
+
+        var message = Text(feedbackView, "Message", string.Empty, 28);
+        message.fontStyle = FontStyles.Bold;
+        Anchors(message.rectTransform, new Vector2(0.045f, 0.10f), new Vector2(0.955f, 0.90f));
         var feedbackPresenter = Component<GameplayFeedbackPresenter>(root);
         Reference(feedbackPresenter, "source", feedback);
         Reference(feedbackPresenter, "skills", player.GetComponent<PlayerSkillState>());
@@ -220,28 +234,35 @@ public static class GameplayPresentationSetup
         );
         Reference(feedbackPresenter, "view", Component<CanvasGroup>(feedbackView.gameObject));
         Reference(feedbackPresenter, "message", message);
-        Reference(feedbackPresenter, "accent", feedbackAccent.GetComponent<Image>());
+        Reference(feedbackPresenter, "accent", null);
 
-        RectTransform pause = Panel(safe, "PauseButton", Indigo, true);
-        Fixed(pause, new Vector2(1, 1), new Vector2(-24, -24), new Vector2(100, 88));
-        Outline(pause.gameObject, Magenta);
+        RectTransform pause = Panel(safe, "PauseButton", Color.white, true);
+        Fixed(pause, new Vector2(1, 1), new Vector2(-28, -28), new Vector2(96, 96));
+        StyleSprite(pause, neonCircle, Image.Type.Simple, new Color(1f, 1f, 1f, 0.96f), true);
+        DisableOutline(pause.gameObject);
         Button pauseButton = Button(pause.gameObject);
+
         RectTransform pauseIcon = Child(pause, "PauseIcon");
         Stretch(pauseIcon);
         Anchors(
-            Panel(pauseIcon, "LeftBar", Cyan, false),
-            new Vector2(0.32f, 0.28f),
-            new Vector2(0.44f, 0.72f)
+            Panel(pauseIcon, "LeftBar", Color.white, false),
+            new Vector2(0.34f, 0.29f),
+            new Vector2(0.43f, 0.71f)
         );
         Anchors(
-            Panel(pauseIcon, "RightBar", Cyan, false),
-            new Vector2(0.56f, 0.28f),
-            new Vector2(0.68f, 0.72f)
+            Panel(pauseIcon, "RightBar", Color.white, false),
+            new Vector2(0.57f, 0.29f),
+            new Vector2(0.66f, 0.71f)
         );
+
         RectTransform playIcon = Child(pause, "PlayIcon");
-        Anchors(playIcon, new Vector2(0.35f, 0.27f), new Vector2(0.7f, 0.73f));
+        Anchors(playIcon, new Vector2(0.35f, 0.28f), new Vector2(0.70f, 0.72f));
+        // PlayIconGraphic is a custom Graphic, so make the renderer explicit.
+        // The previous generated object had no CanvasRenderer and therefore drew
+        // an empty button while paused.
+        Component<CanvasRenderer>(playIcon.gameObject);
         var triangle = Component<PlayIconGraphic>(playIcon.gameObject);
-        triangle.color = Cyan;
+        triangle.color = Color.white;
         triangle.raycastTarget = false;
         playIcon.gameObject.SetActive(false);
         var manual = Component<ManualPauseButton>(pause.gameObject);
@@ -251,65 +272,126 @@ public static class GameplayPresentationSetup
         Reference(manual, "pauseIcon", pauseIcon.gameObject);
         Reference(manual, "playIcon", playIcon.gameObject);
 
-        RectTransform overlay = Panel(
-            root.transform,
-            "KnowledgeOverlay",
-            new Color(Navy.r, Navy.g, Navy.b, 0.86f),
-            true
-        );
+        // KnowledgeOverlay stays on the high presentation canvas so it can
+        // block gameplay pointer input and keep the modal above the HUD, but
+        // the overlay itself is transparent. This prevents the dark tint from
+        // washing over joystick/action-button edges.
+        RectTransform overlay = Panel(root.transform, "KnowledgeOverlay", Color.clear, true);
         Stretch(overlay);
         overlay.SetAsLastSibling();
-        RectTransform modalSafe = Child(overlay, "SafeArea");
-        Component<SafeAreaPanel>(modalSafe.gameObject);
-        RectTransform card = Panel(
-            modalSafe,
-            "Card",
-            new Color(Indigo.r, Indigo.g, Indigo.b, 0.98f),
-            true
-        );
-        Anchors(card, new Vector2(0.08f, 0.045f), new Vector2(0.92f, 0.955f));
-        Outline(card.gameObject, Magenta);
-        RectTransform topAccent = Panel(card, "TopAccent", Cyan, false);
-        Anchors(topAccent, new Vector2(0.12f, 0.985f), new Vector2(0.88f, 0.99f));
-        RectTransform content = Child(card, "Content");
-        Anchors(content, new Vector2(0.04f, 0.035f), new Vector2(0.96f, 0.965f));
-        var layout = Component<VerticalLayoutGroup>(content.gameObject);
-        layout.spacing = 10;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.childAlignment = TextAnchor.UpperCenter;
-        TMP_Text heading = Text(content, "Heading", "KNOWLEDGE ACQUIRED", 38);
-        heading.color = Cyan;
-        Height(heading.gameObject, 52);
-        RectTransform previewFrame = Panel(
-            content,
-            "PreviewFrame",
-            new Color(Navy.r, Navy.g, Navy.b, 0.6f),
+
+        // Separate visual dimmer: nested canvas with its own sorting order,
+        // below the normal HUD canvas (GamePoc HUD is order 0) but still as a
+        // Screen Space Overlay canvas, so it darkens only the 3D world. Because
+        // it is a child of KnowledgeOverlay it automatically follows the modal
+        // active state without adding runtime presentation logic.
+        RectTransform worldDimmer = Panel(
+            overlay,
+            "WorldDimmer",
+            new Color(Navy.r, Navy.g, Navy.b, 0.58f),
             false
         );
-        var previewLayout = Component<LayoutElement>(previewFrame.gameObject);
-        previewLayout.minHeight = 120;
-        previewLayout.preferredHeight = 420;
-        previewLayout.flexibleHeight = 1;
-        Outline(previewFrame.gameObject, new Color(Cyan.r, Cyan.g, Cyan.b, 0.35f));
+        Stretch(worldDimmer);
+        worldDimmer.SetAsFirstSibling();
+        Canvas dimmerCanvas = Component<Canvas>(worldDimmer.gameObject);
+        dimmerCanvas.overrideSorting = true;
+        dimmerCanvas.sortingOrder = -100;
+
+        RectTransform modalSafe = Child(overlay, "SafeArea");
+        Stretch(modalSafe);
+        Component<SafeAreaPanel>(modalSafe.gameObject);
+
+        RectTransform card = Panel(modalSafe, "Card", Color.white, true);
+        // Keep the modal inside the gameplay HUD gutters: above the inventory strip
+        // and away from the left/right touch controls.
+        Anchors(card, new Vector2(0.18f, 0.13f), new Vector2(0.82f, 0.94f));
+        StyleSprite(card, neonPill, Image.Type.Sliced, Color.white);
+        DisableOutline(card.gameObject);
+
+        // NeonPill is primarily a glowing frame. Give the card an opaque dark
+        // interior so paused gameplay HUD elements do not visually bleed through it.
+        RectTransform cardFill = Panel(
+            card,
+            "CardFill",
+            new Color(Indigo.r, Indigo.g, Indigo.b, 0.985f),
+            false
+        );
+        Anchors(cardFill, new Vector2(0.018f, 0.028f), new Vector2(0.982f, 0.972f));
+        cardFill.SetAsFirstSibling();
+
+        RectTransform topAccent = Panel(card, "TopAccent", Cyan, false);
+        Anchors(topAccent, new Vector2(0.34f, 0.972f), new Vector2(0.66f, 0.978f));
+
+        RectTransform content = Child(card, "Content");
+        Anchors(content, new Vector2(0.045f, 0.045f), new Vector2(0.955f, 0.955f));
+
+        // The main menu is anchor-driven rather than layout-group driven. Manual
+        // normalized anchors give the Knowledge card stable proportions at phone
+        // and desktop aspect ratios instead of letting a VerticalLayoutGroup squash
+        // the preview into a debug-looking strip.
+        var layout = content.GetComponent<VerticalLayoutGroup>();
+        if (layout != null)
+            layout.enabled = false;
+
+        TMP_Text heading = Text(content, "Heading", "KNOWLEDGE ACQUIRED", 31);
+        heading.color = Cyan;
+        heading.fontStyle = FontStyles.Bold;
+        Anchors(heading.rectTransform, new Vector2(0.18f, 0.885f), new Vector2(0.82f, 0.97f));
+
+        RectTransform previewFrame = Panel(content, "PreviewFrame", Color.white, false);
+        Anchors(previewFrame, new Vector2(0.27f, 0.38f), new Vector2(0.73f, 0.86f));
+        StyleSprite(previewFrame, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.78f));
+        DisableOutline(previewFrame.gameObject);
+        // CharacterRender uses a square RenderTexture/AspectRatioFitter. Mask it
+        // to the neon frame so the preview can never bleed into title/text space.
+        Component<RectMask2D>(previewFrame.gameObject);
+
         RectTransform imageRect = Child(previewFrame, "CharacterRender");
+        Anchors(imageRect, new Vector2(0.055f, 0.08f), new Vector2(0.945f, 0.92f));
         var image = Component<RawImage>(imageRect.gameObject);
+        image.color = Color.white;
         image.raycastTarget = false;
         var aspect = Component<AspectRatioFitter>(imageRect.gameObject);
         aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
         aspect.aspectRatio = 1f;
+
         TMP_Text title = Text(content, "SkillTitle", "", 40);
-        Height(title.gameObject, 56);
-        TMP_Text description = Text(content, "Description", "", 28);
-        Height(description.gameObject, 52);
-        TMP_Text instructions = Text(content, "Instructions", "", 27);
-        Height(instructions.gameObject, 56);
-        RectTransform acknowledge = Panel(content, "Acknowledge", Hex("5E1885"), true);
-        Height(acknowledge.gameObject, 76);
-        Outline(acknowledge.gameObject, Cyan);
-        TMP_Text gotIt = Text(acknowledge, "Label", "GOT IT", 30);
+        title.fontStyle = FontStyles.Bold;
+        Anchors(title.rectTransform, new Vector2(0.10f, 0.285f), new Vector2(0.90f, 0.375f));
+
+        TMP_Text description = Text(content, "Description", "", 25);
+        description.color = new Color(0.90f, 0.92f, 1f, 1f);
+        Anchors(description.rectTransform, new Vector2(0.10f, 0.205f), new Vector2(0.90f, 0.285f));
+
+        RectTransform instructionPlate = Panel(content, "InstructionPlate", Color.white, false);
+        // Leave enough vertical room for two-line instructions (grenades and future
+        // skills) while keeping the same compact NeonPill treatment for short text.
+        Anchors(instructionPlate, new Vector2(0.17f, 0.105f), new Vector2(0.83f, 0.215f));
+        StyleSprite(instructionPlate, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.58f));
+
+        // V4 kept Instructions as a sibling of the plate. Move/reuse that generated
+        // object inside the plate so wrapping/autosizing is constrained by the pill.
+        Transform legacyInstructions = content.Find("Instructions");
+        if (legacyInstructions != null && legacyInstructions.parent != instructionPlate)
+        {
+            Undo.RecordObject(legacyInstructions, "Reparent Knowledge instructions");
+            legacyInstructions.SetParent(instructionPlate, false);
+        }
+        TMP_Text instructions = Text(instructionPlate, "Instructions", "", 22);
+        instructions.color = new Color(0.92f, 0.97f, 1f, 1f);
+        instructions.fontStyle = FontStyles.Bold;
+        instructions.enableAutoSizing = true;
+        instructions.fontSizeMin = 15f;
+        instructions.fontSizeMax = 22f;
+        Anchors(instructions.rectTransform, new Vector2(0.055f, 0.10f), new Vector2(0.945f, 0.90f));
+
+        RectTransform acknowledge = Panel(content, "Acknowledge", Color.white, true);
+        Anchors(acknowledge, new Vector2(0.34f, 0.018f), new Vector2(0.66f, 0.095f));
+        StyleSprite(acknowledge, neonPill, Image.Type.Sliced, Color.white);
+        DisableOutline(acknowledge.gameObject);
+
+        TMP_Text gotIt = Text(acknowledge, "Label", "GOT IT", 29);
+        gotIt.fontStyle = FontStyles.Bold;
         Stretch(gotIt.rectTransform);
         Button acknowledgeButton = Button(acknowledge.gameObject);
         var knowledge = Component<KnowledgeAcquiredPresenter>(root);
@@ -356,12 +438,18 @@ public static class GameplayPresentationSetup
         rig.position = new Vector3(1000, -1000, 0);
         RectTransform actorRoot = Child(rig, "ActorRoot");
         actorRoot.localPosition = Vector3.zero;
+        // Three-quarter side view so future fire/throw demos read left-to-right
+        // instead of aiming directly at the viewer.
+        actorRoot.localRotation = Quaternion.Euler(0f, -40f, 0f);
         actorRoot.localScale = Vector3.one;
         actorRoot.gameObject.SetActive(false);
         Camera camera = Component<Camera>(Child(rig, "PreviewCamera").gameObject);
         camera.enabled = false;
         camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = new Color(0, 0, 0, 0);
+        // The PreviewFrame owns the background. Keep the RenderTexture clear
+        // transparent so its square 512x512 surface never appears as a dark box
+        // inside the wider neon frame.
+        camera.backgroundColor = new Color(Navy.r, Navy.g, Navy.b, 0f);
         camera.cullingMask = 1 << layer;
         camera.fieldOfView = 30;
         camera.nearClipPlane = 0.05f;
@@ -541,6 +629,20 @@ public static class GameplayPresentationSetup
             EditorUtility.SetDirty(tutorial);
             AssetDatabase.SaveAssetIfDirty(tutorial);
         }
+        // The original generated framing was conservative (1.15; an earlier
+        // menu-style pass used 0.85). 0.80 fits Amy/Granny well in the current
+        // compact frame. Migrate only those known untouched defaults and preserve
+        // any other hand-tuned value.
+        if (
+            Mathf.Approximately(tutorial.distanceMultiplier, 1.15f)
+            || Mathf.Approximately(tutorial.distanceMultiplier, 0.85f)
+        )
+        {
+            tutorial.distanceMultiplier = 0.80f;
+            EditorUtility.SetDirty(tutorial);
+            AssetDatabase.SaveAssetIfDirty(tutorial);
+        }
+
         if (skill.TutorialData == null)
         {
             Reference(skill, "tutorialData", tutorial);
@@ -657,14 +759,55 @@ public static class GameplayPresentationSetup
     {
         var button = Component<Button>(go);
         button.targetGraphic = go.GetComponent<Image>();
+
+        // Match the existing menu button transitions.
         var colors = button.colors;
-        colors.highlightedColor = new Color(0.65f, 0.93f, 1);
-        colors.pressedColor = Magenta;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = Color.white;
+        colors.pressedColor = new Color(0.74f, 0.78f, 0.90f, 1f);
+        colors.selectedColor = Color.white;
+        colors.disabledColor = new Color(0.40f, 0.40f, 0.50f, 0.38f);
+        colors.colorMultiplier = 1f;
+        colors.fadeDuration = 0.06f;
         button.colors = colors;
+
         var navigation = button.navigation;
         navigation.mode = Navigation.Mode.None;
         button.navigation = navigation;
         return button;
+    }
+
+    private static Sprite SpriteByGuid(string guid, string label)
+    {
+        string path = AssetDatabase.GUIDToAssetPath(guid);
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (sprite == null)
+            throw new InvalidOperationException(
+                $"Gameplay presentation could not load menu sprite '{label}' ({guid})."
+            );
+        return sprite;
+    }
+
+    private static void StyleSprite(
+        RectTransform rect,
+        Sprite sprite,
+        Image.Type type,
+        Color color,
+        bool preserveAspect = false
+    )
+    {
+        var image = Component<Image>(rect.gameObject);
+        image.sprite = sprite;
+        image.type = type;
+        image.color = color;
+        image.preserveAspect = preserveAspect;
+    }
+
+    private static void DisableOutline(GameObject go)
+    {
+        var outline = go.GetComponent<Outline>();
+        if (outline != null)
+            outline.enabled = false;
     }
 
     private static void Reference(

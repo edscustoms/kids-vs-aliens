@@ -14,12 +14,17 @@ Current override — 5 Sep 2026: Knowledge + Feedback + Pause V1 implementation 
 review fixes are complete in code. Final compilation and all 43 Core EditMode tests
 passed (0 failures, 0 skipped). Finish acceptance in the existing Unity project:
 
-- Open GamePoc and run Tools > Kids VS Aliens > Setup > Knowledge Feedback & Pause V1.
-- Inspect and save the gameplay scene manually; repeat for intended gameplay scenes.
-- Playtest Amy/Granny Knowledge overlays, feedback and nested manual pause ownership.
-- Verify Held/Charging grenade pause/resume, fresh FIRE, ammo/equipment preservation.
-- Verify preview rendering/lighting and menu framing; test safe-area/mobile input on device.
-- After hand-tuning UI, checkpoint before setup reruns: generated visual defaults are reapplied.
+Open GamePoc and run Tools > Kids VS Aliens > Setup > Knowledge Feedback & Pause V1.
+
+Inspect and save the gameplay scene manually; repeat for intended gameplay scenes.
+
+Playtest Amy/Granny Knowledge overlays, feedback and nested manual pause ownership.
+
+Verify Held/Charging grenade pause/resume, fresh FIRE, ammo/equipment preservation.
+
+Verify preview rendering/lighting and menu framing; test safe-area/mobile input on device.
+
+After hand-tuning UI, checkpoint before setup reruns: generated visual defaults are reapplied.
 
 Details and remaining acceptance checklist: Assets/Game/Docs/07-GAMEPLAY-PRESENTATION.md.
 Knowledge presentation V1 now precedes the older roadmap below. The existing repo
@@ -27,7 +32,7 @@ already has grenade gameplay; do not rebuild it from the historical goals below.
 
 PRIOR ROADMAP / FOLLOW-UP GOALS
 
-1. Grenade V1 — NEXT
+Grenade V1 — NEXT
 
 Build a reusable grenade foundation from the existing project architecture.
 
@@ -87,7 +92,7 @@ A dedicated grenade implementation prompt/spec may override details here.
 
 NEXT
 
-2. Grenade Throw Animation Experiment
+Grenade Throw Animation Experiment
 
 After gameplay works:
 
@@ -105,7 +110,7 @@ keep gameplay independent from final animation polish
 
 Do not over-invest if final animation assets will replace the setup.
 
-3. Unarmed Combat V1
+Unarmed Combat V1
 
 Build the first real player melee foundation.
 
@@ -149,7 +154,7 @@ charged Ultra moves
 
 tune combo windows through playtesting
 
-4. Generic Melee Weapon Framework
+Generic Melee Weapon Framework
 
 After unarmed combat works.
 
@@ -177,7 +182,7 @@ item/equipment integration
 
 weapon-specific tuning without one-off duplicated systems
 
-5. Ranged Alien V1
+Ranged Alien V1
 
 Add the second real enemy combat role.
 
@@ -199,7 +204,7 @@ begin making cover/fences tactically important
 
 Do not build a separate enemy framework.
 
-6. Knowledge Hologram / Tutorial Presentation
+Knowledge Hologram / Tutorial Presentation
 
 Finish the Knowledge Book presentation layer.
 
@@ -401,6 +406,87 @@ grenade effects
 enemy projectiles
 
 Avoid building a giant universal pooling framework prematurely.
+
+Grenade Asset LOD / Mobile Rendering Pass
+
+Build this once as a reusable grenade optimization pipeline so future grenade types do not require separate manual LOD setup/configuration.
+
+Architecture:
+
+- Reusable grenade LOD pipeline, not necessarily one universal grenade mesh.
+- Grenades that share the same physical base should reuse the same body/lever/pin/ring meshes and the same generated LOD meshes.
+- Visually distinct grenade families may use their own base mesh, but must use the exact same automatic Blender -> Unity LOD workflow.
+- Grenade types should mainly differ through core/chamber/VFX/material treatment where possible.
+
+Current Gravity Grenade reference:
+
+- ~22.3k triangles
+- ~11.3k vertices
+- 5 mesh objects
+- 8 materials
+
+Blender generation:
+
+Automatically output reusable visual LODs:
+
+- LOD0: hero mesh, current quality (~22k tris)
+- LOD1: ~8-12k tris
+- LOD2: ~2-4k tris
+
+LOD generation should preserve the important silhouette and readable gameplay details while aggressively reducing geometry that is insignificant at distance.
+
+Unity integration:
+
+- Use Unity-compatible LOD naming.
+- Automatically detect/import generated LOD meshes.
+- Automatically create and populate the LODGroup.
+- Automatically assign sensible default transition thresholds.
+- No per-grenade manual renderer dragging or LOD configuration.
+- Gameplay logic, Rigidbody, colliders, damage and grenade state must remain independent from visual LOD switching.
+- Shared grenade bodies reuse the same LOD mesh assets instead of duplicating them per grenade type.
+
+Materials / draw calls:
+
+- Profile the current material cost.
+- Reduce/shared materials if the current 8-material setup becomes expensive.
+- Keep glass and emissive materials separate where required.
+- Prefer shared materials across grenade families whenever visually practical.
+
+Mobile stress case:
+
+Profile on OnePlus Nord 3 with approximately:
+
+- 38 grenade instances
+- 12 characters
+- active combat
+- projectiles
+- grenade VFX
+- other scene VFX
+
+Measure:
+
+- CPU
+- GPU
+- draw calls
+- triangles
+- overdraw
+- memory
+- thermal behavior
+
+VFX:
+
+- Pool grenade VFX.
+- Allow grenade VFX complexity/effect density to scale with graphics presets where useful.
+- Visual LOD/VFX reduction should happen automatically where practical.
+
+Goal:
+
+Solve the Blender -> Unity LOD/configuration pipeline once.
+
+Do NOT manually create/configure three separate LOD setups for every grenade type.
+
+Shared physical grenade bases reuse shared LODs.
+Unique grenade bodies may have unique LOD meshes, but their generation/import/setup must still be automatic.
 
 Graphics Presets
 
