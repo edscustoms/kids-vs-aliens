@@ -98,9 +98,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
             nextRefreshTime = Time.time + currentRefreshInterval;
         }
 
-        ApplyVisualState(
-            remaining /
-            Mathf.Max(0.001f, currentLifetime));
+        ApplyVisualState(remaining / Mathf.Max(0.001f, currentLifetime));
     }
 
     public void Play(
@@ -108,14 +106,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
         Vector3 end,
         Color color)
     {
-        Play(
-            start,
-            end,
-            color,
-            defaultLifetime,
-            1f,
-            1f,
-            refreshInterval);
+        Play(start, end, color, defaultLifetime, 1f, 1f, refreshInterval);
     }
 
     public void Play(
@@ -141,11 +132,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
         currentLifetime = Mathf.Max(0.01f, lifetime);
         currentWidthMultiplier = Mathf.Max(0.01f, widthMultiplier);
         currentJitterMultiplier = Mathf.Max(0f, jitterMultiplier);
-        currentRefreshInterval = Mathf.Max(
-            0.005f,
-            refreshEvery > 0f
-                ? refreshEvery
-                : refreshInterval);
+        currentRefreshInterval = Mathf.Max(0.005f, refreshEvery > 0f ? refreshEvery : refreshInterval);
 
         isPlaying = true;
         endTime = Time.time + currentLifetime;
@@ -187,95 +174,37 @@ public sealed class ElectricArcVFX : MonoBehaviour
                 ? displacement / length
                 : Vector3.forward;
 
-        BuildPerpendicularBasis(
-            forward,
-            out Vector3 basisA,
-            out Vector3 basisB);
-
-        float baseOffsetScale =
-            jitter *
-            currentJitterMultiplier *
-            Mathf.Max(0.25f, length);
-
-        // V3 jitter was deliberately tiny to remove the chunky zig-zags.
-        // Here it becomes the seed for a persistent random walk instead of
-        // independent offsets around a straight line. This makes the bolt
-        // genuinely wander through 3D while still landing exactly on its end.
-        float wanderStep =
-            baseOffsetScale *
-            Mathf.Max(0f, pathWanderMultiplier);
-
-        Vector2 walk = Vector2.zero;
-        Vector2 walkDirection = Random.insideUnitCircle.normalized;
+        BuildPerpendicularBasis(forward, out Vector3 basisA, out Vector3 basisB);
 
         points[0] = currentStart;
-
-        for (int i = 1; i < points.Length - 1; i++)
-        {
-            float t = i / (float)(points.Length - 1);
-
-            Vector2 randomDirection = Random.insideUnitCircle;
-
-            if (randomDirection.sqrMagnitude < 0.0001f)
-            {
-                randomDirection = Vector2.right;
-            }
-
-            randomDirection.Normalize();
-
-            walkDirection = Vector2.Lerp(
-                randomDirection,
-                walkDirection,
-                Mathf.Clamp01(directionPersistence));
-
-            if (walkDirection.sqrMagnitude < 0.0001f)
-            {
-                walkDirection = randomDirection;
-            }
-
-            walkDirection.Normalize();
-
-            walk +=
-                walkDirection *
-                wanderStep *
-                Random.Range(0.72f, 1.28f);
-
-            // Pull the path back toward the destination as it approaches the
-            // end. The resulting path can travel in strong random directions,
-            // but never misses the authored endpoint.
-            float restore = Mathf.Lerp(0.02f, 0.42f, t * t);
-            walk = Vector2.Lerp(walk, Vector2.zero, restore);
-
-            float envelope = Mathf.Sin(t * Mathf.PI);
-
-            Vector3 point = Vector3.Lerp(
-                currentStart,
-                currentEnd,
-                t);
-
-            point +=
-                (basisA * walk.x + basisB * walk.y) *
-                envelope;
-
-            // Small high-frequency kink on top of the larger wandering path.
-            Vector2 micro = Random.insideUnitCircle * baseOffsetScale * 0.42f;
-
-            point +=
-                (basisA * micro.x + basisB * micro.y) *
-                envelope;
-
-            points[i] = point;
-        }
-
         points[points.Length - 1] = currentEnd;
-        lineRenderer.SetPositions(points);
 
-        GenerateBranches(
-            forward,
+        float baseAmplitude =
+            jitter *
+            currentJitterMultiplier *
+            Mathf.Max(0.12f, length) *
+            Mathf.Max(0.75f, pathWanderMultiplier);
+
+        float roughness = Mathf.Lerp(0.38f, 0.68f, directionPersistence);
+        float asymmetry = Random.Range(-1f, 1f);
+
+        GenerateFractalPath(
+            points,
+            0,
+            points.Length - 1,
+            currentStart,
+            currentEnd,
             basisA,
             basisB,
-            length,
-            baseOffsetScale);
+            baseAmplitude,
+            roughness,
+            asymmetry);
+
+        AddMicroKinks(points, basisA, basisB, baseAmplitude * 0.12f);
+
+        lineRenderer.SetPositions(points);
+
+        GenerateBranches(forward, basisA, basisB, length, baseAmplitude);
     }
 
     private void GenerateBranches(
@@ -283,7 +212,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
         Vector3 basisA,
         Vector3 basisB,
         float mainLength,
-        float baseOffsetScale)
+        float baseAmplitude)
     {
         int allowedBranches = Mathf.Clamp(maxBranches, 0, MaxBranches);
 
@@ -306,8 +235,8 @@ public sealed class ElectricArcVFX : MonoBehaviour
                 continue;
             }
 
-            int minOrigin = Mathf.Max(2, Mathf.RoundToInt(points.Length * 0.22f));
-            int maxOrigin = Mathf.Min(points.Length - 3, Mathf.RoundToInt(points.Length * 0.82f));
+            int minOrigin = Mathf.Max(2, Mathf.RoundToInt(points.Length * 0.18f));
+            int maxOrigin = Mathf.Min(points.Length - 3, Mathf.RoundToInt(points.Length * 0.84f));
             int originIndex = Random.Range(minOrigin, maxOrigin + 1);
 
             Vector3 origin = points[originIndex];
@@ -325,9 +254,9 @@ public sealed class ElectricArcVFX : MonoBehaviour
             float sideB = Random.Range(-1f, 1f);
 
             Vector3 branchDirection =
-                tangent * Random.Range(0.12f, 0.55f) +
-                basisA * sideA * Random.Range(0.75f, 1.35f) +
-                basisB * sideB * Random.Range(0.75f, 1.35f);
+                tangent * Random.Range(0.05f, 0.28f) +
+                basisA * sideA * Random.Range(0.9f, 1.4f) +
+                basisB * sideB * Random.Range(0.9f, 1.4f);
 
             if (branchDirection.sqrMagnitude < 0.0001f)
             {
@@ -338,20 +267,11 @@ public sealed class ElectricArcVFX : MonoBehaviour
 
             float minLength = Mathf.Max(0.05f, Mathf.Min(branchLengthRange.x, branchLengthRange.y));
             float maxLength = Mathf.Max(minLength, Mathf.Max(branchLengthRange.x, branchLengthRange.y));
-            float branchLength =
-                mainLength *
-                Random.Range(minLength, maxLength);
+            float branchLength = mainLength * Random.Range(minLength, maxLength);
 
-            Vector3 branchEnd =
-                origin +
-                branchDirection * branchLength;
+            Vector3 branchEnd = origin + branchDirection * branchLength;
 
-            GenerateBranchPath(
-                branchIndex,
-                origin,
-                branchEnd,
-                baseOffsetScale);
-
+            GenerateBranchPath(branchIndex, origin, branchEnd, baseAmplitude * Mathf.Max(0.25f, branchWanderMultiplier));
             branch.enabled = true;
         }
     }
@@ -360,10 +280,13 @@ public sealed class ElectricArcVFX : MonoBehaviour
         int branchIndex,
         Vector3 start,
         Vector3 end,
-        float mainOffsetScale)
+        float mainAmplitude)
     {
         LineRenderer branch = branchRenderers[branchIndex];
         Vector3[] buffer = branchPoints[branchIndex];
+
+        if (branch == null || buffer == null || buffer.Length < 2)
+            return;
 
         Vector3 displacement = end - start;
         float length = displacement.magnitude;
@@ -373,74 +296,103 @@ public sealed class ElectricArcVFX : MonoBehaviour
                 ? displacement / length
                 : Vector3.forward;
 
-        BuildPerpendicularBasis(
-            forward,
-            out Vector3 basisA,
-            out Vector3 basisB);
-
-        float localWander =
-            Mathf.Max(
-                mainOffsetScale * 0.9f,
-                length * 0.055f) *
-            Mathf.Max(0f, branchWanderMultiplier);
-
-        Vector2 walk = Vector2.zero;
-        Vector2 direction = Random.insideUnitCircle.normalized;
+        BuildPerpendicularBasis(forward, out Vector3 basisA, out Vector3 basisB);
 
         buffer[0] = start;
-
-        for (int i = 1; i < buffer.Length - 1; i++)
-        {
-            float t = i / (float)(buffer.Length - 1);
-
-            Vector2 randomDirection = Random.insideUnitCircle;
-
-            if (randomDirection.sqrMagnitude < 0.0001f)
-            {
-                randomDirection = Vector2.up;
-            }
-
-            randomDirection.Normalize();
-
-            direction = Vector2.Lerp(
-                randomDirection,
-                direction,
-                0.42f).normalized;
-
-            walk +=
-                direction *
-                localWander *
-                Random.Range(0.7f, 1.3f);
-
-            walk = Vector2.Lerp(
-                walk,
-                Vector2.zero,
-                Mathf.Lerp(0.02f, 0.34f, t * t));
-
-            float envelope = Mathf.Sin(t * Mathf.PI);
-
-            Vector3 point = Vector3.Lerp(start, end, t);
-
-            point +=
-                (basisA * walk.x + basisB * walk.y) *
-                envelope;
-
-            buffer[i] = point;
-        }
-
         buffer[buffer.Length - 1] = end;
+
+        float roughness = Mathf.Lerp(0.32f, 0.6f, directionPersistence * 0.8f + 0.1f);
+        float amplitude = Mathf.Max(mainAmplitude * 0.55f, length * 0.08f);
+
+        GenerateFractalPath(
+            buffer,
+            0,
+            buffer.Length - 1,
+            start,
+            end,
+            basisA,
+            basisB,
+            amplitude,
+            roughness,
+            Random.Range(-1f, 1f));
+
+        AddMicroKinks(buffer, basisA, basisB, amplitude * 0.1f);
 
         branch.positionCount = buffer.Length;
         branch.SetPositions(buffer);
     }
 
-    private void ApplyVisualState(
-        float life01)
+    private static void GenerateFractalPath(
+        Vector3[] buffer,
+        int startIndex,
+        int endIndex,
+        Vector3 start,
+        Vector3 end,
+        Vector3 basisA,
+        Vector3 basisB,
+        float amplitude,
+        float roughness,
+        float asymmetry)
     {
-        float fade =
-            fadeOut
-                ? Smooth01(Mathf.Clamp01(life01))
-                : 1f;
+        if (endIndex - startIndex <= 1)
+        {
+            return;
+        }
+
+        int midIndex = (startIndex + endIndex) / 2;
+        float t = midIndex / (float)(buffer.Length - 1);
+
+        Vector3 midpoint = Vector3.Lerp(start, end, 0.5f);
+
+        Vector2 offset2 = Random.insideUnitCircle;
+        if (offset2.sqrMagnitude < 0.0001f)
+        {
+            offset2 = Vector2.right;
+        }
+
+        offset2.Normalize();
+        offset2.x += asymmetry * 0.45f;
+        if (offset2.sqrMagnitude < 0.0001f)
+        {
+            offset2 = Vector2.right;
+        }
+        offset2.Normalize();
+
+        float envelope = Mathf.Sin(t * Mathf.PI);
+        float shapedAmplitude = amplitude * Mathf.Lerp(0.85f, 1.15f, Random.value) * envelope;
+
+        midpoint += (basisA * offset2.x + basisB * offset2.y) * shapedAmplitude;
+        buffer[midIndex] = midpoint;
+
+        float childAsymmetryA = Mathf.Lerp(asymmetry, Random.Range(-1f, 1f), 0.45f);
+        float childAsymmetryB = Mathf.Lerp(asymmetry, Random.Range(-1f, 1f), 0.45f);
+        float nextAmplitude = amplitude * Mathf.Clamp01(roughness);
+
+        GenerateFractalPath(buffer, startIndex, midIndex, start, midpoint, basisA, basisB, nextAmplitude, roughness, childAsymmetryA);
+        GenerateFractalPath(buffer, midIndex, endIndex, midpoint, end, basisA, basisB, nextAmplitude, roughness, childAsymmetryB);
+    }
+
+    private static void AddMicroKinks(
+        Vector3[] buffer,
+        Vector3 basisA,
+        Vector3 basisB,
+        float microAmplitude)
+    {
+        if (buffer == null || buffer.Length < 3 || microAmplitude <= 0f)
+            return;
+
+        for (int i = 1; i < buffer.Length - 1; i++)
+        {
+            float t = i / (float)(buffer.Length - 1);
+            float envelope = Mathf.Sin(t * Mathf.PI);
+            Vector2 micro = Random.insideUnitCircle * microAmplitude * Random.Range(0.45f, 1f);
+            buffer[i] += (basisA * micro.x + basisB * micro.y) * envelope;
+        }
+    }
+
+    private void ApplyVisualState(float life01)
+    {
+        float fade = fadeOut ? Smooth01(Mathf.Clamp01(life01)) : 1f;
 
         float width =
             baseWidth *
@@ -448,12 +400,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
             Mathf.Lerp(0.22f, 1f, fade);
 
         lineRenderer.startWidth = width;
-        lineRenderer.endWidth =
-            width *
-            Mathf.Clamp(
-                endWidthFactor,
-                0.05f,
-                1f);
+        lineRenderer.endWidth = width * Mathf.Clamp(endWidthFactor, 0.05f, 1f);
 
         Color startColor = currentColor;
         Color endColor = currentColor;
@@ -471,9 +418,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
             if (branch == null || !branch.enabled)
                 continue;
 
-            float branchWidth =
-                width *
-                Mathf.Clamp(branchWidthFactor, 0.05f, 1f);
+            float branchWidth = width * Mathf.Clamp(branchWidthFactor, 0.05f, 1f);
 
             branch.startWidth = branchWidth;
             branch.endWidth = branchWidth * 0.12f;
@@ -532,9 +477,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
         }
     }
 
-    private static void CopyLineRendererPresentation(
-        LineRenderer source,
-        LineRenderer target)
+    private static void CopyLineRendererPresentation(LineRenderer source, LineRenderer target)
     {
         target.sharedMaterial = source.sharedMaterial;
         target.useWorldSpace = true;
@@ -549,10 +492,7 @@ public sealed class ElectricArcVFX : MonoBehaviour
         target.motionVectorGenerationMode = source.motionVectorGenerationMode;
     }
 
-    private static void BuildPerpendicularBasis(
-        Vector3 forward,
-        out Vector3 basisA,
-        out Vector3 basisB)
+    private static void BuildPerpendicularBasis(Vector3 forward, out Vector3 basisA, out Vector3 basisB)
     {
         basisA = Vector3.Cross(forward, Vector3.up);
 
@@ -581,17 +521,11 @@ public sealed class ElectricArcVFX : MonoBehaviour
 
     private void EnsurePointBuffer()
     {
-        pointCount =
-            Mathf.Clamp(
-                pointCount,
-                4,
-                28);
+        pointCount = Mathf.Clamp(pointCount, 4, 28);
 
-        if (points == null ||
-            points.Length != pointCount)
+        if (points == null || points.Length != pointCount)
         {
-            points =
-                new Vector3[pointCount];
+            points = new Vector3[pointCount];
         }
     }
 
@@ -606,27 +540,10 @@ public sealed class ElectricArcVFX : MonoBehaviour
         CacheReferences();
         EnsurePointBuffer();
 
-        refreshInterval =
-            Mathf.Max(
-                0.005f,
-                refreshInterval);
-
-        defaultLifetime =
-            Mathf.Max(
-                0.01f,
-                defaultLifetime);
-
-        baseWidth =
-            Mathf.Max(
-                0.001f,
-                baseWidth);
-
-        maxBranches =
-            Mathf.Clamp(
-                maxBranches,
-                0,
-                MaxBranches);
-
+        refreshInterval = Mathf.Max(0.005f, refreshInterval);
+        defaultLifetime = Mathf.Max(0.01f, defaultLifetime);
+        baseWidth = Mathf.Max(0.001f, baseWidth);
+        maxBranches = Mathf.Clamp(maxBranches, 0, MaxBranches);
         branchChance = Mathf.Clamp01(branchChance);
         branchWidthFactor = Mathf.Clamp(branchWidthFactor, 0.05f, 1f);
     }

@@ -6,11 +6,13 @@ using UnityEngine.Rendering;
 
 public static class ElectricGrenadeVfxSetup
 {
+    // Kept at the original generated path intentionally so rerunning setup
+    // updates the existing material/texture assets instead of duplicating them.
     private const string GeneratedFolder =
         "Assets/Game/Generated/VFX/ElectricGrenadeV3";
 
     private const string GeneratedRootName =
-        "Generated_ElectricBurstV3";
+        "Generated_ElectricBurstV5";
 
     private const string LineMaterialPath =
         GeneratedFolder + "/M_ElectricArc_Additive.mat";
@@ -24,10 +26,17 @@ public static class ElectricGrenadeVfxSetup
     private const string ParticleMaterialPath =
         GeneratedFolder + "/M_ElectricParticle_Additive.mat";
 
+
+    private const string EnergyCloudMaterialPath =
+        GeneratedFolder + "/M_ElectricEnergyCloud_Additive.mat";
+
     private const string SoftDotTexturePath =
         GeneratedFolder + "/T_ElectricSoftDot.asset";
 
-    [MenuItem("Tools/Kids VS Aliens/Setup/Electric Grenade VFX V3")]
+    private const string EnergyCloudTexturePath =
+        GeneratedFolder + "/T_ElectricEnergyCloud.asset";
+
+    [MenuItem("Tools/Kids VS Aliens/Setup/Electric Grenade VFX V5")]
     public static void Run()
     {
         ElectricGrenadeEffectData effectData =
@@ -36,7 +45,7 @@ public static class ElectricGrenadeVfxSetup
         if (effectData == null)
         {
             Debug.LogError(
-                "Electric Grenade VFX V3: could not find ElectricGrenadeEffectData.");
+                "Electric Grenade VFX V5: could not find ElectricGrenadeEffectData.");
 
             return;
         }
@@ -44,7 +53,7 @@ public static class ElectricGrenadeVfxSetup
         if (effectData.burstPrefab == null)
         {
             Debug.LogError(
-                $"Electric Grenade VFX V3: {effectData.name} has no burstPrefab assigned.",
+                $"Electric Grenade VFX V5: {effectData.name} has no burstPrefab assigned.",
                 effectData);
 
             return;
@@ -57,7 +66,7 @@ public static class ElectricGrenadeVfxSetup
         if (string.IsNullOrWhiteSpace(prefabPath))
         {
             Debug.LogError(
-                "Electric Grenade VFX V3: could not resolve the burst prefab asset path.",
+                "Electric Grenade VFX V5: could not resolve the burst prefab asset path.",
                 effectData);
 
             return;
@@ -67,6 +76,9 @@ public static class ElectricGrenadeVfxSetup
 
         Texture2D softDot =
             GetOrCreateSoftDotTexture();
+
+        Texture2D energyCloudTexture =
+            GetOrCreateEnergyCloudTexture();
 
         Material lineMaterial =
             GetOrCreateAdditiveMaterial(
@@ -89,6 +101,12 @@ public static class ElectricGrenadeVfxSetup
                 softDot,
                 Color.white);
 
+        Material energyCloudMaterial =
+            GetOrCreateAdditiveMaterial(
+                EnergyCloudMaterialPath,
+                energyCloudTexture,
+                Color.white);
+
         GameObject prefabRoot =
             PrefabUtility.LoadPrefabContents(
                 prefabPath);
@@ -101,7 +119,7 @@ public static class ElectricGrenadeVfxSetup
             if (burst == null)
             {
                 Debug.LogError(
-                    $"Electric Grenade VFX V3: no ElectricGrenadeBurstVFX found in {prefabPath}.");
+                    $"Electric Grenade VFX V5: no ElectricGrenadeBurstVFX found in {prefabPath}.");
 
                 return;
             }
@@ -116,6 +134,16 @@ public static class ElectricGrenadeVfxSetup
             {
                 UnityEngine.Object.DestroyImmediate(
                     previousGenerated.gameObject);
+            }
+
+            Transform previousV3 =
+                burst.transform.Find(
+                    "Generated_ElectricBurstV3");
+
+            if (previousV3 != null)
+            {
+                UnityEngine.Object.DestroyImmediate(
+                    previousV3.gameObject);
             }
 
             Transform previousV2 =
@@ -160,14 +188,14 @@ public static class ElectricGrenadeVfxSetup
                 CreateArcGroup(
                     generatedRoot,
                     "RadialArcs",
-                    10,
+                    16,
                     lineMaterial);
 
             ElectricArcVFX[] secondaryArcs =
                 CreateArcGroup(
                     generatedRoot,
                     "SecondaryArcs",
-                    7,
+                    10,
                     lineMaterial);
 
             ElectricArcVFX[] targetArcs =
@@ -184,6 +212,20 @@ public static class ElectricGrenadeVfxSetup
                     8,
                     lineMaterial);
 
+            ElectricArcVFX[] heroArcs =
+                CreateArcGroup(
+                    generatedRoot,
+                    "HeroArcs",
+                    4,
+                    lineMaterial);
+
+            ElectricArcVFX[] ignitionSpikes =
+                CreateArcGroup(
+                    generatedRoot,
+                    "IgnitionSpikes",
+                    10,
+                    lineMaterial);
+
             ParticleSystem sparks =
                 CreateSparkBurst(
                     generatedRoot,
@@ -194,6 +236,11 @@ public static class ElectricGrenadeVfxSetup
                     generatedRoot,
                     particleMaterial);
 
+            ElectricEnergyCloudVFX energyCloud =
+                CreateEnergyCloud(
+                    generatedRoot,
+                    energyCloudMaterial);
+
             WireBurst(
                 burst,
                 coreRenderer,
@@ -201,10 +248,13 @@ public static class ElectricGrenadeVfxSetup
                 shockRing,
                 sparks,
                 residual,
+                energyCloud,
                 radialArcs,
                 secondaryArcs,
                 targetArcs,
-                groundArcs);
+                groundArcs,
+                heroArcs,
+                ignitionSpikes);
 
             PrefabUtility.SaveAsPrefabAsset(
                 prefabRoot,
@@ -218,9 +268,10 @@ public static class ElectricGrenadeVfxSetup
                     prefabPath);
 
             Debug.Log(
-                "Electric Grenade VFX V3 configured. " +
-                "V3 fixes electric color/fading, keeps the core compact, extends the fading shock ring, " +
-                "and uses finer jagged lightning plus colored sparks. Throw one grenade and inspect the burst.");
+                "Electric Grenade VFX V5 configured. " +
+                "Current V5 density, hero bolts, ignition spikes and energy streak defaults are authored. " +
+                "V5 finalizes the V1 electric burst: clustered energy-cloud pockets, stretched internal wisps, and the existing lightning/core/ring pass. " +
+                "Throw one grenade and inspect the burst.");
         }
         finally
         {
@@ -283,6 +334,15 @@ public static class ElectricGrenadeVfxSetup
 
         DisableParticleReference(
             serialized.FindProperty("residualParticles"));
+
+
+        SerializedProperty energyCloudProperty =
+            serialized.FindProperty("energyCloud");
+
+        if (energyCloudProperty != null)
+        {
+            energyCloudProperty.objectReferenceValue = null;
+        }
 
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
@@ -637,6 +697,261 @@ public static class ElectricGrenadeVfxSetup
         return system;
     }
 
+
+    private static ElectricEnergyCloudVFX CreateEnergyCloud(
+        Transform parent,
+        Material material)
+    {
+        GameObject cloudRootObject =
+            new GameObject(
+                "EnergyCloud");
+
+        cloudRootObject.transform.SetParent(
+            parent,
+            false);
+
+        cloudRootObject.transform.localPosition =
+            Vector3.up * 0.10f;
+
+        ElectricEnergyCloudVFX cloud =
+            cloudRootObject.AddComponent<ElectricEnergyCloudVFX>();
+
+        ParticleSystem cloudBody =
+            CreateEnergyCloudLayer(
+                cloudRootObject.transform,
+                "CloudBody",
+                material,
+                false);
+
+        ParticleSystem brightWisps =
+            CreateEnergyCloudLayer(
+                cloudRootObject.transform,
+                "BrightWisps",
+                material,
+                true);
+
+        SerializedObject serialized =
+            new SerializedObject(cloud);
+
+        SetObjectReference(
+            serialized,
+            "cloudBody",
+            cloudBody);
+
+        SetObjectReference(
+            serialized,
+            "brightWisps",
+            brightWisps);
+
+        // Final V1 authored cloud defaults. The two particle systems stay cheap,
+        // while ElectricEnergyCloudVFX emits them from several small pockets
+        // so the volume is irregular instead of reading as one centered puff.
+        SetFloat(serialized, "bodyMinSizeRadiusFactor", 0.20f);
+        SetFloat(serialized, "bodyMaxSizeRadiusFactor", 0.38f);
+        SetFloat(serialized, "bodyMinSpeedRadiusFactor", 0.08f);
+        SetFloat(serialized, "bodyMaxSpeedRadiusFactor", 0.21f);
+        SetFloat(serialized, "bodyShapeRadiusFactor", 0.065f);
+        SetInt(serialized, "bodyPocketCount", 3);
+        SetFloat(serialized, "bodyPocketSpreadRadiusFactor", 0.12f);
+        SetInt(serialized, "bodyMinParticleCount", 22);
+        SetInt(serialized, "bodyMaxParticleCount", 28);
+        SetFloat(serialized, "wispMinSizeRadiusFactor", 0.09f);
+        SetFloat(serialized, "wispMaxSizeRadiusFactor", 0.21f);
+        SetFloat(serialized, "wispMinSpeedRadiusFactor", 0.14f);
+        SetFloat(serialized, "wispMaxSpeedRadiusFactor", 0.33f);
+        SetFloat(serialized, "wispShapeRadiusFactor", 0.05f);
+        SetInt(serialized, "wispPocketCount", 4);
+        SetFloat(serialized, "wispPocketSpreadRadiusFactor", 0.18f);
+        SetInt(serialized, "wispMinParticleCount", 22);
+        SetInt(serialized, "wispMaxParticleCount", 30);
+        SetFloat(serialized, "bodySecondaryMix", 0.18f);
+        SetFloat(serialized, "wispSecondaryMix", 0.34f);
+        SetFloat(serialized, "bodyAlpha", 0.52f);
+        SetFloat(serialized, "wispAlpha", 0.68f);
+
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(cloud);
+
+        cloud.Stop();
+        return cloud;
+    }
+
+    private static ParticleSystem CreateEnergyCloudLayer(
+        Transform parent,
+        string name,
+        Material material,
+        bool brightWispLayer)
+    {
+        GameObject objectRoot =
+            new GameObject(name);
+
+        objectRoot.transform.SetParent(
+            parent,
+            false);
+
+        ParticleSystem system =
+            objectRoot.AddComponent<ParticleSystem>();
+
+        ParticleSystem.MainModule main =
+            system.main;
+
+        main.loop = false;
+        main.playOnAwake = false;
+        main.simulationSpace =
+            ParticleSystemSimulationSpace.World;
+        main.startLifetime =
+            brightWispLayer
+                ? new ParticleSystem.MinMaxCurve(0.34f, 0.66f)
+                : new ParticleSystem.MinMaxCurve(0.60f, 0.84f);
+        main.startSpeed =
+            brightWispLayer
+                ? new ParticleSystem.MinMaxCurve(0.72f, 1.62f)
+                : new ParticleSystem.MinMaxCurve(0.40f, 0.98f);
+        main.startSize =
+            brightWispLayer
+                ? new ParticleSystem.MinMaxCurve(0.40f, 0.92f)
+                : new ParticleSystem.MinMaxCurve(0.92f, 1.82f);
+        main.startRotation =
+            new ParticleSystem.MinMaxCurve(
+                0f,
+                Mathf.PI * 2f);
+        main.maxParticles =
+            brightWispLayer
+                ? 40
+                : 36;
+
+        ParticleSystem.EmissionModule emission =
+            system.emission;
+
+        // ElectricEnergyCloudVFX emits manually from several offset pockets.
+        // Keep the module alive for simulation, but do not auto-burst here.
+        emission.enabled = true;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(Array.Empty<ParticleSystem.Burst>());
+
+        ParticleSystem.ShapeModule shape =
+            system.shape;
+
+        shape.enabled = true;
+        shape.shapeType =
+            ParticleSystemShapeType.Sphere;
+        shape.radius =
+            brightWispLayer
+                ? 0.13f
+                : 0.18f;
+        shape.radiusThickness = 1f;
+
+        ParticleSystem.SizeOverLifetimeModule sizeOverLifetime =
+            system.sizeOverLifetime;
+
+        sizeOverLifetime.enabled = true;
+
+        AnimationCurve sizeCurve =
+            brightWispLayer
+                ? new AnimationCurve(
+                    new Keyframe(0f, 0.28f),
+                    new Keyframe(0.10f, 0.88f),
+                    new Keyframe(0.48f, 1.08f),
+                    new Keyframe(1f, 0.38f))
+                : new AnimationCurve(
+                    new Keyframe(0f, 0.32f),
+                    new Keyframe(0.16f, 0.92f),
+                    new Keyframe(0.62f, 1.18f),
+                    new Keyframe(1f, 1.34f));
+
+        sizeOverLifetime.size =
+            new ParticleSystem.MinMaxCurve(
+                1f,
+                sizeCurve);
+
+        ParticleSystem.ColorOverLifetimeModule colorOverLifetime =
+            system.colorOverLifetime;
+
+        colorOverLifetime.enabled = true;
+
+        Gradient alphaGradient =
+            new Gradient();
+
+        alphaGradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(Color.white, 0f),
+                new GradientColorKey(Color.white, 1f)
+            },
+            brightWispLayer
+                ? new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(1f, 0.045f),
+                    new GradientAlphaKey(0.78f, 0.34f),
+                    new GradientAlphaKey(0.32f, 0.72f),
+                    new GradientAlphaKey(0f, 1f)
+                }
+                : new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.86f, 0.075f),
+                    new GradientAlphaKey(0.62f, 0.42f),
+                    new GradientAlphaKey(0.22f, 0.78f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+
+        colorOverLifetime.color =
+            new ParticleSystem.MinMaxGradient(
+                alphaGradient);
+
+        ParticleSystem.NoiseModule noise =
+            system.noise;
+
+        noise.enabled = true;
+        noise.quality =
+            ParticleSystemNoiseQuality.Medium;
+        noise.strength =
+            brightWispLayer
+                ? 0.84f
+                : 0.58f;
+        noise.frequency =
+            brightWispLayer
+                ? 0.72f
+                : 0.46f;
+        noise.scrollSpeed =
+            brightWispLayer
+                ? 0.54f
+                : 0.34f;
+        noise.damping = true;
+        noise.octaveCount = 2;
+        noise.octaveMultiplier = 0.52f;
+        noise.octaveScale = 2f;
+
+        ParticleSystemRenderer renderer =
+            objectRoot.GetComponent<ParticleSystemRenderer>();
+
+        renderer.sharedMaterial = material;
+        renderer.renderMode =
+            brightWispLayer
+                ? ParticleSystemRenderMode.Stretch
+                : ParticleSystemRenderMode.Billboard;
+        renderer.velocityScale =
+            brightWispLayer
+                ? 0.16f
+                : 0f;
+        renderer.lengthScale =
+            brightWispLayer
+                ? 0.52f
+                : 1f;
+        renderer.sortMode =
+            ParticleSystemSortMode.Distance;
+        renderer.shadowCastingMode =
+            ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+
+        system.Stop(
+            true,
+            ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        return system;
+    }
+
     private static ParticleSystem.MinMaxGradient CreateElectricGradient(
         Color start,
         Color end)
@@ -669,10 +984,13 @@ public static class ElectricGrenadeVfxSetup
         LineRenderer shockRing,
         ParticleSystem sparks,
         ParticleSystem residual,
+        ElectricEnergyCloudVFX energyCloud,
         ElectricArcVFX[] radialArcs,
         ElectricArcVFX[] secondaryArcs,
         ElectricArcVFX[] targetArcs,
-        ElectricArcVFX[] groundArcs)
+        ElectricArcVFX[] groundArcs,
+        ElectricArcVFX[] heroArcs,
+        ElectricArcVFX[] ignitionSpikes)
     {
         SerializedObject serialized =
             new SerializedObject(burst);
@@ -712,6 +1030,12 @@ public static class ElectricGrenadeVfxSetup
             "residualParticles",
             residual);
 
+
+        SetObjectReference(
+            serialized,
+            "energyCloud",
+            energyCloud);
+
         SetArray(
             serialized,
             "radialArcs",
@@ -732,8 +1056,18 @@ public static class ElectricGrenadeVfxSetup
             "groundArcs",
             groundArcs);
 
+        SetArray(
+            serialized,
+            "heroArcs",
+            heroArcs);
+
+        SetArray(
+            serialized,
+            "ignitionSpikes",
+            ignitionSpikes);
+
         // The component already existed in V2, so field initializers alone
-        // would not migrate its serialized timings. Re-apply the V3 authored
+        // would not migrate its serialized timings. Re-apply the current V5 authored
         // presentation defaults every time this setup command is run.
         SetFloat(serialized, "presentationDuration", 0.85f);
         SetFloat(serialized, "coreDuration", 0.24f);
@@ -763,6 +1097,21 @@ public static class ElectricGrenadeVfxSetup
         SetFloat(serialized, "groundArcLifetime", 0.16f);
         SetFloat(serialized, "groundArcWidthMultiplier", 0.85f);
         SetFloat(serialized, "groundArcJitterMultiplier", 0.55f);
+
+        // V5.1 electric-storm punch pass.
+        SetFloat(serialized, "heroArcLifetime", 0.20f);
+        SetFloat(serialized, "heroArcWidthMultiplier", 1.30f);
+        SetFloat(serialized, "heroArcJitterMultiplier", 0.90f);
+        SetFloat(serialized, "heroRetargetInterval", 0.08f);
+        SetFloat(serialized, "ignitionSpikeLifetime", 0.09f);
+        SetFloat(serialized, "ignitionSpikeWidthMultiplier", 0.58f);
+        SetFloat(serialized, "ignitionSpikeJitterMultiplier", 0.40f);
+        SetInt(serialized, "energyStreakBurstCount", 26);
+        SetVector2(serialized, "energyStreakLifetimeRange", new Vector2(0.15f, 0.30f));
+        SetVector2(serialized, "energyStreakLengthRange", new Vector2(0.18f, 0.55f));
+        SetVector2(serialized, "energyStreakTravelRange", new Vector2(1.0f, 3.0f));
+        SetVector2(serialized, "energyStreakWidthRange", new Vector2(0.014f, 0.024f));
+
         SetFloat(serialized, "originLift", 0.12f);
         SetFloat(serialized, "targetLift", 0.08f);
         SetFloat(serialized, "groundHeightJitter", 0.035f);
@@ -961,6 +1310,137 @@ public static class ElectricGrenadeVfxSetup
         return texture;
     }
 
+    private static Texture2D GetOrCreateEnergyCloudTexture()
+    {
+        Texture2D existing =
+            AssetDatabase.LoadAssetAtPath<Texture2D>(
+                EnergyCloudTexturePath);
+
+        if (existing != null)
+            return existing;
+
+        const int size = 128;
+
+        Texture2D texture =
+            new Texture2D(
+                size,
+                size,
+                TextureFormat.RGBA32,
+                true,
+                true)
+            {
+                name = "T_ElectricEnergyCloud",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+
+        Color[] pixels =
+            new Color[size * size];
+
+        for (int y = 0;
+             y < size;
+             y++)
+        {
+            for (int x = 0;
+                 x < size;
+                 x++)
+            {
+                float u =
+                    (x + 0.5f) /
+                    size;
+
+                float v =
+                    (y + 0.5f) /
+                    size;
+
+                float nx =
+                    u * 2f - 1f;
+
+                float ny =
+                    v * 2f - 1f;
+
+                float distance =
+                    Mathf.Sqrt(
+                        nx * nx +
+                        ny * ny);
+
+                float radial =
+                    Mathf.Clamp01(
+                        1f -
+                        Mathf.InverseLerp(
+                            0.42f,
+                            1.02f,
+                            distance));
+
+                radial =
+                    radial *
+                    radial *
+                    (3f - 2f * radial);
+
+                float coarse =
+                    Mathf.PerlinNoise(
+                        u * 3.2f + 11.7f,
+                        v * 3.2f + 4.1f);
+
+                float medium =
+                    Mathf.PerlinNoise(
+                        u * 7.4f + 2.3f,
+                        v * 7.4f + 17.9f);
+
+                float fine =
+                    Mathf.PerlinNoise(
+                        u * 15.5f + 31.2f,
+                        v * 15.5f + 7.6f);
+
+                float noise =
+                    coarse * 0.56f +
+                    medium * 0.30f +
+                    fine * 0.14f;
+
+                // Hollow a few patches so overlapping billboards read as
+                // turbulent wisps instead of stacked soft circles.
+                float breakup =
+                    Mathf.PerlinNoise(
+                        u * 5.1f + 43.8f,
+                        v * 5.1f + 22.4f);
+
+                float density =
+                    Mathf.Clamp01(
+                        (noise - 0.28f) *
+                        1.55f);
+
+                density *=
+                    Mathf.Lerp(
+                        0.48f,
+                        1f,
+                        breakup);
+
+                density =
+                    Mathf.Pow(
+                        density,
+                        1.25f) *
+                    radial;
+
+                pixels[
+                    y * size + x] =
+                    new Color(
+                        1f,
+                        1f,
+                        1f,
+                        density * 0.92f);
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply(true, false);
+
+        AssetDatabase.CreateAsset(
+            texture,
+            EnergyCloudTexturePath);
+
+        return texture;
+    }
+
     private static Material GetOrCreateCoreMaterial()
     {
         Material material =
@@ -974,7 +1454,7 @@ public static class ElectricGrenadeVfxSetup
         if (shader == null)
         {
             throw new InvalidOperationException(
-                "Electric Grenade VFX V3 requires Assets/Game/Shaders/VFX/ElectricAdditive.shader.");
+                "Electric Grenade VFX V5 requires Assets/Game/Shaders/VFX/ElectricAdditive.shader.");
         }
 
         if (material == null)
@@ -1032,7 +1512,7 @@ public static class ElectricGrenadeVfxSetup
         if (shader == null)
         {
             throw new InvalidOperationException(
-                "Electric Grenade VFX V3 requires Assets/Game/Shaders/VFX/ElectricAdditive.shader.");
+                "Electric Grenade VFX V5 requires Assets/Game/Shaders/VFX/ElectricAdditive.shader.");
         }
 
         if (material == null)
@@ -1075,7 +1555,9 @@ public static class ElectricGrenadeVfxSetup
                     ? 1.55f
                     : path == ParticleMaterialPath
                         ? 1.65f
-                        : 1.15f;
+                        : path == EnergyCloudMaterialPath
+                            ? 1.02f
+                            : 1.15f;
 
             material.SetFloat(
                 "_Intensity",

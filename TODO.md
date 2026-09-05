@@ -10,63 +10,179 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
-Current override — 5 Sep 2026
+1. Grenade Throw Animation Experiment — NEXT
 
-Knowledge + Feedback + Pause V1 implementation and
-review fixes are complete in code. Final compilation and all 43 Core EditMode tests
-passed (0 failures, 0 skipped). Finish acceptance in the existing Unity project:
+Grenade gameplay is already working. Electric Grenade VFX V1 is now closed enough for V1.
 
-Open GamePoc and run Tools > Kids VS Aliens > Setup > Knowledge Feedback & Pause V1.
+Next task is to test the existing grenade throw animation in the real player setup without coupling gameplay logic to animation polish.
 
-Inspect and save the gameplay scene manually; repeat for intended gameplay scenes.
+Test cases
 
-Playtest Amy/Granny Knowledge overlays, feedback and nested manual pause ownership.
+unarmed / melee
 
-Verify Held/Charging grenade pause/resume, fresh FIRE, ammo/equipment preservation.
+plasma pistol equipped
 
-Verify preview rendering/lighting and menu framing; test safe-area/mobile input on device.
+plasma rifle equipped
 
-After hand-tuning UI, checkpoint before setup reruns: generated visual defaults are reapplied.
+First implementation attempt
 
-Details and remaining acceptance checklist: Assets/Game/Docs/07-GAMEPLAY-PRESENTATION.md.
-Knowledge presentation V1 now precedes the older roadmap below. The existing repo
-already has grenade gameplay; do not rebuild it from the historical goals below.
+Use:
 
-PRIOR ROADMAP / FOLLOW-UP GOALS
+Animator Layer
 
-1. Grenade V1 — NEXT
+Avatar Mask
 
-Build a reusable grenade foundation from the existing project architecture.
+upper-body throw animation where possible
 
-Core goals
+existing locomotion continues underneath
 
-generic grenade item/data setup
+grenade gameplay / release timing remains controlled by gameplay code
+
+Goals
+
+Amy can throw while moving
+
+throw does not break locomotion
+
+throw does not permanently disturb weapon pose
+
+pistol/rifle return cleanly to their normal animation state
+
+grenade release can be synchronized to a clean animation event / authored release point
+
+gameplay still works if the animation is missing or interrupted
+
+keep the solution generic enough for Granny and future characters
+
+Important
+
+Do not over-invest yet.
+
+This is an experiment to determine whether the existing throw animation can work cleanly across:
+
+Unarmed
+
+Pistol
+
+Rifle
+
+If one shared upper-body layer looks bad for one weapon family, split animation handling by weapon stance rather than forcing one animation to fit everything.
+
+2. Knowledge + Feedback + Pause V1 — Acceptance
+
+Implementation and review fixes are complete in code.
+
+Final compilation and all 43 Core EditMode tests passed:
+
+0 failures
+
+0 skipped
+
+Remaining Unity acceptance:
+
+Open GamePoc
+
+Run Tools > Kids VS Aliens > Setup > Knowledge Feedback & Pause V1
+
+Inspect and save the gameplay scene manually
+
+Repeat for intended gameplay scenes
+
+Playtest Amy/Granny Knowledge overlays, feedback and nested manual pause ownership
+
+Verify Held/Charging grenade pause/resume, fresh FIRE, ammo/equipment preservation
+
+Verify preview rendering/lighting and menu framing
+
+Test safe-area/mobile input on device
+
+After hand-tuning UI, checkpoint before setup reruns because generated visual defaults are reapplied
+
+Details and remaining acceptance checklist:
+
+Assets/Game/Docs/07-GAMEPLAY-PRESENTATION.md
+
+CURRENTLY DONE / CLOSED ENOUGH FOR V1
+
+1. Grenade Gameplay Foundation
+
+Reusable grenade gameplay already exists.
+
+Current foundation includes:
+
+grenade item/data flow
 
 pickup / inventory / use flow
 
 throw input
 
-spawn from player/hand
+spawn / held grenade handling
 
 physics-based throw
 
 collision / activation
 
-configurable fuse or impact behavior
+configurable grenade gameplay behavior
 
-AoE hit resolution
+AoE gameplay effect path
 
-damage / status-effect hook
+damage / status-effect integration
 
-clean integration with existing combat architecture
+pause/resume handling while grenade is Held/Charging
 
-mobile-friendly / pool-friendly VFX path
+ammo/equipment preservation
 
-support multiple grenade types from the same base architecture
+mobile-friendly gameplay path
 
-Initial effect families
+Do not rebuild the grenade foundation from older roadmap text.
 
-Electric / Shock
+Electric Grenade VFX V1
+
+Closed enough for V1.
+
+Current visual stack:
+
+compact white/cyan energy core
+
+halo
+
+expanding/fading shock ring
+
+fractal/jagged lightning
+
+16 radial arcs
+
+10 secondary arcs
+
+target arcs
+
+ground crawlers
+
+4 hero bolts
+
+10 ignition spikes
+
+26 energy streaks
+
+reusable electric energy cloud
+
+irregular overlapping cloud pockets
+
+bright wisps
+
+pooled/reused runtime VFX architecture
+
+Final cleanup removed the obsolete Ionized Mist path.
+
+Current setup command:
+
+Tools > Kids VS Aliens > Setup > Electric Grenade VFX V5
+
+Do not continue polishing Electric Grenade VFX until the broader game V1 polish pass unless a real gameplay/readability problem appears.
+
+Future grenade effect families
+
+After animation / core combat priorities:
 
 Fire
 
@@ -74,45 +190,95 @@ Ice
 
 Toxic
 
-Implementation order
+Possible later families:
 
-placeholder grenade
+Shock variants
 
-throw
+Gravity / pull
 
-physics
+Healing
 
-activation
+Sticky
 
-AoE gameplay effect
+Smoke / confusion
 
-VFX
+EMP
 
-polish
+2. Plasma Pistol
 
-A dedicated grenade implementation prompt/spec may override details here.
+equipped / dropped / menu preview
+
+shooting
+
+hitscan gameplay + visual plasma bolt
+
+impact VFX
+
+muzzle safety
+
+skill gating
+
+Pistol Handling Knowledge Book
+
+3. Plasma Rifle
+
+rifle asset
+
+materials
+
+PlasmaCore
+
+dropped prefab
+
+equipped prefab
+
+menu preview prefab
+
+automatic fire
+
+rifle animation style
+
+menu item/catalog integration
+
+Rifle Handling skill
+
+Rifle Handling Knowledge Book
+
+required skill wired
+
+4. Melee Alien V1
+
+NavMesh
+
+perception/FOV/LOS
+
+chase
+
+investigation
+
+melee attack
+
+hit reaction
+
+death
+
+5. Core Mobile Foundation
+
+Android build
+
+mobile controls
+
+auto aim
+
+sticky lock / switching
+
+LOS/cover
+
+wall fading
 
 NEXT
 
-2. Grenade Throw Animation Experiment
-
-After gameplay works:
-
-test existing grenade throw animation
-
-test while rifle equipped
-
-test while pistol equipped
-
-test while unarmed / melee
-
-first attempt: Animator Layer + Avatar Mask
-
-keep gameplay independent from final animation polish
-
-Do not over-invest if final animation assets will replace the setup.
-
-3. Unarmed Combat V1
+1. Unarmed Combat V1
 
 Build the first real player melee foundation.
 
@@ -148,7 +314,7 @@ hold
 
 Important
 
-first tap must never feel delayed while waiting for a possible second tap
+First tap must never feel delayed while waiting for a possible second tap.
 
 Future
 
@@ -156,11 +322,11 @@ charged Ultra moves
 
 tune combo windows through playtesting
 
-4. Generic Melee Weapon Framework
+2. Generic Melee Weapon Framework
 
 After unarmed combat works.
 
-Support weapons such as
+Support weapons such as:
 
 baseball bat
 
@@ -184,7 +350,7 @@ item/equipment integration
 
 weapon-specific tuning without one-off duplicated systems
 
-5. Ranged Alien V1
+3. Ranged Alien V1
 
 Add the second real enemy combat role.
 
@@ -206,21 +372,17 @@ begin making cover/fences tactically important
 
 Do not build a separate enemy framework.
 
-6. Knowledge Hologram / Tutorial Presentation
+4. Knowledge Hologram / Tutorial Presentation
 
 Finish the Knowledge Book presentation layer.
 
 Desired flow
 
 Gain Knowledge
-
-hologram demonstration
-
-Amy demonstrates technique
-
-KNOWLEDGE ACQUIRED
-
-control returns
+→ hologram demonstration
+→ Amy demonstrates technique
+→ KNOWLEDGE ACQUIRED
+→ control returns
 
 Requirements
 
@@ -232,85 +394,11 @@ skippable/replayable direction later
 
 presentation should not own the actual skill-unlock logic
 
-CURRENTLY DONE / CLOSED ENOUGH FOR V1
-
-1. Plasma Pistol
-
-equipped / dropped / menu preview
-
-shooting
-
-hitscan gameplay + visual plasma bolt
-
-impact VFX
-
-muzzle safety
-
-skill gating
-
-Pistol Handling Knowledge Book
-
-2. Plasma Rifle
-
-rifle asset
-
-materials
-
-PlasmaCore
-
-dropped prefab
-
-equipped prefab
-
-menu preview prefab
-
-automatic fire
-
-rifle animation style
-
-menu item/catalog integration
-
-Rifle Handling skill
-
-Rifle Handling Knowledge Book
-
-required skill wired
-
-3. Melee Alien V1
-
-NavMesh
-
-perception/FOV/LOS
-
-chase
-
-investigation
-
-melee attack
-
-hit reaction
-
-death
-
-4. Core Mobile Foundation
-
-Android build
-
-mobile controls
-
-auto aim
-
-sticky lock / switching
-
-LOS/cover
-
-wall fading
-
 NICE TO HAVE / PARKED
 
 1. Rifle Left-Hand Grip / IK
 
-rifle already contains LeftGripPoint
+Rifle already contains LeftGripPoint.
 
 right hand remains real weapon attachment
 
@@ -328,7 +416,7 @@ then exposed upper body
 
 lower body fallback
 
-real Physics.Raycast remains authoritative
+Real Physics.Raycast remains authoritative.
 
 3. Circular Target Rail
 
@@ -337,7 +425,7 @@ Circular rail can come later.
 
 4. Camera Feel Pass
 
-Test
+Test:
 
 current
 
@@ -349,7 +437,7 @@ Do this in real combat, not only practice range.
 
 5. Pistol / Rifle Polish
 
-Later
+Later:
 
 recoil
 
@@ -369,7 +457,7 @@ PERFORMANCE / TECHNICAL LATER
 
 1. Mobile Profiling
 
-Profile before optimizing
+Profile before optimizing:
 
 CPU
 
@@ -387,7 +475,7 @@ memory
 
 thermal throttling
 
-Reference device
+Reference device:
 
 OnePlus Nord 3
 
@@ -419,7 +507,7 @@ Reusable grenade LOD pipeline, not necessarily one universal grenade mesh.
 
 Grenades that share the same physical base should reuse the same body/lever/pin/ring meshes and the same generated LOD meshes.
 
-Visually distinct grenade families may use their own base mesh, but must use the exact same automatic Blender -> Unity LOD workflow.
+Visually distinct grenade families may use their own base mesh, but must use the exact same automatic Blender → Unity LOD workflow.
 
 Grenade types should mainly differ through core/chamber/VFX/material treatment where possible.
 
@@ -439,37 +527,37 @@ Automatically output reusable visual LODs:
 
 LOD0: hero mesh, current quality (~22k tris)
 
-LOD1: ~8-12k tris
+LOD1: ~8–12k tris
 
-LOD2: ~2-4k tris
+LOD2: ~2–4k tris
 
 LOD generation should preserve the important silhouette and readable gameplay details while aggressively reducing geometry that is insignificant at distance.
 
 Unity integration
 
-Use Unity-compatible LOD naming.
+use Unity-compatible LOD naming
 
-Automatically detect/import generated LOD meshes.
+automatically detect/import generated LOD meshes
 
-Automatically create and populate the LODGroup.
+automatically create and populate the LODGroup
 
-Automatically assign sensible default transition thresholds.
+automatically assign sensible default transition thresholds
 
-No per-grenade manual renderer dragging or LOD configuration.
+no per-grenade manual renderer dragging or LOD configuration
 
-Gameplay logic, Rigidbody, colliders, damage and grenade state must remain independent from visual LOD switching.
+gameplay logic, Rigidbody, colliders, damage and grenade state remain independent from visual LOD switching
 
-Shared grenade bodies reuse the same LOD mesh assets instead of duplicating them per grenade type.
+shared grenade bodies reuse the same LOD mesh assets instead of duplicating them per grenade type
 
 Materials / draw calls
 
-Profile the current material cost.
+profile the current material cost
 
-Reduce/shared materials if the current 8-material setup becomes expensive.
+reduce/shared materials if the current 8-material setup becomes expensive
 
-Keep glass and emissive materials separate where required.
+keep glass and emissive materials separate where required
 
-Prefer shared materials across grenade families whenever visually practical.
+prefer shared materials across grenade families whenever visually practical
 
 Mobile stress case
 
@@ -487,7 +575,7 @@ grenade VFX
 
 other scene VFX
 
-Measure
+Measure:
 
 CPU
 
@@ -505,17 +593,17 @@ thermal behavior
 
 VFX
 
-Pool grenade VFX.
+pool grenade VFX
 
-Allow grenade VFX complexity/effect density to scale with graphics presets where useful.
+allow grenade VFX complexity/effect density to scale with graphics presets where useful
 
-Visual LOD/VFX reduction should happen automatically where practical.
+visual LOD/VFX reduction should happen automatically where practical
 
 Goal
 
-Solve the Blender -> Unity LOD/configuration pipeline once.
+Solve the Blender → Unity LOD/configuration pipeline once.
 
-Do NOT manually create/configure three separate LOD setups for every grenade type.
+Do not manually create/configure three separate LOD setups for every grenade type.
 
 Shared physical grenade bases reuse shared LODs.
 Unique grenade bodies may have unique LOD meshes, but their generation/import/setup must still be automatic.
@@ -530,7 +618,7 @@ Medium
 
 High
 
-Potential controls
+Potential controls:
 
 render scale
 
@@ -560,7 +648,7 @@ A collaborator currently owns most level/environment construction.
 
 Core coding work should support level creation rather than taking it over unless explicitly requested.
 
-Future gameplay systems that level work may need
+Future gameplay systems that level work may need:
 
 ranged enemy
 
@@ -578,7 +666,7 @@ FUTURE SYSTEMS
 
 1. Alien Beam / Hoist
 
-Reusable traversal prefab
+Reusable traversal prefab:
 
 capture/lift player
 
@@ -592,7 +680,7 @@ custom VFX/animation later
 
 2. Gauntlets
 
-Future combat family
+Future combat family:
 
 basic attack
 
@@ -604,7 +692,7 @@ charged move
 
 Ultra
 
-Possible powers
+Possible powers:
 
 shock
 
@@ -620,7 +708,7 @@ knockback
 
 3. Progression Expansion
 
-Direction
+Direction:
 
 Knowledge = permanent capability unlock
 
@@ -630,7 +718,7 @@ prevent early-level grinding from trivializing later content
 
 meaningful level unlocks > tiny stat bumps
 
-UI / Product Later
+UI / PRODUCT LATER
 
 objective presentation
 
