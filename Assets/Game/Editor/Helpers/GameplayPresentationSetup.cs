@@ -131,19 +131,34 @@ public static class GameplayPresentationSetup
             "PistolHandling",
             "Assets/Game/Items/Weapons/PlasmaPistolItem.asset",
             "You can now operate plasma pistols.",
-            "Press FIRE to shoot."
+            "Press FIRE to shoot.",
+            SkillDemoType.WeaponFire,
+            CharacterActionId.PistolFire,
+            4,
+            0.7f,
+            2.0f
         );
         Tutorial(
             "RifleHandling",
             "Assets/Game/Items/Weapons/PlasmaRifleItem.asset",
             "You can now operate plasma rifles.",
-            "Hold FIRE to fire automatically."
+            "Hold FIRE to fire automatically.",
+            SkillDemoType.WeaponFire,
+            CharacterActionId.RifleFire,
+            6,
+            0.14f,
+            1.5f
         );
         Tutorial(
             "GrenadeHandling",
             "Assets/Game/Data/Items/Grenades/ElectricGrenade.asset",
             "You can now activate alien grenades.",
-            "Select a grenade. Hold FIRE to charge; release to throw."
+            "Select a grenade. Hold FIRE to charge; release to throw.",
+            SkillDemoType.Stance,
+            CharacterActionId.EquippedStance,
+            0,
+            0.7f,
+            2.0f
         );
     }
 
@@ -197,7 +212,12 @@ public static class GameplayPresentationSetup
         // Input-only blocker. Keep it visually transparent so suspension never
         // tints the mobile HUD. Knowledge dimming is handled by a separate
         // low-sorting canvas beneath the gameplay HUD.
-        RectTransform blocker = Panel(root.transform, "SuspensionInputBlocker", Color.clear, true);
+        RectTransform blocker = Panel(
+            root.transform,
+            "SuspensionInputBlocker",
+            Color.clear,
+            true
+        );
         Stretch(blocker);
         blocker.SetAsFirstSibling();
         blocker.gameObject.SetActive(false);
@@ -276,7 +296,12 @@ public static class GameplayPresentationSetup
         // block gameplay pointer input and keep the modal above the HUD, but
         // the overlay itself is transparent. This prevents the dark tint from
         // washing over joystick/action-button edges.
-        RectTransform overlay = Panel(root.transform, "KnowledgeOverlay", Color.clear, true);
+        RectTransform overlay = Panel(
+            root.transform,
+            "KnowledgeOverlay",
+            Color.clear,
+            true
+        );
         Stretch(overlay);
         overlay.SetAsLastSibling();
 
@@ -340,7 +365,12 @@ public static class GameplayPresentationSetup
 
         RectTransform previewFrame = Panel(content, "PreviewFrame", Color.white, false);
         Anchors(previewFrame, new Vector2(0.27f, 0.38f), new Vector2(0.73f, 0.86f));
-        StyleSprite(previewFrame, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.78f));
+        StyleSprite(
+            previewFrame,
+            neonPill,
+            Image.Type.Sliced,
+            new Color(1f, 1f, 1f, 0.78f)
+        );
         DisableOutline(previewFrame.gameObject);
         // CharacterRender uses a square RenderTexture/AspectRatioFitter. Mask it
         // to the neon frame so the preview can never bleed into title/text space.
@@ -361,13 +391,31 @@ public static class GameplayPresentationSetup
 
         TMP_Text description = Text(content, "Description", "", 25);
         description.color = new Color(0.90f, 0.92f, 1f, 1f);
-        Anchors(description.rectTransform, new Vector2(0.10f, 0.205f), new Vector2(0.90f, 0.285f));
+        Anchors(
+            description.rectTransform,
+            new Vector2(0.10f, 0.205f),
+            new Vector2(0.90f, 0.285f)
+        );
 
-        RectTransform instructionPlate = Panel(content, "InstructionPlate", Color.white, false);
+        RectTransform instructionPlate = Panel(
+            content,
+            "InstructionPlate",
+            Color.white,
+            false
+        );
         // Leave enough vertical room for two-line instructions (grenades and future
         // skills) while keeping the same compact NeonPill treatment for short text.
-        Anchors(instructionPlate, new Vector2(0.17f, 0.105f), new Vector2(0.83f, 0.215f));
-        StyleSprite(instructionPlate, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.58f));
+        Anchors(
+            instructionPlate,
+            new Vector2(0.17f, 0.105f),
+            new Vector2(0.83f, 0.215f)
+        );
+        StyleSprite(
+            instructionPlate,
+            neonPill,
+            Image.Type.Sliced,
+            new Color(1f, 1f, 1f, 0.58f)
+        );
 
         // V4 kept Instructions as a sibling of the plate. Move/reuse that generated
         // object inside the plate so wrapping/autosizing is constrained by the pill.
@@ -383,7 +431,11 @@ public static class GameplayPresentationSetup
         instructions.enableAutoSizing = true;
         instructions.fontSizeMin = 15f;
         instructions.fontSizeMax = 22f;
-        Anchors(instructions.rectTransform, new Vector2(0.055f, 0.10f), new Vector2(0.945f, 0.90f));
+        Anchors(
+            instructions.rectTransform,
+            new Vector2(0.055f, 0.10f),
+            new Vector2(0.945f, 0.90f)
+        );
 
         RectTransform acknowledge = Panel(content, "Acknowledge", Color.white, true);
         Anchors(acknowledge, new Vector2(0.34f, 0.018f), new Vector2(0.66f, 0.095f));
@@ -604,7 +656,12 @@ public static class GameplayPresentationSetup
         string skillName,
         string equipmentPath,
         string description,
-        string instructions
+        string instructions,
+        SkillDemoType demoType,
+        CharacterActionId action,
+        int shotsPerBurst,
+        float shotInterval,
+        float burstPause
     )
     {
         var skill = AssetDatabase.LoadAssetAtPath<SkillData>(
@@ -615,20 +672,43 @@ public static class GameplayPresentationSetup
             Debug.LogWarning($"Initial tutorial skipped: {skillName} skill asset is missing.");
             return;
         }
+
         var tutorial = Asset<SkillTutorialData>(
             $"{DataFolder}/{skillName}Tutorial.asset",
             out bool created
         );
+
         if (created)
         {
             tutorial.shortDescription = description;
             tutorial.instructions = instructions;
             tutorial.equipment = AssetDatabase.LoadAssetAtPath<ItemData>(equipmentPath);
-            tutorial.action = CharacterActionId.EquippedStance;
             tutorial.localizationKey = "knowledge." + skill.Id;
-            EditorUtility.SetDirty(tutorial);
-            AssetDatabase.SaveAssetIfDirty(tutorial);
         }
+
+        // One-time migration for the initial generated tutorials. Once a tutorial
+        // has a non-Stance demo type we preserve hand-tuned weapon timing on reruns.
+        bool untouchedDemo =
+            tutorial.demoType == SkillDemoType.Stance
+            && tutorial.action == CharacterActionId.EquippedStance;
+
+        if (created || (untouchedDemo && demoType != SkillDemoType.Stance))
+        {
+            tutorial.demoType = demoType;
+            tutorial.action = action;
+
+            if (demoType == SkillDemoType.WeaponFire)
+            {
+                tutorial.weaponInitialDelay = 0.35f;
+                tutorial.weaponShotsPerBurst = Mathf.Max(1, shotsPerBurst);
+                tutorial.weaponShotInterval = Mathf.Max(0.05f, shotInterval);
+                tutorial.weaponBurstPause = Mathf.Max(0f, burstPause);
+                tutorial.weaponBoltDistance = 2.5f;
+                tutorial.weaponRecoilDistance = 0.035f;
+                tutorial.weaponRecoilDuration = 0.12f;
+            }
+        }
+
         // The original generated framing was conservative (1.15; an earlier
         // menu-style pass used 0.85). 0.80 fits Amy/Granny well in the current
         // compact frame. Migrate only those known untouched defaults and preserve
@@ -639,6 +719,10 @@ public static class GameplayPresentationSetup
         )
         {
             tutorial.distanceMultiplier = 0.80f;
+        }
+
+        if (created || untouchedDemo)
+        {
             EditorUtility.SetDirty(tutorial);
             AssetDatabase.SaveAssetIfDirty(tutorial);
         }

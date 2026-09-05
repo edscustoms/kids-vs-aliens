@@ -16,9 +16,17 @@ MonoBehaviour:
   shortDescription: You can now operate plasma pistols.
   instructions: Press FIRE to shoot.
   localizationKey: knowledge.pistol_handling
-  action: 0
+  demoType: 1
+  action: 1
   equipment: {fileID: 11400000, guid: 3765c3b1e078cf14487dc137ccde2ce1, type: 2}
   loop: 1
   loopDuration: 4
+  weaponInitialDelay: 0.35
+  weaponShotsPerBurst: 4
+  weaponShotInterval: 0.7
+  weaponBurstPause: 2
+  weaponBoltDistance: 2.5
+  weaponRecoilDistance: 0.035
+  weaponRecoilDuration: 0.12
   distanceMultiplier: 0.8
   targetOffset: {x: 0, y: 0, z: 0}

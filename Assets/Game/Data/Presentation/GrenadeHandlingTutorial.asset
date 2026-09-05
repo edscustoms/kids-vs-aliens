@@ -16,9 +16,17 @@ MonoBehaviour:
   shortDescription: You can now activate alien grenades.
   instructions: Select a grenade. Hold FIRE to charge; release to throw.
   localizationKey: knowledge.grenade_handling
+  demoType: 0
   action: 0
   equipment: {fileID: 11400000, guid: 92e2ba6e5eb8dc84ab05d1933af0f3c7, type: 2}
   loop: 1
   loopDuration: 4
+  weaponInitialDelay: 0.35
+  weaponShotsPerBurst: 4
+  weaponShotInterval: 0.7
+  weaponBurstPause: 2
+  weaponBoltDistance: 2.5
+  weaponRecoilDistance: 0.035
+  weaponRecoilDuration: 0.12
   distanceMultiplier: 0.8
   targetOffset: {x: 0, y: 0, z: 0}
