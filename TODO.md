@@ -10,7 +10,9 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
-Current override — 5 Sep 2026: Knowledge + Feedback + Pause V1 implementation and
+Current override — 5 Sep 2026
+
+Knowledge + Feedback + Pause V1 implementation and
 review fixes are complete in code. Final compilation and all 43 Core EditMode tests
 passed (0 failures, 0 skipped). Finish acceptance in the existing Unity project:
 
@@ -32,11 +34,11 @@ already has grenade gameplay; do not rebuild it from the historical goals below.
 
 PRIOR ROADMAP / FOLLOW-UP GOALS
 
-Grenade V1 — NEXT
+1. Grenade V1 — NEXT
 
 Build a reusable grenade foundation from the existing project architecture.
 
-Core goals:
+Core goals
 
 generic grenade item/data setup
 
@@ -62,7 +64,7 @@ mobile-friendly / pool-friendly VFX path
 
 support multiple grenade types from the same base architecture
 
-Initial effect families:
+Initial effect families
 
 Electric / Shock
 
@@ -72,27 +74,27 @@ Ice
 
 Toxic
 
-Implementation order:
+Implementation order
 
 placeholder grenade
-↓
+
 throw
-↓
+
 physics
-↓
+
 activation
-↓
+
 AoE gameplay effect
-↓
+
 VFX
-↓
+
 polish
 
 A dedicated grenade implementation prompt/spec may override details here.
 
 NEXT
 
-Grenade Throw Animation Experiment
+2. Grenade Throw Animation Experiment
 
 After gameplay works:
 
@@ -110,11 +112,11 @@ keep gameplay independent from final animation polish
 
 Do not over-invest if final animation assets will replace the setup.
 
-Unarmed Combat V1
+3. Unarmed Combat V1
 
 Build the first real player melee foundation.
 
-Goals:
+Goals
 
 punch
 
@@ -130,7 +132,7 @@ reusable hit resolution
 
 proficiency/skill-family integration where appropriate
 
-Current mobile input idea:
+Current mobile input idea
 
 tap attack
 → punch immediately
@@ -144,21 +146,21 @@ continued taps
 hold
 → future Ultra
 
-Important:
+Important
 
 first tap must never feel delayed while waiting for a possible second tap
 
-Future:
+Future
 
 charged Ultra moves
 
 tune combo windows through playtesting
 
-Generic Melee Weapon Framework
+4. Generic Melee Weapon Framework
 
 After unarmed combat works.
 
-Support weapons such as:
+Support weapons such as
 
 baseball bat
 
@@ -172,7 +174,7 @@ wooden stick
 
 alien / plasma blade
 
-Goals:
+Goals
 
 common melee hit architecture
 
@@ -182,11 +184,11 @@ item/equipment integration
 
 weapon-specific tuning without one-off duplicated systems
 
-Ranged Alien V1
+5. Ranged Alien V1
 
 Add the second real enemy combat role.
 
-Goals:
+Goals
 
 reuse current enemy navigation/perception/LOS/investigation foundation
 
@@ -204,23 +206,23 @@ begin making cover/fences tactically important
 
 Do not build a separate enemy framework.
 
-Knowledge Hologram / Tutorial Presentation
+6. Knowledge Hologram / Tutorial Presentation
 
 Finish the Knowledge Book presentation layer.
 
-Desired flow:
+Desired flow
 
 Gain Knowledge
-↓
+
 hologram demonstration
-↓
+
 Amy demonstrates technique
-↓
+
 KNOWLEDGE ACQUIRED
-↓
+
 control returns
 
-Requirements:
+Requirements
 
 generic across weapon/melee/ability/alien-tech skills
 
@@ -232,7 +234,7 @@ presentation should not own the actual skill-unlock logic
 
 CURRENTLY DONE / CLOSED ENOUGH FOR V1
 
-Plasma Pistol
+1. Plasma Pistol
 
 equipped / dropped / menu preview
 
@@ -248,7 +250,7 @@ skill gating
 
 Pistol Handling Knowledge Book
 
-Plasma Rifle
+2. Plasma Rifle
 
 rifle asset
 
@@ -274,7 +276,7 @@ Rifle Handling Knowledge Book
 
 required skill wired
 
-Melee Alien V1
+3. Melee Alien V1
 
 NavMesh
 
@@ -290,7 +292,7 @@ hit reaction
 
 death
 
-Core Mobile Foundation
+4. Core Mobile Foundation
 
 Android build
 
@@ -306,7 +308,7 @@ wall fading
 
 NICE TO HAVE / PARKED
 
-Rifle Left-Hand Grip / IK
+1. Rifle Left-Hand Grip / IK
 
 rifle already contains LeftGripPoint
 
@@ -316,7 +318,7 @@ add left-hand IK only after final rifle animations exist
 
 not required for Rifle V1
 
-Amy Short-Cover Aim-Point Priority
+2. Amy Short-Cover Aim-Point Priority
 
 When low cover blocks the lower/center shot path:
 
@@ -328,14 +330,14 @@ lower body fallback
 
 real Physics.Raycast remains authoritative
 
-Circular Target Rail
+3. Circular Target Rail
 
 Straight rail works.
 Circular rail can come later.
 
-Camera Feel Pass
+4. Camera Feel Pass
 
-Test:
+Test
 
 current
 
@@ -345,9 +347,9 @@ current-ish distance + subtle aim/movement look-ahead
 
 Do this in real combat, not only practice range.
 
-Pistol / Rifle Polish
+5. Pistol / Rifle Polish
 
-Later:
+Later
 
 recoil
 
@@ -365,9 +367,9 @@ final weapon animation polish
 
 PERFORMANCE / TECHNICAL LATER
 
-Mobile Profiling
+1. Mobile Profiling
 
-Profile before optimizing:
+Profile before optimizing
 
 CPU
 
@@ -385,13 +387,13 @@ memory
 
 thermal throttling
 
-Reference device:
+Reference device
 
 OnePlus Nord 3
 
 Then test older Android hardware.
 
-Pooling
+2. Pooling
 
 Pool frequent gameplay effects when justified:
 
@@ -407,79 +409,109 @@ enemy projectiles
 
 Avoid building a giant universal pooling framework prematurely.
 
-Grenade Asset LOD / Mobile Rendering Pass
+3. Grenade Asset LOD / Mobile Rendering Pass
 
 Build this once as a reusable grenade optimization pipeline so future grenade types do not require separate manual LOD setup/configuration.
 
-Architecture:
+Architecture
 
-- Reusable grenade LOD pipeline, not necessarily one universal grenade mesh.
-- Grenades that share the same physical base should reuse the same body/lever/pin/ring meshes and the same generated LOD meshes.
-- Visually distinct grenade families may use their own base mesh, but must use the exact same automatic Blender -> Unity LOD workflow.
-- Grenade types should mainly differ through core/chamber/VFX/material treatment where possible.
+Reusable grenade LOD pipeline, not necessarily one universal grenade mesh.
 
-Current Gravity Grenade reference:
+Grenades that share the same physical base should reuse the same body/lever/pin/ring meshes and the same generated LOD meshes.
 
-- ~22.3k triangles
-- ~11.3k vertices
-- 5 mesh objects
-- 8 materials
+Visually distinct grenade families may use their own base mesh, but must use the exact same automatic Blender -> Unity LOD workflow.
 
-Blender generation:
+Grenade types should mainly differ through core/chamber/VFX/material treatment where possible.
+
+Current Gravity Grenade reference
+
+~22.3k triangles
+
+~11.3k vertices
+
+5 mesh objects
+
+8 materials
+
+Blender generation
 
 Automatically output reusable visual LODs:
 
-- LOD0: hero mesh, current quality (~22k tris)
-- LOD1: ~8-12k tris
-- LOD2: ~2-4k tris
+LOD0: hero mesh, current quality (~22k tris)
+
+LOD1: ~8-12k tris
+
+LOD2: ~2-4k tris
 
 LOD generation should preserve the important silhouette and readable gameplay details while aggressively reducing geometry that is insignificant at distance.
 
-Unity integration:
+Unity integration
 
-- Use Unity-compatible LOD naming.
-- Automatically detect/import generated LOD meshes.
-- Automatically create and populate the LODGroup.
-- Automatically assign sensible default transition thresholds.
-- No per-grenade manual renderer dragging or LOD configuration.
-- Gameplay logic, Rigidbody, colliders, damage and grenade state must remain independent from visual LOD switching.
-- Shared grenade bodies reuse the same LOD mesh assets instead of duplicating them per grenade type.
+Use Unity-compatible LOD naming.
 
-Materials / draw calls:
+Automatically detect/import generated LOD meshes.
 
-- Profile the current material cost.
-- Reduce/shared materials if the current 8-material setup becomes expensive.
-- Keep glass and emissive materials separate where required.
-- Prefer shared materials across grenade families whenever visually practical.
+Automatically create and populate the LODGroup.
 
-Mobile stress case:
+Automatically assign sensible default transition thresholds.
+
+No per-grenade manual renderer dragging or LOD configuration.
+
+Gameplay logic, Rigidbody, colliders, damage and grenade state must remain independent from visual LOD switching.
+
+Shared grenade bodies reuse the same LOD mesh assets instead of duplicating them per grenade type.
+
+Materials / draw calls
+
+Profile the current material cost.
+
+Reduce/shared materials if the current 8-material setup becomes expensive.
+
+Keep glass and emissive materials separate where required.
+
+Prefer shared materials across grenade families whenever visually practical.
+
+Mobile stress case
 
 Profile on OnePlus Nord 3 with approximately:
 
-- 38 grenade instances
-- 12 characters
-- active combat
-- projectiles
-- grenade VFX
-- other scene VFX
+38 grenade instances
 
-Measure:
+12 characters
 
-- CPU
-- GPU
-- draw calls
-- triangles
-- overdraw
-- memory
-- thermal behavior
+active combat
 
-VFX:
+projectiles
 
-- Pool grenade VFX.
-- Allow grenade VFX complexity/effect density to scale with graphics presets where useful.
-- Visual LOD/VFX reduction should happen automatically where practical.
+grenade VFX
 
-Goal:
+other scene VFX
+
+Measure
+
+CPU
+
+GPU
+
+draw calls
+
+triangles
+
+overdraw
+
+memory
+
+thermal behavior
+
+VFX
+
+Pool grenade VFX.
+
+Allow grenade VFX complexity/effect density to scale with graphics presets where useful.
+
+Visual LOD/VFX reduction should happen automatically where practical.
+
+Goal
 
 Solve the Blender -> Unity LOD/configuration pipeline once.
 
@@ -488,15 +520,17 @@ Do NOT manually create/configure three separate LOD setups for every grenade typ
 Shared physical grenade bases reuse shared LODs.
 Unique grenade bodies may have unique LOD meshes, but their generation/import/setup must still be automatic.
 
-Graphics Presets
+4. Graphics Presets
 
 Create meaningful:
 
 Low
+
 Medium
+
 High
 
-Potential controls:
+Potential controls
 
 render scale
 
@@ -512,7 +546,7 @@ bloom / post-processing
 
 effect density
 
-Android / Build Checks
+5. Android / Build Checks
 
 keep editor-baked target MeshCollider workflow
 
@@ -526,7 +560,7 @@ A collaborator currently owns most level/environment construction.
 
 Core coding work should support level creation rather than taking it over unless explicitly requested.
 
-Future gameplay systems that level work may need:
+Future gameplay systems that level work may need
 
 ranged enemy
 
@@ -542,9 +576,9 @@ combat encounter tools
 
 FUTURE SYSTEMS
 
-Alien Beam / Hoist
+1. Alien Beam / Hoist
 
-Reusable traversal prefab:
+Reusable traversal prefab
 
 capture/lift player
 
@@ -556,9 +590,9 @@ placeholder VFX first
 
 custom VFX/animation later
 
-Gauntlets
+2. Gauntlets
 
-Future combat family:
+Future combat family
 
 basic attack
 
@@ -570,7 +604,7 @@ charged move
 
 Ultra
 
-Possible powers:
+Possible powers
 
 shock
 
@@ -584,9 +618,9 @@ telekinesis
 
 knockback
 
-Progression Expansion
+3. Progression Expansion
 
-Direction:
+Direction
 
 Knowledge = permanent capability unlock
 
@@ -617,17 +651,17 @@ DEVELOPMENT RULE
 For every major feature:
 
 inspect current architecture
-↓
+
 design smallest compatible V1
-↓
+
 implement
-↓
+
 test in Unity
-↓
+
 test on Android when relevant
-↓
+
 fix root causes
-↓
+
 polish later
 
 Do not expand scope during implementation unless the extra work is required for the feature to be correct.
