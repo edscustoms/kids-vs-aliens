@@ -29,6 +29,12 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlasmaImpactVFX plasmaImpactPrefab;
 
+    // Presentation-only access to the same cosmetic shot prefabs used by gameplay.
+    // Knowledge previews instantiate these directly and never call Shoot(), consume ammo,
+    // raycast, apply damage or touch progression.
+    public PlasmaBoltVFX PlasmaBoltPrefab => plasmaBoltPrefab;
+    public PlasmaMuzzleVFX PlasmaMuzzlePrefab => plasmaMuzzlePrefab;
+
     // =====================================================
     // CACHED
     // =====================================================

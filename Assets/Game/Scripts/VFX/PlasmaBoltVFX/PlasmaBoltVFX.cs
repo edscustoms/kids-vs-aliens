@@ -25,6 +25,7 @@ public class PlasmaBoltVFX : MonoBehaviour
 
     private Action onArrive;
     private bool activeBolt;
+    private bool useUnscaledTime;
 
     private void Awake()
     {
@@ -40,7 +41,8 @@ public class PlasmaBoltVFX : MonoBehaviour
         Vector3 start,
         Vector3 end,
         Color? auraColor = null,
-        Action onArrive = null
+        Action onArrive = null,
+        bool useUnscaledTime = false
     )
     {
         direction =
@@ -63,6 +65,9 @@ public class PlasmaBoltVFX : MonoBehaviour
         this.onArrive =
             onArrive;
 
+        this.useUnscaledTime =
+            useUnscaledTime;
+
         activeBolt = true;
 
         SetColor(
@@ -84,7 +89,7 @@ public class PlasmaBoltVFX : MonoBehaviour
             return;
 
         float movement =
-            speed * Time.deltaTime;
+            speed * (useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
 
         travelled +=
             movement;
@@ -178,6 +183,7 @@ public class PlasmaBoltVFX : MonoBehaviour
     private void OnDisable()
     {
         activeBolt = false;
+        useUnscaledTime = false;
         onArrive = null;
     }
 }
