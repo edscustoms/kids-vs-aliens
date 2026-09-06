@@ -8,4 +8,6 @@ public enum CharacterActionId
     Punch = 4,
     Kick = 5,
     GauntletPrimary = 6,
+    MeleeLight1 = 7,
+    MeleeLight2 = 8,
 }

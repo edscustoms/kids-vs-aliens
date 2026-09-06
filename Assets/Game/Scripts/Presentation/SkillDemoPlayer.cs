@@ -147,6 +147,7 @@ public sealed class SkillDemoPlayer : MonoBehaviour
             }
 
             driver.SetWeaponStyle(style);
+            driver.SetCombatStance(tutorial != null && tutorial.combatStance);
             driver.SetMovement(Vector2.zero, 1f);
 
             // Always establish the valid equipped stance first. A future real fire

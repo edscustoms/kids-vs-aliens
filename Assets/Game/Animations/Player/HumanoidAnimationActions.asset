@@ -18,3 +18,16 @@ MonoBehaviour:
     layerName: GrenadeThrow
     statePath: GrenadeThrow.TossGrenade
     clip: {fileID: 7400000, guid: e706b952b42091945bdf23e6fe0ca5d2, type: 2}
+    cancellationStatePath: 
+  - action: 7
+    triggerParameter: MeleeLight1
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Punch_Left
+    clip: {fileID: 8201581640480608467, guid: 933d9395c0a361843bfee209f01b4364, type: 3}
+    cancellationStatePath: UnarmedCombatActions.Empty
+  - action: 8
+    triggerParameter: MeleeLight2
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Punch_Right
+    clip: {fileID: -2880506663686599108, guid: 933d9395c0a361843bfee209f01b4364, type: 3}
+    cancellationStatePath: UnarmedCombatActions.Empty

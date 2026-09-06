@@ -30,6 +30,7 @@ public sealed class SkillTutorialData : ScriptableObject
             + "If the current controller has no matching trigger yet, the preview keeps the valid equipped stance and continues cosmetic presentation."
     )]
     public CharacterActionId action = CharacterActionId.EquippedStance;
+    public bool combatStance;
 
     public ItemData equipment;
     public bool loop = true;

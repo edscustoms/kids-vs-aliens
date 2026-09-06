@@ -2,4 +2,5 @@
 public enum CharacterAnimationEventId
 {
     GrenadeRelease = 0,
+    MeleeImpact = 1,
 }

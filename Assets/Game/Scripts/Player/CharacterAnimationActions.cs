@@ -13,6 +13,8 @@ public sealed class CharacterAnimationActions : ScriptableObject
         public string layerName;
         public string statePath;
         public AnimationClip clip;
+        [Tooltip("Optional layer state used to blend out a cancelled action. Leave empty for existing action behavior.")]
+        public string cancellationStatePath;
     }
 
     [SerializeField]

@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d2579ade3e4ccd04f82c59edcbb26fe4, type: 3}
-  m_Name: GrenadeHandlingTutorial
+  m_Name: UnarmedCombatTutorial
   m_EditorClassIdentifier: Assembly-CSharp::SkillTutorialData
   titleOverride: 
-  shortDescription: You can now activate alien grenades.
-  instructions: Select a grenade. Hold FIRE to charge; release to throw.
-  localizationKey: knowledge.grenade_handling
+  shortDescription: You can now fight unarmed.
+  instructions: Tap FIRE to strike when empty-handed. Select Fighting to put away your weapon. Enemies nearby keep you ready.
+  localizationKey: knowledge.unarmed_combat
   demoType: 0
-  action: 0
-  combatStance: 0
-  equipment: {fileID: 11400000, guid: 92e2ba6e5eb8dc84ab05d1933af0f3c7, type: 2}
+  action: 7
+  combatStance: 1
+  equipment: {fileID: 0}
   loop: 1
-  loopDuration: 4
+  loopDuration: 2
   weaponInitialDelay: 0.35
   weaponShotsPerBurst: 4
   weaponShotInterval: 0.7

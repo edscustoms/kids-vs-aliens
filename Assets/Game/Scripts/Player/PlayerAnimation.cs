@@ -20,6 +20,7 @@ public class PlayerAnimation : MonoBehaviour
     private int markedLayer, markedState;
     private bool waitingForMarker, enteredMarkedState;
     private float enterElapsed;
+    private bool combatStance;
 
     public event Action<CharacterAnimationEventId> AnimationEventReceived;
     public event Action<CharacterActionId> ActionInterrupted;
@@ -75,6 +76,7 @@ public class PlayerAnimation : MonoBehaviour
         if (relay != null) relay.Marker += HandleMarker;
 
         ApplyWeaponStyle();
+        driver?.SetCombatStance(combatStance);
     }
 
     private void OnEquippedWeaponChanged(WeaponItemData weapon)
@@ -112,6 +114,12 @@ public class PlayerAnimation : MonoBehaviour
     public bool TryPlayAction(CharacterActionId action) =>
         driver != null && driver.TryPlayAction(action);
 
+    public void SetCombatStance(bool active)
+    {
+        combatStance = active;
+        driver?.SetCombatStance(active);
+    }
+
     public bool TryPlayAction(CharacterActionId action, CharacterAnimationEventId marker)
     {
         if (!isActiveAndEnabled || waitingForMarker || relay == null || !relay.isActiveAndEnabled
@@ -136,6 +144,9 @@ public class PlayerAnimation : MonoBehaviour
     private void HandleMarker(CharacterAnimationEventId marker, int sourceState)
     {
         if (!waitingForMarker || marker != expectedMarker || sourceState != markedState) return;
+        if (animator == null || !animator.isActiveAndEnabled || animator.runtimeAnimatorController != markedController
+            || !driver.IsInState(markedLayer, markedState) || driver.IsExitingState(markedLayer, markedState))
+        { InterruptMarkedAction(); return; }
         waitingForMarker = false; // Duplicate/late markers cannot reenter gameplay.
         AnimationEventReceived?.Invoke(marker);
     }
@@ -147,6 +158,7 @@ public class PlayerAnimation : MonoBehaviour
             || animator.runtimeAnimatorController != markedController || relay == null || !relay.isActiveAndEnabled)
         { InterruptMarkedAction(); return; }
         bool inState = driver.IsInState(markedLayer, markedState);
+        if (driver.IsExitingState(markedLayer, markedState)) { InterruptMarkedAction(); return; }
         if (inState)
         {
             enteredMarkedState = true;

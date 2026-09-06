@@ -24,6 +24,8 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField]
     private PlayerGrenadeController playerGrenadeController;
 
+    [SerializeField] private PlayerMeleeController playerMeleeController;
+
     private readonly List<ItemData> items = new();
     private StarterAssets.StarterAssetsInputs input;
 
@@ -58,6 +60,8 @@ public class PlayerInventory : MonoBehaviour
 
         if (playerGrenadeController == null)
             playerGrenadeController = GetComponent<PlayerGrenadeController>();
+        if (playerMeleeController == null)
+            playerMeleeController = GetComponent<PlayerMeleeController>();
     }
 
     public bool TryAddItem(ItemData item) => TryAddItem(item, out _);
@@ -145,6 +149,10 @@ public class PlayerInventory : MonoBehaviour
                 UseKnowledgeBook(index, item as KnowledgeBookItemData);
                 break;
 
+            case ItemType.UnarmedCombat:
+                playerMeleeController?.SelectCombatItem(item as UnarmedCombatItemData);
+                break;
+
             case ItemType.Consumable:
                 break;
         }
@@ -207,7 +215,12 @@ public class PlayerInventory : MonoBehaviour
         if (!playerSkillState.UnlockSkill(book.skill))
             return;
 
-        items.RemoveAt(index);
+        // Replace in place: learning can grant a capability even with a full bag.
+        // Repeated books must not duplicate an existing granted option.
+        if (book.grantedItem != null && !items.Contains(book.grantedItem))
+            items[index] = book.grantedItem;
+        else
+            items.RemoveAt(index);
 
         OnInventoryChanged?.Invoke();
     }

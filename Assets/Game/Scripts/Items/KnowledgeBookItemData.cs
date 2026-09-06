@@ -9,6 +9,9 @@ public sealed class KnowledgeBookItemData : ItemData
     [Header("Knowledge")]
     public SkillData skill;
 
+    [Tooltip("Optional item that replaces this book in its inventory slot when learned.")]
+    public ItemData grantedItem;
+
     [Header("Rarity")]
     public RarityTier rarity = RarityTier.Common;
 
