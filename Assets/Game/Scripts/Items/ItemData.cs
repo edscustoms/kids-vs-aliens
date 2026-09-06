@@ -5,7 +5,10 @@ public enum ItemType
     Weapon,
     Consumable,
     Armor,
-    Key
+    Key,
+    KnowledgeBook,
+    Grenade,
+    UnarmedCombat
 }
 
 public abstract class ItemData : ScriptableObject

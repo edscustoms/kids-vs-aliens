@@ -44,6 +44,19 @@ Protects:
 - release → reuse
 - separate prefabs stay in separate pools
 
+## Knowledge / feedback / suspension additions (5 September 2026)
+
+Core now also covers feedback dedupe/cooldown/priority, deferred Knowledge Book
+acquisition, independent manual/modal pause ownership, teardown and fresh input,
+grenade selection/charge preservation during suspension, legacy melee pause safety,
+shared menu framing, Amy/Granny demo attachments and idempotent setup/URP renderer
+assignment. See [presentation verification](../Docs/07-GAMEPLAY-PRESENTATION.md).
+
+The repository `Tools/Run-UnityCoreTests.ps1` runs this suite in the **existing**
+project when Unity is closed. Use the open Editor's Test Runner otherwise. The
+compile helper is a separate Roslyn check against this project's Unity references;
+neither helper creates another Unity project or rebuilds Library.
+
 ## What we deliberately DO NOT automate
 
 Do not add automated tests for subjective game feel:

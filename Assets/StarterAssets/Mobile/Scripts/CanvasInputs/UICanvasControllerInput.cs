@@ -31,5 +31,10 @@ namespace StarterAssets
         {
             starterAssetsInputs.ShootInput(virtualShootState);
         }
+
+        public void VirtualCancelShootInput()
+        {
+            starterAssetsInputs.CancelShootInput();
+        }
     }
 }

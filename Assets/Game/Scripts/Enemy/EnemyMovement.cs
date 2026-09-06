@@ -29,8 +29,7 @@ public class EnemyMovement : MonoBehaviour
     // Fixed reusable physics buffer.
     // At a 1m separation radius, 16 nearby colliders is already plenty
     // for the current enemy setup and avoids a new Collider[] every Update.
-    private readonly Collider[] nearbyEnemyBuffer =
-        new Collider[16];
+    private readonly Collider[] nearbyEnemyBuffer = new Collider[16];
 
     private Transform player;
     private PlayerHealth playerHealth;
@@ -39,34 +38,29 @@ public class EnemyMovement : MonoBehaviour
 
     private void Start()
     {
-        GameObject playerObject =
-            GameObject.FindGameObjectWithTag(
-                "Player"
-            );
+        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
 
         if (playerObject != null)
         {
-            player =
-                playerObject.transform;
+            player = playerObject.transform;
 
-            playerHealth =
-                playerObject.GetComponent<PlayerHealth>();
+            playerHealth = playerObject.GetComponent<PlayerHealth>();
         }
     }
 
     private void Update()
     {
+        // Legacy Enemy.prefab still uses this immediate melee path.
+        if (Time.timeScale <= 0f)
+            return;
         if (player == null)
             return;
 
-        Vector3 direction =
-            player.position
-            - transform.position;
+        Vector3 direction = player.position - transform.position;
 
         direction.y = 0f;
 
-        float distance =
-            direction.magnitude;
+        float distance = direction.magnitude;
 
         if (distance <= stopDistance)
         {
@@ -76,81 +70,53 @@ public class EnemyMovement : MonoBehaviour
 
         direction.Normalize();
 
-        Vector3 separation =
-            Vector3.zero;
+        Vector3 separation = Vector3.zero;
 
-        int nearbyEnemyCount =
-            Physics.OverlapSphereNonAlloc(
-                transform.position,
-                separationRadius,
-                nearbyEnemyBuffer,
-                enemyLayer,
-                QueryTriggerInteraction.Collide
-            );
+        int nearbyEnemyCount = Physics.OverlapSphereNonAlloc(
+            transform.position,
+            separationRadius,
+            nearbyEnemyBuffer,
+            enemyLayer,
+            QueryTriggerInteraction.Collide
+        );
 
-        for (
-            int i = 0;
-            i < nearbyEnemyCount;
-            i++
-        )
+        for (int i = 0; i < nearbyEnemyCount; i++)
         {
-            Collider other =
-                nearbyEnemyBuffer[i];
+            Collider other = nearbyEnemyBuffer[i];
 
             if (other == null)
                 continue;
 
-            EnemyMovement otherEnemy =
-                other.GetComponentInParent<EnemyMovement>();
+            EnemyMovement otherEnemy = other.GetComponentInParent<EnemyMovement>();
 
-            if (
-                otherEnemy == null
-                || otherEnemy == this
-            )
+            if (otherEnemy == null || otherEnemy == this)
             {
                 continue;
             }
 
-            Vector3 away =
-                transform.position
-                - otherEnemy.transform.position;
+            Vector3 away = transform.position - otherEnemy.transform.position;
 
             away.y = 0f;
 
-            float enemyDistance =
-                away.magnitude;
+            float enemyDistance = away.magnitude;
 
             if (enemyDistance < 0.001f)
                 continue;
 
-            float strength =
-                1f
-                - Mathf.Clamp01(
-                    enemyDistance
-                    / separationRadius
-                );
+            float strength = 1f - Mathf.Clamp01(enemyDistance / separationRadius);
 
-            separation +=
-                away.normalized
-                * strength;
+            separation += away.normalized * strength;
         }
 
-        Vector3 moveDirection =
-            direction
-            + separation
-            * separationStrength;
+        Vector3 moveDirection = direction + separation * separationStrength;
 
         if (moveDirection.sqrMagnitude > 0.001f)
         {
             moveDirection.Normalize();
 
-            transform.position +=
-                moveDirection
-                * moveSpeed
-                * Time.deltaTime;
+            transform.position += moveDirection * moveSpeed * Time.deltaTime;
 
-            transform.forward =
-                moveDirection;
+            transform.forward = moveDirection;
         }
     }
 
@@ -162,12 +128,8 @@ public class EnemyMovement : MonoBehaviour
         if (Time.time < nextAttackTime)
             return;
 
-        playerHealth.TakeDamage(
-            attackDamage
-        );
+        playerHealth.TakeDamage(attackDamage);
 
-        nextAttackTime =
-            Time.time
-            + attackCooldown;
+        nextAttackTime = Time.time + attackCooldown;
     }
 }

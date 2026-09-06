@@ -3,6 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public enum InventoryAddFailure
+{
+    None,
+    InvalidItem,
+    Full,
+}
+
 public class PlayerInventory : MonoBehaviour
 {
     [SerializeField]
@@ -11,29 +18,118 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField]
     private int maxSlots = 5;
 
+    [SerializeField]
+    private PlayerSkillState playerSkillState;
+
+    [SerializeField]
+    private PlayerGrenadeController playerGrenadeController;
+
+    [SerializeField] private PlayerMeleeController playerMeleeController;
+
     private readonly List<ItemData> items = new();
+    private StarterAssets.StarterAssetsInputs input;
 
     public IReadOnlyList<ItemData> Items => items;
 
+    public int GrenadeCount
+    {
+        get
+        {
+            int count = 0;
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is GrenadeItemData)
+                    count++;
+            }
+
+            return count;
+        }
+    }
+
     public event Action OnInventoryChanged;
 
-    public void AddItem(ItemData item)
+    private void Awake()
     {
+        input = GetComponent<StarterAssets.StarterAssetsInputs>();
+        if (playerEquipment == null)
+            playerEquipment = GetComponent<PlayerEquipment>();
+
+        if (playerSkillState == null)
+            playerSkillState = GetComponent<PlayerSkillState>();
+
+        if (playerGrenadeController == null)
+            playerGrenadeController = GetComponent<PlayerGrenadeController>();
+        if (playerMeleeController == null)
+            playerMeleeController = GetComponent<PlayerMeleeController>();
+    }
+
+    public bool TryAddItem(ItemData item) => TryAddItem(item, out _);
+
+    public bool TryAddItem(ItemData item, out InventoryAddFailure failure)
+    {
+        failure = InventoryAddFailure.None;
         if (item == null)
-            return;
+        {
+            failure = InventoryAddFailure.InvalidItem;
+            return false;
+        }
 
         if (items.Count >= maxSlots)
         {
-            return;
+            failure = InventoryAddFailure.Full;
+            return false;
         }
 
         items.Add(item);
 
         OnInventoryChanged?.Invoke();
+
+        return true;
+    }
+
+    public void AddItem(ItemData item)
+    {
+        TryAddItem(item);
+    }
+
+    public bool HasGrenade(GrenadeItemData grenade)
+    {
+        return grenade != null && items.Contains(grenade);
+    }
+
+    public GrenadeItemData GetFirstGrenade()
+    {
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (items[i] is GrenadeItemData grenade)
+                return grenade;
+        }
+
+        return null;
+    }
+
+    public bool TryConsumeGrenade(GrenadeItemData grenade)
+    {
+        if (grenade == null)
+            return false;
+
+        int index = items.IndexOf(grenade);
+
+        if (index < 0)
+            return false;
+
+        items.RemoveAt(index);
+
+        OnInventoryChanged?.Invoke();
+
+        return true;
     }
 
     public void UseItem(int index)
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return;
         if (index < 0 || index >= items.Count)
             return;
 
@@ -42,19 +138,97 @@ public class PlayerInventory : MonoBehaviour
         switch (item.itemType)
         {
             case ItemType.Weapon:
-                playerEquipment.EquipWeapon((WeaponItemData)item);
+                TryEquipWeapon(item as WeaponItemData);
+                break;
+
+            case ItemType.Grenade:
+                TrySelectGrenade(item as GrenadeItemData);
+                break;
+
+            case ItemType.KnowledgeBook:
+                UseKnowledgeBook(index, item as KnowledgeBookItemData);
+                break;
+
+            case ItemType.UnarmedCombat:
+                playerMeleeController?.SelectCombatItem(item as UnarmedCombatItemData);
                 break;
 
             case ItemType.Consumable:
                 break;
-
-            default:
-                break;
         }
+    }
+
+    private void TryEquipWeapon(WeaponItemData weapon)
+    {
+        if (weapon == null)
+            return;
+
+        if (playerGrenadeController != null && playerGrenadeController.IsGrenadeSelected)
+        {
+            playerGrenadeController.CancelThrow();
+        }
+
+        playerEquipment.EquipWeapon(weapon);
+    }
+
+    private void TrySelectGrenade(GrenadeItemData grenade)
+    {
+        if (grenade == null || playerGrenadeController == null)
+        {
+            return;
+        }
+
+        playerGrenadeController.SelectGrenade(grenade);
+    }
+
+    private void UseKnowledgeBook(int index, KnowledgeBookItemData book)
+    {
+        if (book == null || book.skill == null)
+        {
+            Debug.LogWarning("Knowledge book has no SkillData assigned.", this);
+
+            return;
+        }
+
+        if (playerSkillState == null)
+        {
+            Debug.LogWarning("PlayerSkillState is missing on the player.", this);
+
+            return;
+        }
+
+        if (playerSkillState.HasSkill(book.skill))
+        {
+            GetComponent<PlayerFeedback>()
+                ?.Report(
+                    new GameplayFeedbackEvent(
+                        FeedbackCode.KnowledgeAlreadyKnown,
+                        book.skill,
+                        book,
+                        FeedbackAction.Learn
+                    )
+                );
+
+            return;
+        }
+
+        if (!playerSkillState.UnlockSkill(book.skill))
+            return;
+
+        // Replace in place: learning can grant a capability even with a full bag.
+        // Repeated books must not duplicate an existing granted option.
+        if (book.grantedItem != null && !items.Contains(book.grantedItem))
+            items[index] = book.grantedItem;
+        else
+            items.RemoveAt(index);
+
+        OnInventoryChanged?.Invoke();
     }
 
     public void DropItem(int index)
     {
+        if (input != null && !input.CanProcessGameplayInput)
+            return;
         if (index < 0 || index >= items.Count)
             return;
 
@@ -63,11 +237,10 @@ public class PlayerInventory : MonoBehaviour
         if (item.worldPrefab == null)
         {
             Debug.LogWarning($"{item.itemName} has no world prefab.");
+
             return;
         }
 
-        // If we're dropping the item currently in our hand,
-        // unequip it first.
         if (playerEquipment.IsEquipped(item))
         {
             playerEquipment.UnequipWeapon();

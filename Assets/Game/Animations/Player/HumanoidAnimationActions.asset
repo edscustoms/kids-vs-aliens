@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4138290bb23adc04aa43cfa0680c1774, type: 3}
+  m_Name: HumanoidAnimationActions
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationActions
+  bindings:
+  - action: 3
+    triggerParameter: ThrowGrenade
+    layerName: GrenadeThrow
+    statePath: GrenadeThrow.TossGrenade
+    clip: {fileID: 7400000, guid: e706b952b42091945bdf23e6fe0ca5d2, type: 2}
+    cancellationStatePath: 
+  - action: 7
+    triggerParameter: MeleeLight1
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Punch_Left
+    clip: {fileID: 8201581640480608467, guid: 933d9395c0a361843bfee209f01b4364, type: 3}
+    cancellationStatePath: UnarmedCombatActions.Empty
+  - action: 8
+    triggerParameter: MeleeLight2
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Punch_Right
+    clip: {fileID: -2880506663686599108, guid: 933d9395c0a361843bfee209f01b4364, type: 3}
+    cancellationStatePath: UnarmedCombatActions.Empty

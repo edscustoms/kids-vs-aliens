@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CharacterVisual : MonoBehaviour
@@ -6,7 +7,16 @@ public class CharacterVisual : MonoBehaviour
     private Animator animator;
 
     [SerializeField]
+    private CharacterAnimationActions animationActions;
+    public CharacterAnimationActions AnimationActions => animationActions;
+
+    [SerializeField]
     private Transform weaponSocket;
+
+    [Header("Grenades")]
+    [Tooltip("Ordered character-specific sockets used for stowed grenade visuals.")]
+    [SerializeField]
+    private Transform[] grenadeCarrySockets = new Transform[0];
 
     [Header("Aura")]
     [SerializeField]
@@ -14,6 +24,7 @@ public class CharacterVisual : MonoBehaviour
 
     public Animator Animator => animator;
     public Transform WeaponSocket => weaponSocket;
+    public IReadOnlyList<Transform> GrenadeCarrySockets => grenadeCarrySockets;
     public Color AuraColor => auraColor;
     public bool HasWeaponSocket => weaponSocket != null;
 

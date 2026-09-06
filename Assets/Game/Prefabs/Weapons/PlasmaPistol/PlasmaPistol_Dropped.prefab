@@ -158,7 +158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldItemFloat
   rotationSpeed: 80
-  bobHeight: 0.15
+  bobHeight: 0.1
   bobSpeed: 2
 --- !u!114 &-5368076572202137054
 MonoBehaviour:

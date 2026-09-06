@@ -12,7 +12,8 @@ public class PlasmaMuzzleVFX : MonoBehaviour
     private int startedFrame;
 
     public void Play(
-        Color? auraColor = null
+        Color? auraColor = null,
+        bool useUnscaledTime = false
     )
     {
         if (particles == null)
@@ -32,6 +33,11 @@ public class PlasmaMuzzleVFX : MonoBehaviour
 
         main.startColor =
             color;
+
+        // Knowledge/tutorial previews run while gameplay timeScale is zero.
+        // Gameplay callers keep the existing scaled-time behavior by default.
+        main.useUnscaledTime =
+            useUnscaledTime;
 
         particles.Stop(
             true,

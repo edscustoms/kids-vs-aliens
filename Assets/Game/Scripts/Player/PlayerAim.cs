@@ -23,6 +23,30 @@ public class PlayerAim : MonoBehaviour
     [SerializeField]
     private float desktopRotationSpeed = 20f;
 
+    [Tooltip(
+        "How long mouse aim keeps priority after the mouse stops moving. "
+            + "A tiny grace period prevents facing from flickering between mouse aim and movement."
+    )]
+    [SerializeField, Min(0f)]
+    private float desktopAimGraceTime = 0.15f;
+
+    [Tooltip("Mouse delta smaller than this is treated as no deliberate aiming input.")]
+    [SerializeField, Min(0f)]
+    private float desktopMouseDeltaThreshold = 0.25f;
+
+    [Header("Passive Movement Facing")]
+    [Tooltip(
+        "When there is no active manual aim and no mobile auto-aim lock, "
+            + "Amy rotates toward the actual camera-relative movement direction."
+    )]
+    [SerializeField]
+    private float movementFacingRotationSpeed = 8f;
+
+    [Tooltip("Movement input below this magnitude does not change facing.")]
+    [Range(0f, 0.95f)]
+    [SerializeField]
+    private float movementFacingDeadZone = 0.10f;
+
     // =====================================================
     // MOBILE
     // =====================================================
@@ -86,7 +110,18 @@ public class PlayerAim : MonoBehaviour
 
     private readonly RaycastHit[] mouseAimHits = new RaycastHit[32];
 
+    // Visibility rays may pass through explicitly vision-transparent geometry
+    // such as chain-link fences. RaycastNonAlloc results are not ordered, so
+    // we collect several hits and resolve the nearest real blocker ourselves.
+    private readonly RaycastHit[] visibilityHits = new RaycastHit[32];
+
     private readonly Vector3[] mobileVisibilitySamples = new Vector3[5];
+
+    // =====================================================
+    // DESKTOP AIM INTENT STATE
+    // =====================================================
+
+    private float lastDesktopAimIntentTime = float.NegativeInfinity;
 
     // =====================================================
     // MOBILE FREE-LOOK STATE
@@ -137,15 +172,26 @@ public class PlayerAim : MonoBehaviour
         if (InputModeController.IsMobile)
         {
             MobileAim();
+            return;
         }
-        else
-        {
-            CurrentTarget = null;
-            freeLookShotTarget = null;
-            isFreeLooking = false;
-            manualSwitchConsumed = false;
 
-            MouseAim();
+        CurrentTarget = null;
+        freeLookShotTarget = null;
+        isFreeLooking = false;
+        manualSwitchConsumed = false;
+
+        UpdateDesktopAimIntent();
+
+        bool hasActiveMouseAim = HasActiveDesktopAimIntent();
+
+        // Always keep the desktop AimPoint current so shooting still uses
+        // the cursor correctly. Character rotation only follows the mouse
+        // while the player is actively aiming.
+        MouseAim(hasActiveMouseAim);
+
+        if (!hasActiveMouseAim)
+        {
+            RotateTowardsMovementInput();
         }
     }
 
@@ -153,7 +199,7 @@ public class PlayerAim : MonoBehaviour
     // DESKTOP AIM
     // =====================================================
 
-    private void MouseAim()
+    private void MouseAim(bool rotateCharacter)
     {
         if (Mouse.current == null || mainCamera == null)
         {
@@ -179,6 +225,14 @@ public class PlayerAim : MonoBehaviour
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit hit = mouseAimHits[i];
+
+            if (hit.collider == null)
+                continue;
+
+            // Chain-link fences and similar geometry may remain physically
+            // solid while being transparent to aiming/vision.
+            if (IsVisionTransparent(hit.collider))
+                continue;
 
             Renderer renderer = hit.collider.GetComponent<Renderer>();
 
@@ -209,7 +263,11 @@ public class PlayerAim : MonoBehaviour
             AimPoint = closestHit.point;
             HasAimPoint = true;
 
-            RotateTowards(AimPoint, desktopRotationSpeed);
+            if (rotateCharacter)
+            {
+                RotateTowards(AimPoint, desktopRotationSpeed);
+            }
+
             return;
         }
 
@@ -218,11 +276,41 @@ public class PlayerAim : MonoBehaviour
             AimPoint = ray.GetPoint(distance);
             HasAimPoint = true;
 
-            RotateTowards(AimPoint, desktopRotationSpeed);
+            if (rotateCharacter)
+            {
+                RotateTowards(AimPoint, desktopRotationSpeed);
+            }
+
             return;
         }
 
         HasAimPoint = false;
+    }
+
+    private void UpdateDesktopAimIntent()
+    {
+        if (Mouse.current == null)
+            return;
+
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+
+        float thresholdSquared = desktopMouseDeltaThreshold * desktopMouseDeltaThreshold;
+
+        bool mouseMoved = mouseDelta.sqrMagnitude > thresholdSquared;
+
+        // Clicking/shooting is also deliberate mouse aim intent even if the
+        // cursor itself did not move on this exact frame.
+        bool mouseAction = Mouse.current.leftButton.isPressed;
+
+        if (mouseMoved || mouseAction)
+        {
+            lastDesktopAimIntentTime = Time.unscaledTime;
+        }
+    }
+
+    private bool HasActiveDesktopAimIntent()
+    {
+        return Time.unscaledTime - lastDesktopAimIntentTime <= desktopAimGraceTime;
     }
 
     // =====================================================
@@ -306,6 +394,10 @@ public class PlayerAim : MonoBehaviour
         if (CurrentTarget == null)
         {
             HasAimPoint = false;
+
+            // No right-stick intent and no auto-aim target:
+            // movement becomes the natural facing intent.
+            RotateTowardsMovementInput();
             return;
         }
 
@@ -328,7 +420,7 @@ public class PlayerAim : MonoBehaviour
     {
         if (mainCamera == null)
         {
-            Vector3 fallback = transform.forward * input.y + transform.right * input.x;
+            Vector3 fallback = transform.forward * -input.y + transform.right * input.x;
 
             fallback.y = 0f;
 
@@ -740,21 +832,61 @@ public class PlayerAim : MonoBehaviour
 
         float castDistance = distance + padding;
 
-        if (
-            !Physics.Raycast(
-                origin,
-                direction,
-                out RaycastHit hit,
-                castDistance,
-                aimMask,
-                QueryTriggerInteraction.Ignore
-            )
-        )
-        {
+        int hitCount = Physics.RaycastNonAlloc(
+            origin,
+            direction,
+            visibilityHits,
+            castDistance,
+            aimMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (hitCount == 0)
             return false;
+
+        RaycastHit closestBlockingHit = default;
+
+        bool foundBlockingHit = false;
+
+        float closestBlockingDistance = Mathf.Infinity;
+
+        // RaycastNonAlloc does NOT guarantee distance order.
+        // Ignore vision-transparent surfaces, then choose the nearest
+        // remaining physical hit ourselves.
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = visibilityHits[i];
+
+            if (hit.collider == null)
+                continue;
+
+            if (IsVisionTransparent(hit.collider))
+            {
+                continue;
+            }
+
+            if (hit.distance >= closestBlockingDistance)
+            {
+                continue;
+            }
+
+            closestBlockingDistance = hit.distance;
+
+            closestBlockingHit = hit;
+
+            foundBlockingHit = true;
         }
 
-        return target.OwnsCollider(hit.collider);
+        if (!foundBlockingHit)
+            return false;
+
+        return target.OwnsCollider(closestBlockingHit.collider);
+    }
+
+    private static bool IsVisionTransparent(Collider collider)
+    {
+        return collider != null
+            && collider.GetComponentInParent<VisionTransparentObstacle>() != null;
     }
 
     // =====================================================
@@ -771,6 +903,81 @@ public class PlayerAim : MonoBehaviour
         }
 
         return transform.position + Vector3.up * 1.4f;
+    }
+
+    // =====================================================
+    // PASSIVE MOVEMENT FACING
+    // =====================================================
+
+    private void RotateTowardsMovementInput()
+    {
+        if (!TryGetCameraRelativeMovementDirection(out Vector3 movementDirection))
+        {
+            return;
+        }
+
+        RotateTowardsDirection(movementDirection, movementFacingRotationSpeed);
+    }
+
+    private bool TryGetCameraRelativeMovementDirection(out Vector3 direction)
+    {
+        direction = Vector3.zero;
+
+        if (starterAssetsInputs == null)
+            return false;
+
+        Vector2 moveInput = starterAssetsInputs.move;
+
+        float deadZoneSquared = movementFacingDeadZone * movementFacingDeadZone;
+
+        if (moveInput.sqrMagnitude <= deadZoneSquared)
+        {
+            return false;
+        }
+
+        // This intentionally mirrors ThirdPersonController.Move():
+        //
+        // cameraForward * move.y + cameraRight * move.x
+        //
+        // so Amy faces the direction she is ACTUALLY travelling.
+        if (mainCamera == null)
+        {
+            direction = transform.forward * moveInput.y + transform.right * moveInput.x;
+        }
+        else
+        {
+            Vector3 cameraForward = mainCamera.transform.forward;
+
+            cameraForward.y = 0f;
+
+            Vector3 cameraRight = mainCamera.transform.right;
+
+            cameraRight.y = 0f;
+
+            if (cameraForward.sqrMagnitude > 0.001f)
+            {
+                cameraForward.Normalize();
+            }
+
+            if (cameraRight.sqrMagnitude > 0.001f)
+            {
+                cameraRight.Normalize();
+            }
+
+            direction = cameraForward * moveInput.y + cameraRight * moveInput.x;
+        }
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.001f)
+        {
+            direction = Vector3.zero;
+
+            return false;
+        }
+
+        direction.Normalize();
+        return true;
     }
 
     // =====================================================

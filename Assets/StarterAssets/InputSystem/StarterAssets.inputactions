@@ -7,6 +7,16 @@
             "id": "f62a4b92-ef5e-4175-8f4c-c9075429d32c",
             "actions": [
                 {
+                    "name": "Pause",
+                    "type": "Button",
+                    "id": "67756cd9-c1c1-4bdc-9666-7e4ac2b49abc",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
                     "name": "Move",
                     "type": "Value",
                     "id": "6bc1aaf4-b110-4ff7-891e-5b9fe6f32c4d",
@@ -58,6 +68,17 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "7bb6c4da-46a6-48af-8b61-0ca092bd0db0",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "WASD",
                     "id": "b7594ddb-26c9-4ba2-bd5a-901468929edc",

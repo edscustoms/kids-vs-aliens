@@ -33,7 +33,7 @@ public class WeaponInstance : MonoBehaviour
             return false;
         }
 
-        AlignGripToSocket(transform, gripPoint, characterVisual.WeaponSocket);
+        GripAttachmentUtility.AlignGripToSocket(transform, gripPoint, characterVisual.WeaponSocket);
 
         if (plasmaCoreSetup != null)
         {
@@ -45,7 +45,8 @@ public class WeaponInstance : MonoBehaviour
 
     public static WeaponInstance SpawnAttached(
         WeaponItemData weaponData,
-        CharacterVisual characterVisual
+        CharacterVisual characterVisual,
+        Transform stagingParent = null
     )
     {
         if (weaponData == null)
@@ -57,7 +58,9 @@ public class WeaponInstance : MonoBehaviour
             return null;
         }
 
-        GameObject weaponObject = Instantiate(weaponData.equippedPrefab);
+        // Optional inactive parent lets visual previews configure their instance
+        // before activation. Existing gameplay/menu callers retain their flow.
+        GameObject weaponObject = Instantiate(weaponData.equippedPrefab, stagingParent);
 
         WeaponInstance instance = weaponObject.GetComponent<WeaponInstance>();
 
@@ -78,23 +81,6 @@ public class WeaponInstance : MonoBehaviour
         }
 
         return instance;
-    }
-
-    private static void AlignGripToSocket(
-        Transform weaponRoot,
-        Transform gripPoint,
-        Transform weaponSocket
-    )
-    {
-        Quaternion rotationDelta = weaponSocket.rotation * Quaternion.Inverse(gripPoint.rotation);
-
-        weaponRoot.rotation = rotationDelta * weaponRoot.rotation;
-
-        Vector3 positionDelta = weaponSocket.position - gripPoint.position;
-
-        weaponRoot.position += positionDelta;
-
-        weaponRoot.SetParent(weaponSocket, true);
     }
 
 #if UNITY_EDITOR

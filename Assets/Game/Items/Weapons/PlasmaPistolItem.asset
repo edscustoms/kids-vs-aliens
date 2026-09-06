@@ -24,3 +24,4 @@ MonoBehaviour:
   reloadTime: 0.8
   fireMode: 0
   animationStyle: 1
+  requiredSkill: {fileID: 11400000, guid: 43103a442e5f3e149b2a468065a892c7, type: 2}

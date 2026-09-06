@@ -750,6 +750,8 @@ public class CharacterSetupHelper : EditorWindow
 
             visualSO.ApplyModifiedPropertiesWithoutUndo();
 
+            CharacterAnimationSetup.ConfigureVisual(characterVisual);
+
             // IMPORTANT:
             // Gameplay prefab intentionally has NO MenuPreviewSettings.
             // Menu presentation now lives in a separate wrapper prefab.

@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5a9cef5e2c5d39489430b005f136d07, type: 3}
+  m_Name: PlasmaRifle_MenuItem
+  m_EditorClassIdentifier: Assembly-CSharp::MenuPreviewItem
+  id: plasma_rifle
+  displayName: Plasma Rifle
+  type: 1
+  previewPrefab: {fileID: 5182591707336637479, guid: 3b09e867bfb542b46a91f0ba41cb0aa2, type: 3}
+  clearsSlot: 0
+  characterPrefab: {fileID: 0}
+  weaponItemData: {fileID: 11400000, guid: f70783c94c394824cae0a35867011521, type: 2}

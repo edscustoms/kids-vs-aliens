@@ -11,6 +11,7 @@ public class PlayerCharacter : MonoBehaviour
     private CharacterVisual startingCharacterPrefab;
 
     public CharacterVisual ActiveVisual { get; private set; }
+    public CharacterVisual CurrentCharacterPrefab { get; private set; }
 
     public event Action<CharacterVisual> CharacterChanged;
 
@@ -38,6 +39,7 @@ public class PlayerCharacter : MonoBehaviour
         }
 
         ActiveVisual = Instantiate(characterPrefab, visualRoot);
+        CurrentCharacterPrefab = characterPrefab;
 
         ActiveVisual.transform.localPosition = Vector3.zero;
 

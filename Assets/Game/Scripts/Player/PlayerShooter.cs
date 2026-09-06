@@ -16,6 +16,9 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlayerCharacter playerCharacter;
 
+    [SerializeField]
+    private PlayerSkillState playerSkillState;
+
     [Header("Shot VFX")]
     [SerializeField]
     private PlasmaBoltVFX plasmaBoltPrefab;
@@ -26,30 +29,36 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlasmaImpactVFX plasmaImpactPrefab;
 
+    // Presentation-only access to the same cosmetic shot prefabs used by gameplay.
+    // Knowledge previews instantiate these directly and never call Shoot(), consume ammo,
+    // raycast, apply damage or touch progression.
+    public PlasmaBoltVFX PlasmaBoltPrefab => plasmaBoltPrefab;
+    public PlasmaMuzzleVFX PlasmaMuzzlePrefab => plasmaMuzzlePrefab;
+
     // =====================================================
     // CACHED
     // =====================================================
 
     private StarterAssetsInputs input;
-
     private CharacterController characterController;
+    private PlayerPrimaryActionRouter primaryActionRouter;
 
     private float nextFireTime;
-
     private int currentAmmo;
-
     private bool isReloading;
-
+    private bool triggerHeld;
     private bool shootWasPressed;
-
+    private bool fireBlocked;
     private int shootMask;
+    private PlayerFeedback feedback;
+    private SkillData reportedMissingSkill;
 
-    // Used for the short 3D safety ray between Amy's
-    // body and the weapon muzzle.
-    //
-    // This catches the case where the gun itself has
-    // clipped through a wall.
     private readonly RaycastHit[] muzzleSafetyHits = new RaycastHit[16];
+
+    // Normal weapon rays need to collect multiple hits because projectile-
+    // transparent surfaces (for example chain-link fence barriers) may be
+    // physically in front of the real target.
+    private readonly RaycastHit[] weaponHits = new RaycastHit[32];
 
     // =====================================================
     // INITIALIZATION
@@ -57,9 +66,12 @@ public class PlayerShooter : MonoBehaviour
 
     private void Awake()
     {
+        feedback = GetComponent<PlayerFeedback>();
         shootMask = ~LayerMask.GetMask("Player");
 
         input = GetComponent<StarterAssetsInputs>();
+
+        primaryActionRouter = GetComponent<PlayerPrimaryActionRouter>();
 
         characterController = GetComponent<CharacterController>();
 
@@ -72,6 +84,11 @@ public class PlayerShooter : MonoBehaviour
         {
             playerCharacter = GetComponent<PlayerCharacter>();
         }
+
+        if (playerSkillState == null)
+        {
+            playerSkillState = GetComponent<PlayerSkillState>();
+        }
     }
 
     // =====================================================
@@ -80,6 +97,21 @@ public class PlayerShooter : MonoBehaviour
 
     private void Update()
     {
+        bool shootPressed =
+            primaryActionRouter != null && primaryActionRouter.isActiveAndEnabled
+                ? triggerHeld
+                : input != null && input.shoot;
+
+        bool shootPressedThisFrame = shootPressed && !shootWasPressed;
+
+        shootWasPressed = shootPressed;
+
+        if (!shootPressed)
+            reportedMissingSkill = null;
+
+        if (fireBlocked)
+            return;
+
         if (equippedWeapon == null || muzzle == null)
         {
             return;
@@ -87,27 +119,6 @@ public class PlayerShooter : MonoBehaviour
 
         if (isReloading)
             return;
-
-        // -------------------------------------------------
-        // INPUT
-        //
-        // StarterAssetsInputs is now the single source
-        // used by both:
-        //
-        // Desktop:
-        //      Mouse -> PlayerInput -> StarterAssetsInputs
-        //
-        // Mobile:
-        //      UI button -> UICanvasControllerInput
-        //                -> StarterAssetsInputs
-        //
-        // -------------------------------------------------
-
-        bool shootPressed = input != null && input.shoot;
-
-        bool shootPressedThisFrame = shootPressed && !shootWasPressed;
-
-        shootWasPressed = shootPressed;
 
         bool wantsToShoot;
 
@@ -117,13 +128,30 @@ public class PlayerShooter : MonoBehaviour
         }
         else
         {
-            // Semi-auto:
-            // one physical press = one shot.
             wantsToShoot = shootPressedThisFrame;
         }
 
         if (!wantsToShoot)
             return;
+
+        if (!CanUseEquippedWeapon())
+        {
+            if (reportedMissingSkill != equippedWeapon.requiredSkill)
+            {
+                reportedMissingSkill = equippedWeapon.requiredSkill;
+                feedback?.Report(
+                    new GameplayFeedbackEvent(
+                        FeedbackCode.MissingSkill,
+                        reportedMissingSkill,
+                        equippedWeapon,
+                        FeedbackAction.Fire
+                    )
+                );
+            }
+            return;
+        }
+
+        reportedMissingSkill = null;
 
         if (Time.time < nextFireTime)
             return;
@@ -141,6 +169,19 @@ public class PlayerShooter : MonoBehaviour
     // =====================================================
     // SHOOTING
     // =====================================================
+
+    private bool CanUseEquippedWeapon()
+    {
+        if (equippedWeapon == null)
+            return false;
+
+        SkillData requiredSkill = equippedWeapon.requiredSkill;
+
+        if (requiredSkill == null)
+            return true;
+
+        return playerSkillState != null && playerSkillState.HasSkill(requiredSkill);
+    }
 
     private void Shoot()
     {
@@ -168,46 +209,12 @@ public class PlayerShooter : MonoBehaviour
 
         Vector3 hitNormal = Vector3.zero;
 
-        IHitReaction hitReaction = null;
+        Collider hitCollider = null;
 
         HitInfo hitInfo = default;
 
         // =================================================
         // MUZZLE WALL SAFETY
-        //
-        // Problem:
-        //
-        // When Amy stands extremely close to a wall,
-        // her weapon can visually penetrate the wall.
-        //
-        // A normal weapon ray begins at the muzzle.
-        // If the muzzle is already on the other side of
-        // the wall, that ray will never see the wall and
-        // Amy can incorrectly shoot through it.
-        //
-        // Solution:
-        //
-        // Before firing the normal weapon ray, perform a
-        // short REAL 3D ray from Amy's body center to the
-        // muzzle.
-        //
-        // This uses the complete X/Y/Z positions.
-        //
-        // Therefore:
-        //
-        // - Tall wall crossing chest -> muzzle:
-        //      BLOCKS shot.
-        //
-        // - 30 cm wall below chest/muzzle:
-        //      does NOT block shot.
-        //
-        // - Railings / openings / low cover:
-        //      behave according to their actual collider
-        //      geometry.
-        //
-        // This is NOT a height approximation.
-        // Physics determines whether the actual 3D line
-        // intersects actual geometry.
         // =================================================
 
         if (TryGetMuzzleObstruction(out RaycastHit muzzleObstruction))
@@ -220,34 +227,20 @@ public class PlayerShooter : MonoBehaviour
 
             hitNormal = muzzleObstruction.normal;
 
-            hitInfo =
-                CreateHitInfo(
-                    hitPoint,
-                    hitNormal,
-                    direction
-                );
+            hitCollider = muzzleObstruction.collider;
 
-            hitReaction =
-                CombatHitResolver.Resolve(
-                    muzzleObstruction.collider,
-                    hitInfo
-                );
+            hitInfo = CreateHitInfo(hitPoint, hitNormal, direction);
         }
         // =================================================
         // NORMAL WEAPON RAY
-        //
-        // Only run this when there was nothing physically
-        // between Amy's body and her muzzle.
         // =================================================
 
         else if (
-            Physics.Raycast(
+            TryGetFirstWeaponHit(
                 muzzle.position,
                 direction,
-                out RaycastHit hit,
                 equippedWeapon.range,
-                shootMask,
-                QueryTriggerInteraction.Ignore
+                out RaycastHit hit
             )
         )
         {
@@ -259,23 +252,9 @@ public class PlayerShooter : MonoBehaviour
 
             hitNormal = hit.normal;
 
-            hitInfo =
-                CreateHitInfo(
-                    hitPoint,
-                    hitNormal,
-                    direction
-                );
+            hitCollider = hit.collider;
 
-            // Damage is resolved instantly.
-            //
-            // Optional physical reactions (for example the practice target
-            // punch-out) are returned so they can stay synchronized with
-            // the visual bolt reaching the impact point.
-            hitReaction =
-                CombatHitResolver.Resolve(
-                    hit.collider,
-                    hitInfo
-                );
+            hitInfo = CreateHitInfo(hitPoint, hitNormal, direction);
         }
 
         // =================================================
@@ -288,13 +267,34 @@ public class PlayerShooter : MonoBehaviour
 
         if (didHit)
         {
+            // IMPORTANT:
+            //
+            // The raycast still decides immediately what this shot hit.
+            // But gameplay damage + health UI + Hit/Death presentation
+            // are now committed together when the visible plasma bolt
+            // reaches that recorded impact point.
+            //
+            // This keeps:
+            // plasma impact
+            // health bar change
+            // Hit animation
+            // Death animation
+            // all on the same visual frame.
+            Collider committedCollider = hitCollider;
+
+            HitInfo committedHit = hitInfo;
+
+            Vector3 committedPoint = hitPoint;
+
+            Vector3 committedNormal = hitNormal;
+
             onArrive = () =>
             {
-                SpawnImpactVFX(hitPoint, hitNormal, auraColor);
+                SpawnImpactVFX(committedPoint, committedNormal, auraColor);
 
-                hitReaction?.ReceiveHit(
-                    hitInfo
-                );
+                IHitReaction reaction = CombatHitResolver.Resolve(committedCollider, committedHit);
+
+                reaction?.ReceiveHit(committedHit);
             };
         }
 
@@ -306,16 +306,10 @@ public class PlayerShooter : MonoBehaviour
         }
     }
 
-    private HitInfo CreateHitInfo(
-        Vector3 point,
-        Vector3 normal,
-        Vector3 direction
-    )
+    private HitInfo CreateHitInfo(Vector3 point, Vector3 normal, Vector3 direction)
     {
         return new HitInfo(
-            equippedWeapon != null
-                ? equippedWeapon.damage
-                : 0f,
+            equippedWeapon != null ? equippedWeapon.damage : 0f,
             point,
             normal,
             direction,
@@ -354,22 +348,56 @@ public class PlayerShooter : MonoBehaviour
             QueryTriggerInteraction.Ignore
         );
 
+        return TryFindClosestProjectileBlockingHit(muzzleSafetyHits, hitCount, out closestHit);
+    }
+
+    private bool TryGetFirstWeaponHit(
+        Vector3 origin,
+        Vector3 direction,
+        float distance,
+        out RaycastHit closestHit
+    )
+    {
+        int hitCount = Physics.RaycastNonAlloc(
+            origin,
+            direction,
+            weaponHits,
+            distance,
+            shootMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        return TryFindClosestProjectileBlockingHit(weaponHits, hitCount, out closestHit);
+    }
+
+    private bool TryFindClosestProjectileBlockingHit(
+        RaycastHit[] hits,
+        int hitCount,
+        out RaycastHit closestHit
+    )
+    {
+        closestHit = default;
+
         bool foundHit = false;
 
         float closestDistance = Mathf.Infinity;
 
+        // RaycastNonAlloc results are not sorted.
+        // Ignore player-owned geometry and explicitly projectile-transparent
+        // surfaces, then choose the nearest real blocker.
         for (int i = 0; i < hitCount; i++)
         {
-            RaycastHit hit = muzzleSafetyHits[i];
+            RaycastHit hit = hits[i];
 
             if (hit.collider == null)
                 continue;
 
-            // The Player layer is already excluded by
-            // shootMask, but this also protects us if a
-            // child object / weapon collider accidentally
-            // remains on another layer.
             if (IsPlayerOwnedCollider(hit.collider))
+            {
+                continue;
+            }
+
+            if (IsProjectilePassThrough(hit.collider))
             {
                 continue;
             }
@@ -389,16 +417,11 @@ public class PlayerShooter : MonoBehaviour
         return foundHit;
     }
 
-    // =====================================================
-    // SHOT SAFETY ORIGIN
-    //
-    // CharacterController.bounds.center gives us a stable
-    // point inside Amy's body around torso height.
-    //
-    // We deliberately do NOT flatten Y or Z.
-    //
-    // bodyOrigin -> muzzle is one actual 3D segment.
-    // =====================================================
+    private static bool IsProjectilePassThrough(Collider collider)
+    {
+        return collider != null
+            && collider.GetComponentInParent<ProjectilePassThroughObstacle>() != null;
+    }
 
     private Vector3 GetShotSafetyOrigin()
     {
@@ -407,8 +430,6 @@ public class PlayerShooter : MonoBehaviour
             return characterController.bounds.center;
         }
 
-        // Defensive fallback for characters without
-        // CharacterController.
         return transform.position + Vector3.up;
     }
 
@@ -426,26 +447,16 @@ public class PlayerShooter : MonoBehaviour
     // SHOT VFX
     // =====================================================
 
-    private void SpawnShotVFX(
-        Vector3 start,
-        Vector3 end,
-        Color? auraColor,
-        System.Action onArrive
-    )
+    private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor, System.Action onArrive)
     {
         if (plasmaBoltPrefab == null)
         {
-            // Gameplay must not depend on whether a visual prefab exists.
+            // No VFX should never block gameplay.
             onArrive?.Invoke();
             return;
         }
 
-        PlasmaBoltVFX bolt =
-            VfxPool.Spawn(
-                plasmaBoltPrefab,
-                start,
-                Quaternion.identity
-            );
+        PlasmaBoltVFX bolt = VfxPool.Spawn(plasmaBoltPrefab, start, Quaternion.identity);
 
         if (bolt == null)
         {
@@ -453,65 +464,40 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
-        bolt.Initialize(
-            start,
-            end,
-            auraColor,
-            onArrive
-        );
+        bolt.Initialize(start, end, auraColor, onArrive);
     }
 
-    private void SpawnMuzzleVFX(
-        Vector3 position,
-        Vector3 direction,
-        Color? auraColor
-    )
+    private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
     {
         if (plasmaMuzzlePrefab == null)
             return;
 
-        PlasmaMuzzleVFX muzzleVfx =
-            VfxPool.Spawn(
-                plasmaMuzzlePrefab,
-                position,
-                Quaternion.LookRotation(
-                    direction
-                )
-            );
+        PlasmaMuzzleVFX muzzleVfx = VfxPool.Spawn(
+            plasmaMuzzlePrefab,
+            position,
+            Quaternion.LookRotation(direction)
+        );
 
         if (muzzleVfx != null)
         {
-            muzzleVfx.Play(
-                auraColor
-            );
+            muzzleVfx.Play(auraColor);
         }
     }
 
-    private void SpawnImpactVFX(
-        Vector3 position,
-        Vector3 normal,
-        Color? auraColor
-    )
+    private void SpawnImpactVFX(Vector3 position, Vector3 normal, Color? auraColor)
     {
         if (plasmaImpactPrefab == null)
             return;
 
-        PlasmaImpactVFX impact =
-            VfxPool.Spawn(
-                plasmaImpactPrefab,
-                position
-                    + normal
-                    * 0.01f,
-                Quaternion.LookRotation(
-                    normal
-                )
-            );
+        PlasmaImpactVFX impact = VfxPool.Spawn(
+            plasmaImpactPrefab,
+            position + normal * 0.01f,
+            Quaternion.LookRotation(normal)
+        );
 
         if (impact != null)
         {
-            impact.Play(
-                auraColor
-            );
+            impact.Play(auraColor);
         }
     }
 
@@ -551,8 +537,27 @@ public class PlayerShooter : MonoBehaviour
     // EQUIPMENT
     // =====================================================
 
+    public void SetTriggerHeld(bool held)
+    {
+        triggerHeld = held;
+        if (!held)
+            reportedMissingSkill = null;
+    }
+
+    public void SetFireBlocked(bool blocked)
+    {
+        fireBlocked = blocked;
+
+        if (!blocked)
+            return;
+
+        triggerHeld = false;
+        shootWasPressed = false;
+    }
+
     public void EquipWeapon(WeaponItemData weapon, Transform weaponMuzzle)
     {
+        reportedMissingSkill = null;
         StopAllCoroutines();
 
         equippedWeapon = weapon;
@@ -577,5 +582,9 @@ public class PlayerShooter : MonoBehaviour
         currentAmmo = 0;
 
         isReloading = false;
+
+        triggerHeld = false;
+
+        shootWasPressed = false;
     }
 }
