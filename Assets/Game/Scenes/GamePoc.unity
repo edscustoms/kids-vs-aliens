@@ -7491,7 +7491,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputModeController
   mobileControlsCanvas: {fileID: 1669976059}
-  editorMode: 1
+  editorMode: 0
 --- !u!1 &1612320136
 GameObject:
   m_ObjectHideFlags: 0
@@ -9056,6 +9056,7 @@ MonoBehaviour:
   shooter: {fileID: 1809920724}
   skillState: {fileID: 1809920738}
   playerCharacter: {fileID: 1809920733}
+  playerAnimation: {fileID: 0}
   ownerCollisionIgnoreTime: 0.2
   angularSpeedRange: {x: 4, y: 9}
 --- !u!114 &1809920743 stripped

@@ -73,4 +73,40 @@ public sealed class CharacterAnimatorDriver
         animator.SetTrigger(trigger);
         return true;
     }
+
+    public void CancelAction(CharacterActionId action)
+    {
+        if (animator != null && actions != null && actions.TryGetTrigger(action, out int trigger)
+            && triggers.Contains(trigger)) animator.ResetTrigger(trigger);
+    }
+
+    // Only marker-driven actions require this stronger content contract.
+    public bool TryGetMarkedAction(CharacterActionId action, CharacterAnimationEventId marker,
+        out CharacterAnimationActions.Binding binding, out int layer, out int state)
+    {
+        binding = default; layer = -1; state = 0;
+        if (!IsCompatible || animator == null || !animator.isActiveAndEnabled || !animator.fireEvents
+            || animator.speed <= 0f || actions == null || !actions.TryGetBinding(action, out binding)
+            || binding.clip == null || binding.clip.length <= 0f || string.IsNullOrEmpty(binding.layerName)
+            || string.IsNullOrEmpty(binding.statePath)) return false;
+        layer = animator.GetLayerIndex(binding.layerName);
+        state = Animator.StringToHash(binding.statePath);
+        if (layer < 0 || !animator.HasState(layer, state) || (layer > 0 && animator.GetLayerWeight(layer) <= 0f))
+            return false;
+        // An old/cancelled performance must finish before a new marked request
+        // can own its events. Callers can use the normal immediate fallback.
+        if (IsInState(layer, state)) return false;
+        bool usesClip = false;
+        foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            if (clip == binding.clip) { usesClip = true; break; }
+        if (!usesClip) return false;
+        foreach (AnimationEvent authored in binding.clip.events)
+            if (authored.functionName == nameof(CharacterAnimationEventRelay.OnCharacterAnimationEvent)
+                && authored.intParameter == (int)marker) return true;
+        return false;
+    }
+
+    public bool IsInState(int layer, int state) => animator != null
+        && (animator.GetCurrentAnimatorStateInfo(layer).fullPathHash == state
+            || (animator.IsInTransition(layer) && animator.GetNextAnimatorStateInfo(layer).fullPathHash == state));
 }

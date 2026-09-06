@@ -19,6 +19,7 @@ public static class PreviewVisualSafety
                 return false;
             if (
                 behaviour is CharacterVisual
+                || behaviour is CharacterAnimationEventRelay
                 || behaviour is MenuPreviewSettings
                 || behaviour is WeaponInstance
                 || behaviour is HeldItemGrip

@@ -25,9 +25,9 @@ public sealed class CharacterDemoTests
             var driver = new CharacterAnimatorDriver(actor.Animator, actor.AnimationActions);
             Assert.That(driver.IsCompatible, Is.True);
             Assert.That(
-                driver.TryPlayAction(CharacterActionId.GrenadeThrow),
+                driver.TryPlayAction(CharacterActionId.Punch),
                 Is.False,
-                "Unimplemented actions must fall back without inventing a throw."
+                "Unimplemented actions must still fall back without inventing animation content."
             );
             foreach (string weaponName in new[] { "PlasmaPistolItem", "PlasmaRifleItem" })
             {

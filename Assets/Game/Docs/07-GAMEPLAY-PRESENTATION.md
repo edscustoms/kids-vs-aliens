@@ -1,5 +1,10 @@
 # Knowledge, Feedback and Pause V1
 
+6 September update: gameplay grenade throws now use the shared action/marker path.
+See [grenade animation integration](08-GRENADE-ANIMATION.md). The original Knowledge
+preview V1 stance assets remain as authored; gameplay animation events stay disabled
+on those isolated preview Animators.
+
 Implementation status: 5 September 2026. Phases 1–7 are complete in code, assets,
 Editor setup and documentation. Final runtime/Editor compilation passed and all
 43 Core EditMode tests passed (0 failures, 0 skipped), including integrated

@@ -98,7 +98,7 @@ public sealed class GrenadeSuspensionTests
         input.ShootInput(true);
         manual.Dispose();
         AssertHeld(held, instances);
-        yield return null;
+        yield return EditorTestFrame.Next();
         input.ShootInput(true); // A held FIRE must not restart the cancelled charge.
         AssertHeld(held, instances);
         input.ShootInput(false);

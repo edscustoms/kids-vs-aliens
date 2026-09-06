@@ -10,11 +10,30 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
-1. Grenade Throw Animation Experiment — NEXT
+1. Grenade Throw Animation Integration — Play Mode acceptance
+
+6 Sep 2026: the existing PlayerAnimation action path now starts an explicit Throwing
+state. The authored release marker commits the existing physical throw once, with
+charge preserved and no early inventory consumption. Generic relay/action mapping
+wiring supports Amy, Granny and compatible future characters. Missing presentation
+falls back immediately; interruption before release returns safely to Held.
+
+Run Tools > Kids VS Aliens > Helpers > Wire Grenade Throw Animation if wiring
+needs repair. The generator preserves this marker on regeneration. See
+Assets/Game/Docs/08-GRENADE-ANIMATION.md for setup, fallback and acceptance checks.
+
+Motion update: generator and clip now produce a raised wind-up, forward extension,
+0.54 s release and smooth recovery. Actual Editor captures were reviewed for Amy and
+Granny over idle, forward, half input, strafes and all diagonals/backward movement.
+Walking/running share the current normalized input contract. Local playback:
+Logs/GrenadeMotion/review.html. Compilation and 18 focused tests pass (including
+native release position at 30/60 FPS). Broader open-Editor Core: 55/59; four existing
+frame-dependent tests stall at Time.frameCount = 1. Rerun batch Core when the Editor
+is closed. In-game camera/device and pistol/rifle acceptance below remain.
 
 Grenade gameplay is already working. Electric Grenade VFX V1 is now closed enough for V1.
 
-Next task is to test the existing grenade throw animation in the real player setup without coupling gameplay logic to animation polish.
+Next task is in-game camera/device acceptance of the corrected throw and armed recovery poses.
 
 Test cases
 
@@ -36,7 +55,7 @@ upper-body throw animation where possible
 
 existing locomotion continues underneath
 
-grenade gameplay / release timing remains controlled by gameplay code
+grenade gameplay remains authoritative; an authored animation marker requests release
 
 Goals
 

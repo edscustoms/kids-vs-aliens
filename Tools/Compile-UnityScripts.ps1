@@ -28,7 +28,11 @@ foreach ($assembly in @('Assembly-CSharp', 'Assembly-CSharp-Editor')) {
     }
     $sources = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach ($source in $project.Project.ItemGroup.Compile) {
-        if ($source.Include) { [void]$sources.Add((Join-Path $projectRoot $source.Include)) }
+        if ($source.Include) {
+            $sourcePath = Join-Path $projectRoot $source.Include
+            # Unity's generated IDE project can still list a recently removed script.
+            if (Test-Path -LiteralPath $sourcePath) { [void]$sources.Add($sourcePath) }
+        }
     }
     # Include newly authored Game scripts even before Unity regenerates its IDE projects.
     foreach ($source in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Assets/Game') -Filter '*.cs' -Recurse) {

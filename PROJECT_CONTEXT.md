@@ -7,6 +7,24 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE — 6 Sep 2026
+
+Grenade animation now uses the existing PlayerAnimation / CharacterAnimatorDriver /
+CharacterAnimationActions path. FIRE release snapshots charge and enters Throwing;
+the authored typed release marker commits the existing physical grenade launch once.
+Selection/held visual and inventory remain intact through wind-up. Missing animation
+uses immediate gameplay fallback; interrupted wind-up returns to Held safely.
+The generator authors the marker, and standard character setup adds the generic
+Animator relay and compatible shared mapping. The generated motion now includes a
+raised backward wind-up, forward arm extension, a 0.54 s release marker and eased
+recovery. Physics/VFX retain their existing behavior. Actual Editor captures of Amy
+and Granny were reviewed over unarmed locomotion in ten input directions/blends.
+Walking/running currently share normalized locomotion input. See
+Assets/Game/Docs/08-GRENADE-ANIMATION.md for captures and remaining Play Mode/device checks.
+Compilation and 18 focused tests pass, including native release position at 30/60 FPS.
+The broader open-Editor Core run passed 55/59; four existing frame-dependent tests
+could not advance Time.frameCount. Earlier existing-project batch validation was 57/57.
+
 CURRENT IMPLEMENTATION OVERRIDE — 5 Sep 2026
 
 Knowledge + Feedback + Pause V1 code, initial assets and an idempotent Editor setup

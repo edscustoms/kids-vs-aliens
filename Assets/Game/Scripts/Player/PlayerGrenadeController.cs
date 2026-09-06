@@ -9,6 +9,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
         Idle,
         Held,
         Charging,
+        Throwing,
     }
 
     [Header("References")]
@@ -27,6 +28,9 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     [SerializeField]
     private PlayerCharacter playerCharacter;
 
+    [SerializeField]
+    private PlayerAnimation playerAnimation;
+
     [Header("Throw")]
     [SerializeField, Min(0f)]
     private float ownerCollisionIgnoreTime = 0.2f;
@@ -41,6 +45,8 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     private Collider[] ownerColliders = new Collider[0];
 
     private float chargeTime;
+    private float committedCharge01;
+    private bool releaseMarkerPending;
     private bool weaponWasVisible;
     private bool isCommittingThrow;
 
@@ -56,6 +62,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     public bool IsGrenadeSelected => state != GrenadeState.Idle;
 
     public bool IsCharging => state == GrenadeState.Charging;
+    public bool IsThrowing => state == GrenadeState.Throwing;
 
     public GrenadeItemData SelectedGrenade => selectedGrenade;
 
@@ -76,6 +83,11 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (playerAnimation != null)
+        {
+            playerAnimation.AnimationEventReceived += HandleAnimationEvent;
+            playerAnimation.ActionInterrupted += HandleActionInterrupted;
+        }
         if (inventory != null)
         {
             inventory.OnInventoryChanged += HandleGrenadesChanged;
@@ -101,6 +113,11 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (playerAnimation != null)
+        {
+            playerAnimation.AnimationEventReceived -= HandleAnimationEvent;
+            playerAnimation.ActionInterrupted -= HandleActionInterrupted;
+        }
         if (inventory != null)
         {
             inventory.OnInventoryChanged -= HandleGrenadesChanged;
@@ -121,6 +138,12 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void Update()
     {
+        if (IsThrowing)
+        {
+            if (releaseMarkerPending && Time.timeScale > 0f
+                && (input == null || !input.GameplayInputBlocked)) CommitThrow();
+            return;
+        }
         if (state != GrenadeState.Charging)
             return;
 
@@ -138,6 +161,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     public bool SelectGrenade(GrenadeItemData grenade)
     {
+        if (IsThrowing || isCommittingThrow) return false;
         if (input != null && !input.CanProcessGameplayInput)
             return false;
         if (
@@ -230,6 +254,47 @@ public sealed class PlayerGrenadeController : MonoBehaviour
             return false;
         }
 
+        committedCharge01 = Charge01;
+        state = GrenadeState.Throwing;
+        // The visual stays attached, inventory untouched, and firearm blocked
+        // until the authored marker arrives through the player animation facade.
+        if (playerAnimation != null && playerAnimation.TryPlayAction(
+            CharacterActionId.GrenadeThrow, CharacterAnimationEventId.GrenadeRelease)) return true;
+        return CommitThrow();
+    }
+
+    private void HandleAnimationEvent(CharacterAnimationEventId marker)
+    {
+        if (marker != CharacterAnimationEventId.GrenadeRelease || !IsThrowing) return;
+        // If pause acquired during the same frame, retain the already-committed
+        // gesture and launch only after gameplay resumes.
+        releaseMarkerPending = true;
+        if (Time.timeScale > 0f && (input == null || !input.GameplayInputBlocked)) CommitThrow();
+    }
+
+    private void HandleActionInterrupted(CharacterActionId action)
+    {
+        if (action != CharacterActionId.GrenadeThrow || !IsThrowing || isCommittingThrow) return;
+        state = GrenadeState.Held;
+        committedCharge01 = chargeTime = 0f;
+        releaseMarkerPending = false;
+        ChargeChanged?.Invoke(0f);
+    }
+
+    private bool CommitThrow()
+    {
+        if (!isActiveAndEnabled || !IsThrowing || isCommittingThrow) return false;
+        if (selectedGrenade == null || heldVisual == null || inventory == null
+            || !inventory.HasGrenade(selectedGrenade))
+        { ExitGrenadeMode(true); return false; }
+        isCommittingThrow = true;
+        try { return PerformThrow(); }
+        finally { isCommittingThrow = false; }
+    }
+
+    private bool PerformThrow()
+    {
+
         bool hasRequiredKnowledge =
             selectedGrenade.requiredSkill == null
             || (skillState != null && skillState.HasSkill(selectedGrenade.requiredSkill));
@@ -265,11 +330,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
             return false;
         }
 
-        isCommittingThrow = true;
-
         bool consumed = inventory.TryConsumeGrenade(selectedGrenade);
-
-        isCommittingThrow = false;
 
         if (!consumed)
         {
@@ -283,7 +344,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
         float speed = Mathf.Lerp(
             selectedGrenade.minThrowSpeed,
             selectedGrenade.maxThrowSpeed,
-            Charge01
+            committedCharge01
         );
 
         Vector3 throwDirection = (
@@ -348,12 +409,22 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     private void ExitGrenadeMode(bool restoreWeapon)
     {
         bool wasSelected = IsGrenadeSelected;
+        playerAnimation?.CancelAction(CharacterActionId.GrenadeThrow);
+        releaseMarkerPending = false;
+        committedCharge01 = 0f;
 
         if (heldVisual != null)
         {
-            heldVisual.gameObject.SetActive(false);
-
-            Destroy(heldVisual.gameObject);
+            GameObject visual = heldVisual.gameObject;
+            visual.SetActive(false);
+#if UNITY_EDITOR
+            // Editor clip sampling can also deliver markers; immediate destroy
+            // is forbidden inside an animation callback. Runtime keeps Destroy.
+            if (!Application.isPlaying)
+                UnityEditor.EditorApplication.delayCall += () => { if (visual != null) DestroyImmediate(visual); };
+            else
+#endif
+                Destroy(visual);
         }
 
         heldVisual = null;
@@ -445,6 +516,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void CacheReferences()
     {
+        if (playerAnimation == null) playerAnimation = GetComponent<PlayerAnimation>();
         if (inventory == null)
         {
             inventory = GetComponent<PlayerInventory>();

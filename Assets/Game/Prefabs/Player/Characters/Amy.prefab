@@ -171,6 +171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterVisual
   animator: {fileID: 3010428651667635385}
+  animationActions: {fileID: 11400000, guid: be001be31c0677543a007715b328c2f7, type: 2}
   weaponSocket: {fileID: 6155522154160799689}
   grenadeCarrySockets:
   - {fileID: 7395523622880362118}
@@ -538,7 +539,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1852576806548013000, guid: 16442d41f8ecfba4bb89e0f08bbb7287, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6155522154160799689}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16442d41f8ecfba4bb89e0f08bbb7287, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6546963519194480495}
   m_SourcePrefab: {fileID: 100100000, guid: 16442d41f8ecfba4bb89e0f08bbb7287, type: 3}
 --- !u!95 &3010428651667635385 stripped
 Animator:
@@ -555,6 +559,23 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1852576806548013000, guid: 16442d41f8ecfba4bb89e0f08bbb7287, type: 3}
   m_PrefabInstance: {fileID: 8695788155716895016}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8389305127877688441 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 16442d41f8ecfba4bb89e0f08bbb7287, type: 3}
+  m_PrefabInstance: {fileID: 8695788155716895016}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6546963519194480495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8389305127877688441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b7d2d78fe97b1e4db772ceeb2df5209, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationEventRelay
 --- !u!4 &9162323011489195715 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 16442d41f8ecfba4bb89e0f08bbb7287, type: 3}

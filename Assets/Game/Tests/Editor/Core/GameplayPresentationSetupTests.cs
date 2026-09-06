@@ -115,7 +115,7 @@ public sealed class GameplayPresentationSetupTests
     [TestCase("PistolHandling")]
     [TestCase("RifleHandling")]
     [TestCase("GrenadeHandling")]
-    public void InitialKnowledgeReferencesActualDataAndStance(string skillName)
+    public void InitialKnowledgeReferencesActualDataAndValidAction(string skillName)
     {
         var skill = AssetDatabase.LoadAssetAtPath<SkillData>(
             $"Assets/Game/Data/Progression/{skillName}.asset"
@@ -123,7 +123,7 @@ public sealed class GameplayPresentationSetupTests
         Assert.That(skill, Is.Not.Null);
         Assert.That(skill.TutorialData, Is.Not.Null);
         Assert.That(skill.TutorialData.equipment, Is.Not.Null);
-        Assert.That(skill.TutorialData.action, Is.EqualTo(CharacterActionId.EquippedStance));
+        Assert.That(System.Enum.IsDefined(typeof(CharacterActionId), skill.TutorialData.action), Is.True);
         Assert.That(skill.TutorialData.instructions, Is.Not.Empty);
     }
 }

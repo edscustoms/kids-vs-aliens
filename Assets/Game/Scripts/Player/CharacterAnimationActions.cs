@@ -9,10 +9,22 @@ public sealed class CharacterAnimationActions : ScriptableObject
     {
         public CharacterActionId action;
         public string triggerParameter;
+        [Tooltip("Optional authored state/clip contract for gameplay actions that wait for a marker.")]
+        public string layerName;
+        public string statePath;
+        public AnimationClip clip;
     }
 
     [SerializeField]
     private Binding[] bindings = Array.Empty<Binding>();
+
+    public bool TryGetBinding(CharacterActionId action, out Binding binding)
+    {
+        foreach (Binding candidate in bindings)
+            if (candidate.action == action) { binding = candidate; return true; }
+        binding = default;
+        return false;
+    }
 
     public bool TryGetTrigger(CharacterActionId action, out int trigger)
     {

@@ -94,7 +94,7 @@ public sealed class GameplaySuspensionTests
         Assert.That(input.move, Is.EqualTo(Vector2.zero));
         lease.Dispose();
         input.ShootInput(true); // Same-frame UI dismissal cannot become FIRE.
-        yield return null;
+        yield return EditorTestFrame.Next();
         input.ShootInput(true); // Still-held pointer must remain suppressed.
         Assert.That(presses, Is.EqualTo(1));
         input.ShootInput(false);

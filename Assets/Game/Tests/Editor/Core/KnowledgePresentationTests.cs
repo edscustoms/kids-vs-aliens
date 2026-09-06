@@ -101,7 +101,7 @@ public sealed class KnowledgePresentationTests
             Call(presenter, "Update");
             Assert.That(view.activeSelf, Is.False, "No modal inside the inventory mutation frame.");
             var manual = suspension.Acquire(SuspensionReason.ManualPause);
-            yield return null;
+            yield return EditorTestFrame.Next();
             Call(presenter, "Update");
             Assert.That(
                 view.activeSelf,
@@ -117,7 +117,7 @@ public sealed class KnowledgePresentationTests
             Assert.That(state.HasSkill(first), Is.True);
             manual.Dispose();
             Assert.That(Time.timeScale, Is.EqualTo(previousTimeScale));
-            yield return null;
+            yield return EditorTestFrame.Next();
             Assert.That(inventory.TryAddItem(book), Is.True);
             inventory.UseItem(0);
             Assert.That(
