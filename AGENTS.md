@@ -4,7 +4,7 @@ This file defines how Codex and other repo-aware coding agents should work in th
 
 Read PROJECT_CONTEXT.md and TODO.md before substantial implementation work.
 
-1. Inspect Before Editing
+Inspect Before Editing
 
 Before changing code:
 
@@ -20,7 +20,7 @@ If repository state conflicts with PROJECT_CONTEXT.md, treat the repository as s
 
 Do not propose or implement a clean-slate rewrite unless explicitly requested or the existing architecture demonstrably requires it.
 
-2. Preserve Working Systems
+Preserve Working Systems
 
 Working systems should be considered production-sensitive.
 
@@ -64,7 +64,7 @@ Android behavior
 
 Prefer the smallest generic change that solves the actual problem.
 
-3. Unity / Project Assumptions
+Unity / Project Assumptions
 
 Project:
 
@@ -84,7 +84,7 @@ Avoid unnecessary per-frame allocations, expensive scene searches, uncontrolled 
 
 Do not prematurely micro-optimize code that is not on a measured hot path.
 
-4. Architecture Style
+Architecture Style
 
 General rule:
 
@@ -113,7 +113,7 @@ Avoid duplicating slightly different versions of the same combat/LOS/targeting l
 
 Do not build giant universal managers when a small reusable component is sufficient.
 
-5. Data-Driven Configuration
+Data-Driven Configuration
 
 Prefer existing ScriptableObject/data architecture for:
 
@@ -135,7 +135,7 @@ Serialized Inspector values may intentionally differ from C# defaults.
 
 Do not overwrite tuned Inspector values merely because the code default is different.
 
-6. Physics Is Authoritative
+Physics Is Authoritative
 
 Real Unity physics/world collision should remain authoritative for:
 
@@ -153,7 +153,7 @@ grenade collision
 
 Do not fake hits through walls or bypass real geometry unless an explicit gameplay rule requires it.
 
-7. Weapons
+Weapons
 
 Use the existing generic weapon pipeline.
 
@@ -181,7 +181,7 @@ Do not add weapon-specific logic to generic equipment/spawn systems unless there
 
 The rifle's LeftGripPoint is currently parked for future support-hand IK. Do not implement/tune it unless explicitly requested.
 
-8. PlasmaCore
+PlasmaCore
 
 The shared PlasmaCore system is already used by working weapons.
 
@@ -197,7 +197,7 @@ weapon-specific configuration
 
 Only change the shared implementation when the change is genuinely reusable and safe for existing pistol/rifle usage.
 
-9. Combat
+Combat
 
 Reuse the existing combat abstractions where relevant, including concepts such as:
 
@@ -211,7 +211,7 @@ IHitReaction
 
 Do not create parallel damage pipelines without first proving the existing one cannot support the feature.
 
-10. Skills / Knowledge
+Skills / Knowledge
 
 Knowledge Books unlock capabilities.
 
@@ -231,7 +231,7 @@ Do not silently convert one into the other.
 
 Do not redesign progression unless explicitly asked.
 
-11. Grenades
+Grenades
 
 Grenades are the current next major system, but a dedicated task prompt may define the exact implementation.
 
@@ -251,7 +251,7 @@ do gameplay/physics first, polish second
 
 Do not create one entirely separate architecture per grenade type unless behavior truly demands it.
 
-12. Enemies
+Enemies
 
 Reuse the existing enemy foundation:
 
@@ -271,25 +271,27 @@ Role-specific behavior should remain modular.
 
 A ranged enemy should be a new combat role on the existing enemy foundation, not a second enemy framework.
 
-13. Animations
+Animations
 
 Animation work is currently provisional in several systems.
 
 Do not over-engineer animation-layer/IK solutions before final animation assets exist.
 
+Gameplay decides WHAT happens. Animation/presentation data decides HOW it looks.
+
+Keep gameplay code independent from concrete clip names, Animator state names and authored frame timings where the existing semantic animation-action/event architecture can express the behavior.
+
+When animation assets are replaced, prefer changing action mappings, Animator motions, Avatar Masks and authored animation events rather than rewriting gameplay/input/combat flow.
+
 Where animation-facing issues are asset/import problems, prefer fixing them at the animation/FBX/import level rather than adding runtime rotation hacks.
 
-For grenade throws, the preferred first experiment is:
+Grenade release and player melee impact timing use authored typed animation events through the shared PlayerAnimation / CharacterAnimatorDriver / CharacterAnimationActions / CharacterAnimationEventRelay path.
 
-Animator Layer
+Do not replace those authored markers with gameplay-side magic delays.
 
-Avatar Mask
+If blending becomes fragile, keep gameplay working and park visual polish.
 
-reusable throw behavior across equipped states
-
-If blending becomes fragile, keep gameplay working and park polish.
-
-14. Menus / Preview Prefabs
+Menus / Preview Prefabs
 
 Menu preview presentation should not force gameplay-prefab changes.
 
@@ -305,7 +307,7 @@ camera presentation
 
 Keep catalog/menu entries data-driven.
 
-15. Art / Large Assets
+Art / Large Assets
 
 Do not modify files under large Art/model/texture areas unless the task explicitly requires it.
 
@@ -317,7 +319,7 @@ Keep Unity .meta files intact and tracked.
 
 If an LFS-managed Unity asset appears corrupt/unreadable, first verify that the actual binary was pulled rather than only an LFS pointer.
 
-16. Scene / Prefab Safety
+Scene / Prefab Safety
 
 When editing Unity YAML or serialized assets directly:
 
@@ -333,7 +335,35 @@ prefer editor-safe/script-based changes when manual YAML editing is risky
 
 If a task depends on Inspector-only state that cannot be safely inferred from text files, say so and specify what must be checked in Unity.
 
-17. Testing Expectations
+Canonical Gameplay Scene Setup / Repair
+
+The canonical setup/repair path for gameplay scenes is:
+
+Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
+
+The central helper is responsible for making old and new gameplay scenes receive the standard shared player/presentation wiring without level designers remembering manual Inspector steps.
+
+Whenever a feature adds a required gameplay-scene or player dependency, shared controller, presentation root, reference, or required component, extend the central GameplaySceneSetup helper in the SAME task.
+
+Rules:
+
+the helper must remain idempotent and safe to rerun
+
+reuse existing objects/components and repair references rather than creating duplicates
+
+preserve intentional/tuned scene content wherever possible
+
+reuse feature-specific setup helpers from the central helper instead of duplicating their setup logic
+
+existing gameplay scenes must be repairable by rerunning the central helper
+
+new gameplay scenes must not require undocumented manual wiring for standard systems
+
+do not leave a required per-scene setup step outside the helper unless it is intentionally level-specific content
+
+when practical, verify the helper on GamePoc and at least one other gameplay scene after changing standard scene requirements
+
+Testing Expectations
 
 After implementation, provide a short test checklist.
 
@@ -357,7 +387,7 @@ needs Unity test
 
 needs device test
 
-18. Scope Discipline
+Scope Discipline
 
 Do not expand the task into unrelated cleanup.
 
@@ -377,7 +407,7 @@ small working V1
 → polish
 → expand
 
-19. Communication Style
+Communication Style
 
 Be concise and implementation-focused.
 
@@ -397,7 +427,7 @@ If there are multiple valid implementations, recommend one and explain the trade
 
 Do not pretend certainty when repository state is ambiguous.
 
-20. Source of Truth Priority
+Source of Truth Priority
 
 When sources conflict, use this priority:
 

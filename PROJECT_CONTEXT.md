@@ -7,6 +7,55 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE — 6 Sep 2026 — Unarmed Combat V0 + Gameplay Scene Setup
+
+Unarmed Combat V0 is now working end-to-end on Amy in a real gameplay level with
+moving melee enemies. The Fighting Knowledge Book unlocks the permanent Fighting
+skill and makes the Fighting inventory option available. Plain unarmed FIRE can enter
+combat stance and perform semantic melee attacks when the skill is known. Fighting
+selection intentionally switches away from weapon use without creating a parallel
+equipment framework.
+
+Combat stance behavior is now:
+
+eligible empty-handed/Fighting player + FIRE anywhere -> combat stance + melee attack
+
+eligible player + valid enemy within about 2.0 m -> combat stance automatically
+
+nearby enemy or recent melee input keeps the stance active
+
+no nearby enemy and more than about 3 seconds without melee input -> normal
+UnarmedLocomotion
+
+weapon/grenade selection remains authoritative and must not be overridden by melee
+
+The current melee implementation is intentionally lean. PlayerMeleeController owns the
+small V0 melee state/input sequence, while existing inventory, aiming, animation,
+Knowledge and CombatHitResolver systems retain their responsibilities. Melee actions
+use semantic CharacterActionId mappings and authored typed MeleeImpact animation
+events; gameplay does not depend on the current Mixamo clip names or hardcoded hit
+timings. Real melee enemies were verified to take punch damage, react and die.
+
+The current FightingIdle / Boxing punch animations are placeholder-quality and visibly
+need replacement/polish. Treat animation assets as swappable presentation: replacing
+them later should require action/Animator mapping and authored impact-event changes,
+not rewrites of melee gameplay/input/targeting/damage/skill/inventory flow. Kicks,
+kick chains, Ultras, proficiency expansion, final impact feel/VFX/SFX and final combat
+animation polish remain later work.
+
+Gameplay scene setup is now centralized through:
+Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
+
+The helper was used successfully to repair another gameplay level so the Knowledge
+tutorial/popup, feedback/pause stack and current melee requirements work there. This
+helper is now a project convention: whenever a new standard player/scene dependency is
+introduced, extend the central GameplaySceneSetup helper in the same task. It must stay
+idempotent, reuse/repair existing objects and references, and prevent level designers
+from having to remember repeated Inspector wiring.
+
+Practice/cardboard targets are not currently a reliable validation target for grenade
+or melee damage; use real combat enemies when validating the melee damage path.
+
 CURRENT IMPLEMENTATION OVERRIDE — 6 Sep 2026
 
 Grenade animation now uses the existing PlayerAnimation / CharacterAnimatorDriver /
@@ -147,14 +196,21 @@ Training/GamePoc progression must be extremely slow and must never become the op
 
 Current immediate roadmap
 
-The current broad implementation order is:
+The current broad implementation order/status is:
 
-1. Grenade V1
-2. Grenade throw animation / Animator Layer experiment
-3. Unarmed combat V1
-4. Generic melee weapon framework
-5. Ranged alien V1
-6. Knowledge hologram/tutorial presentation
+Grenade gameplay + Electric VFX V1 — closed enough for V1
+
+Grenade throw animation V1 — implemented/accepted enough for V1; visual polish later
+
+Knowledge + Feedback + Pause + tutorial presentation V1 — implemented; central scene repair helper now owns standard scene wiring
+
+Unarmed Combat V0 — working end-to-end; placeholder combat animations and broader melee polish parked for later V1
+
+Generic melee weapon framework
+
+Ranged alien V1
+
+Use TODO.md for the live order if priorities change.
 
 Grenade direction
 
@@ -798,7 +854,7 @@ Prototype visuals are fine. Behavior matters first.
 
 UI / Communication
 
-1. Dialogue / Subtitles
+Dialogue / Subtitles
 
 Support:
 
@@ -818,7 +874,7 @@ subtitle size Small / Medium / Large
 
 Default: ON.
 
-2. Objectives / Guidance
+Objectives / Guidance
 
 Example:
 
@@ -829,7 +885,7 @@ Then shrink/fade into a subtle HUD objective.
 
 Optional subtle world markers can come later.
 
-3. Context Hints
+Context Hints
 
 Only for controls/mechanics when needed.
 
@@ -989,9 +1045,9 @@ Real missions are where Amy meaningfully grows. Training can contribute a little
 
 The exact XP multipliers, level curves and per-action XP values are not locked yet and should be tuned through playtesting.
 
-The final hologram/tutorial presentation is still TODO.
+Knowledge tutorial presentation V1 now uses the current character to demonstrate the learned action directly; a separate hologram effect is not required for V1. Further presentation polish can come later.
 
-The hologram sequence should make learning something feel like an actual event rather than a generic skill-tree click.
+Learning something should still feel like an event rather than a generic skill-tree click.
 
 Chest — V1 DONE
 

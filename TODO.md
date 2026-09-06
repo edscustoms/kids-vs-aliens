@@ -10,120 +10,66 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
-1. Grenade Throw Animation Integration — Play Mode acceptance
+Gameplay Scene Setup Rule — permanent project convention
 
-6 Sep 2026: the existing PlayerAnimation action path now starts an explicit Throwing
-state. The authored release marker commits the existing physical throw once, with
-charge preserved and no early inventory consumption. Generic relay/action mapping
-wiring supports Amy, Granny and compatible future characters. Missing presentation
-falls back immediately; interruption before release returns safely to Held.
+Canonical command:
 
-Run Tools > Kids VS Aliens > Helpers > Wire Grenade Throw Animation if wiring
-needs repair. The generator preserves this marker on regeneration. See
-Assets/Game/Docs/08-GRENADE-ANIMATION.md for setup, fallback and acceptance checks.
+Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
 
-Motion update: generator and clip now produce a raised wind-up, forward extension,
-0.54 s release and smooth recovery. Actual Editor captures were reviewed for Amy and
-Granny over idle, forward, half input, strafes and all diagonals/backward movement.
-Walking/running share the current normalized input contract. Local playback:
-Logs/GrenadeMotion/review.html. Compilation and 18 focused tests pass (including
-native release position at 30/60 FPS). Broader open-Editor Core: 55/59; four existing
-frame-dependent tests stall at Time.frameCount = 1. Rerun batch Core when the Editor
-is closed. In-game camera/device and pistol/rifle acceptance below remain.
+Whenever a new standard player/scene dependency, gameplay presentation system,
+controller, shared reference or required scene component is added, extend the central
+GameplaySceneSetup helper in the same task.
 
-Grenade gameplay is already working. Electric Grenade VFX V1 is now closed enough for V1.
+Requirements:
 
-Next task is in-game camera/device acceptance of the corrected throw and armed recovery poses.
+idempotent and safe to rerun
 
-Test cases
+repair/reuse existing objects and references instead of creating duplicates
 
-unarmed / melee
+reuse feature-specific setup helpers where appropriate
 
-plasma pistol equipped
+existing gameplay scenes must be repairable through the central command
 
-plasma rifle equipped
+standard scene wiring must not be left as undocumented manual Inspector work
 
-First implementation attempt
+when practical, verify changes on GamePoc and at least one older gameplay scene
 
-Use:
+Current gameplay acceptance / cleanup
 
-Animator Layer
+Grenade Throw Animation V1 is accepted enough for V1. The semantic action path,
+typed 0.54 s release marker, charge preservation, interruption/fallback handling and
+Amy/Granny-compatible shared setup are implemented. Current motion is acceptable for
+V1; final animation polish is parked.
 
-Avatar Mask
+Knowledge + Feedback + Pause + tutorial presentation V1 is working. The central
+GameplaySceneSetup helper has been verified on another gameplay level and repairs the
+standard presentation/melee scene stack. Further UI/device polish can happen later.
 
-upper-body throw animation where possible
+Unarmed Combat V0 is working end-to-end with a real melee enemy:
 
-existing locomotion continues underneath
+Fighting Knowledge Book / skill unlock
 
-grenade gameplay remains authoritative; an authored animation marker requests release
+Fighting inventory option
 
-Goals
+plain unarmed FIRE enters combat stance and attacks when the skill is known
 
-Amy can throw while moving
+valid enemy within about 2.0 m automatically keeps/enters combat stance when eligible
 
-throw does not break locomotion
+no nearby enemy + more than about 3 seconds without melee input returns to normal
+UnarmedLocomotion
 
-throw does not permanently disturb weapon pose
+weapon/grenade routing remains authoritative
 
-pistol/rifle return cleanly to their normal animation state
+semantic melee actions + authored MeleeImpact markers drive damage timing
 
-grenade release can be synchronized to a clean animation event / authored release point
+real melee enemies take damage, react and die
 
-gameplay still works if the animation is missing or interrupted
-
-keep the solution generic enough for Granny and future characters
-
-Important
-
-Do not over-invest yet.
-
-This is an experiment to determine whether the existing throw animation can work cleanly across:
-
-Unarmed
-
-Pistol
-
-Rifle
-
-If one shared upper-body layer looks bad for one weapon family, split animation handling by weapon stance rather than forcing one animation to fit everything.
-
-2. Knowledge + Feedback + Pause V1 — Acceptance
-
-Implementation and review fixes are complete in code.
-
-Final compilation and all 43 Core EditMode tests passed:
-
-0 failures
-
-0 skipped
-
-Remaining Unity acceptance:
-
-Open GamePoc
-
-Run Tools > Kids VS Aliens > Setup > Knowledge Feedback & Pause V1
-
-Inspect and save the gameplay scene manually
-
-Repeat for intended gameplay scenes
-
-Playtest Amy/Granny Knowledge overlays, feedback and nested manual pause ownership
-
-Verify Held/Charging grenade pause/resume, fresh FIRE, ammo/equipment preservation
-
-Verify preview rendering/lighting and menu framing
-
-Test safe-area/mobile input on device
-
-After hand-tuning UI, checkpoint before setup reruns because generated visual defaults are reapplied
-
-Details and remaining acceptance checklist:
-
-Assets/Game/Docs/07-GAMEPLAY-PRESENTATION.md
+Current FightingIdle/Boxing animations are placeholders and visibly need replacement.
+Do not rebuild melee gameplay merely to improve those animations.
 
 CURRENTLY DONE / CLOSED ENOUGH FOR V1
 
-1. Grenade Gameplay Foundation
+Grenade Gameplay Foundation
 
 Reusable grenade gameplay already exists.
 
@@ -223,7 +169,7 @@ Smoke / confusion
 
 EMP
 
-2. Plasma Pistol
+Plasma Pistol
 
 equipped / dropped / menu preview
 
@@ -239,7 +185,7 @@ skill gating
 
 Pistol Handling Knowledge Book
 
-3. Plasma Rifle
+Plasma Rifle
 
 rifle asset
 
@@ -265,7 +211,7 @@ Rifle Handling Knowledge Book
 
 required skill wired
 
-4. Melee Alien V1
+Melee Alien V1
 
 NavMesh
 
@@ -281,7 +227,7 @@ hit reaction
 
 death
 
-5. Core Mobile Foundation
+Core Mobile Foundation
 
 Android build
 
@@ -295,57 +241,64 @@ LOS/cover
 
 wall fading
 
+Grenade Throw Animation V1
+
+Semantic grenade action path is integrated through PlayerAnimation /
+CharacterAnimatorDriver / CharacterAnimationActions.
+
+Authored typed release marker commits the physical throw once.
+
+Charge, held visual, inventory/equipment preservation, fallback and interruption
+handling are implemented.
+
+Current animation is acceptable for V1; final visual polish is parked.
+
+Knowledge + Feedback + Pause + Tutorial Presentation V1
+
+Knowledge tutorial/popup, feedback and pause/suspension foundations are implemented.
+
+The learned action is demonstrated by the current character through the existing
+semantic animation/presentation path.
+
+Standard gameplay-scene wiring is now repaired through the central
+Setup or Repair Active Gameplay Scene command.
+
+Unarmed Combat V0 Foundation
+
+Working end-to-end in a real gameplay level.
+
+Includes:
+
+Fighting Knowledge Book and permanent skill unlock
+
+Fighting inventory option
+
+plain-unarmed FIRE melee activation
+
+automatic combat stance near a valid enemy at about 2.0 m
+
+about 3 second inactivity exit when no enemy is nearby
+
+separate combat locomotion stance without replacing normal UnarmedLocomotion
+
+semantic melee action mappings
+
+authored MeleeImpact damage timing
+
+lean one-input attack buffering/sequence
+
+existing CombatHitResolver / damage / hit-reaction path
+
+weapon and grenade FIRE priority preserved
+
+Current combat animations are placeholder-quality and are intentionally swappable
+without changing PlayerMeleeController/input/targeting/damage/skill/inventory flow.
+
 NEXT
 
-1. Unarmed Combat V1
+Generic Melee Weapon Framework
 
-Build the first real player melee foundation.
-
-Goals
-
-punch
-
-punch chain
-
-kick
-
-kick chain
-
-responsive input
-
-reusable hit resolution
-
-proficiency/skill-family integration where appropriate
-
-Current mobile input idea
-
-tap attack
-→ punch immediately
-
-second tap inside short window
-→ transition into kick chain
-
-continued taps
-→ continue combo
-
-hold
-→ future Ultra
-
-Important
-
-First tap must never feel delayed while waiting for a possible second tap.
-
-Future
-
-charged Ultra moves
-
-tune combo windows through playtesting
-
-2. Generic Melee Weapon Framework
-
-After unarmed combat works.
-
-Support weapons such as:
+Build reusable melee support for weapons such as:
 
 baseball bat
 
@@ -359,21 +312,23 @@ wooden stick
 
 alien / plasma blade
 
-Goals
+Goals:
 
-common melee hit architecture
+reuse current combat hit abstractions
 
-reusable attack framework
+reuse the semantic animation/action-event approach where appropriate
 
 item/equipment integration
 
-weapon-specific tuning without one-off duplicated systems
+weapon-specific tuning without one-off duplicated combat systems
 
-3. Ranged Alien V1
+keep player unarmed V0 working while this expands
+
+Ranged Alien V1
 
 Add the second real enemy combat role.
 
-Goals
+Goals:
 
 reuse current enemy navigation/perception/LOS/investigation foundation
 
@@ -391,31 +346,34 @@ begin making cover/fences tactically important
 
 Do not build a separate enemy framework.
 
-4. Knowledge Hologram / Tutorial Presentation
+Unarmed Combat V1 Polish — parked until needed
 
-Finish the Knowledge Book presentation layer.
+V0 mechanics are proven. Improve presentation without rewriting gameplay.
 
-Desired flow
+Later:
 
-Gain Knowledge
-→ hologram demonstration
-→ Amy demonstrates technique
-→ KNOWLEDGE ACQUIRED
-→ control returns
+replace current FightingIdle / Boxing placeholder animations
 
-Requirements
+better attack blending/transitions
 
-generic across weapon/melee/ability/alien-tech skills
+better impact feel, VFX/SFX and optional hit-stop/camera impulse after playtesting
 
-short
+kicks and kick chains
 
-skippable/replayable direction later
+combo tuning
 
-presentation should not own the actual skill-unlock logic
+later Ultras/proficiency expansion
+
+Animation replacement rule:
+
+gameplay code must remain independent from clip/state names and authored frame timing
+
+swap animation presentation through mappings/Animator motions/Avatar Masks and
+authored MeleeImpact events
 
 NICE TO HAVE / PARKED
 
-1. Rifle Left-Hand Grip / IK
+Rifle Left-Hand Grip / IK
 
 Rifle already contains LeftGripPoint.
 
@@ -425,7 +383,7 @@ add left-hand IK only after final rifle animations exist
 
 not required for Rifle V1
 
-2. Amy Short-Cover Aim-Point Priority
+Amy Short-Cover Aim-Point Priority
 
 When low cover blocks the lower/center shot path:
 
@@ -437,12 +395,12 @@ lower body fallback
 
 Real Physics.Raycast remains authoritative.
 
-3. Circular Target Rail
+Circular Target Rail
 
 Straight rail works.
 Circular rail can come later.
 
-4. Camera Feel Pass
+Camera Feel Pass
 
 Test:
 
@@ -454,7 +412,7 @@ current-ish distance + subtle aim/movement look-ahead
 
 Do this in real combat, not only practice range.
 
-5. Pistol / Rifle Polish
+Pistol / Rifle Polish
 
 Later:
 
@@ -472,9 +430,28 @@ charged pistol
 
 final weapon animation polish
 
+Held-Item Attachment Authoring Cleanup
+
+Current GripPoint alignment remains valid for V1.
+
+Later simplify authoring so held-item roots attach 1:1 to the shared WeaponSocket
+(local position/rotation zero) and per-item visual positioning lives on a child visual
+offset.
+
+Goal:
+
+WeaponSocket
+→ HeldItem root at zero
+→ Visual child offset
+
+This should make grenade/weapon/item pose authoring easier to understand and remove
+the need to reason about inverse GripPoint alignment when tuning held presentation.
+
+Do not refactor the working attachment system during unrelated V1 work.
+
 PERFORMANCE / TECHNICAL LATER
 
-1. Mobile Profiling
+Mobile Profiling
 
 Profile before optimizing:
 
@@ -500,7 +477,7 @@ OnePlus Nord 3
 
 Then test older Android hardware.
 
-2. Pooling
+Pooling
 
 Pool frequent gameplay effects when justified:
 
@@ -516,7 +493,7 @@ enemy projectiles
 
 Avoid building a giant universal pooling framework prematurely.
 
-3. Grenade Asset LOD / Mobile Rendering Pass
+Grenade Asset LOD / Mobile Rendering Pass
 
 Build this once as a reusable grenade optimization pipeline so future grenade types do not require separate manual LOD setup/configuration.
 
@@ -627,7 +604,7 @@ Do not manually create/configure three separate LOD setups for every grenade typ
 Shared physical grenade bases reuse shared LODs.
 Unique grenade bodies may have unique LOD meshes, but their generation/import/setup must still be automatic.
 
-4. Graphics Presets
+Graphics Presets
 
 Create meaningful:
 
@@ -653,7 +630,7 @@ bloom / post-processing
 
 effect density
 
-5. Android / Build Checks
+Android / Build Checks
 
 keep editor-baked target MeshCollider workflow
 
@@ -683,7 +660,7 @@ combat encounter tools
 
 FUTURE SYSTEMS
 
-1. Alien Beam / Hoist
+Alien Beam / Hoist
 
 Reusable traversal prefab:
 
@@ -697,7 +674,7 @@ placeholder VFX first
 
 custom VFX/animation later
 
-2. Gauntlets
+Gauntlets
 
 Future combat family:
 
@@ -725,7 +702,7 @@ telekinesis
 
 knockback
 
-3. Progression Expansion
+Progression Expansion
 
 Direction:
 
@@ -763,7 +740,13 @@ design smallest compatible V1
 
 implement
 
+extend GameplaySceneSetup in the same task if the feature adds any new standard
+player/scene dependency or required wiring
+
 test in Unity
+
+test the central scene repair helper on an existing gameplay scene when its standard
+requirements changed
 
 test on Android when relevant
 
