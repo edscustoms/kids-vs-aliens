@@ -118,10 +118,7 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
 
         if (grenadeController != null && grenadeController.IsGrenadeSelected)
         {
-            if (input != null && input.GameplayInputBlocked)
-                grenadeController.CancelCharge();
-            else
-                grenadeController.CancelThrow();
+            grenadeController.CancelCharge();
         }
     }
 
