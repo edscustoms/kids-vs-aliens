@@ -54,20 +54,9 @@ namespace StarterAssets
 
         [Header("Player Grounded")]
         [Tooltip(
-            "If the character is grounded or not. Not part of the CharacterController built in grounded check"
+            "True when the CharacterController's latest Move was supported by solid collision below"
         )]
         public bool Grounded = true;
-
-        [Tooltip("Useful for rough ground")]
-        public float GroundedOffset = -0.14f;
-
-        [Tooltip(
-            "The radius of the grounded check. Should match the radius of the CharacterController"
-        )]
-        public float GroundedRadius = 0.28f;
-
-        [Tooltip("What layers the character uses as ground")]
-        public LayerMask GroundLayers;
 
         [Header("Cinemachine")]
         [Tooltip(
@@ -169,7 +158,6 @@ namespace StarterAssets
             _hasAnimator = TryGetComponent(out _animator);
 
             JumpAndGravity();
-            GroundedCheck();
             Move();
         }
 
@@ -185,27 +173,6 @@ namespace StarterAssets
             _animIDJump = Animator.StringToHash("Jump");
             _animIDFreeFall = Animator.StringToHash("FreeFall");
             _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
-        }
-
-        private void GroundedCheck()
-        {
-            Vector3 spherePosition = new Vector3(
-                transform.position.x,
-                transform.position.y - GroundedOffset,
-                transform.position.z
-            );
-
-            Grounded = Physics.CheckSphere(
-                spherePosition,
-                GroundedRadius,
-                GroundLayers,
-                QueryTriggerInteraction.Ignore
-            );
-
-            if (_hasAnimator)
-            {
-                _animator.SetBool(_animIDGrounded, Grounded);
-            }
         }
 
         private void CameraRotation()
@@ -302,10 +269,20 @@ namespace StarterAssets
                 targetDirection.Normalize();
             }
 
-            _controller.Move(
+            CollisionFlags collisionFlags = _controller.Move(
                 targetDirection.normalized * (_speed * Time.deltaTime)
                     + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime
             );
+
+            // Grounding is based on the CharacterController's real collision result,
+            // not on an authored ground layer mask. Any solid collider that actually
+            // supports the controller from below can count as ground.
+            Grounded = (collisionFlags & CollisionFlags.Below) != 0;
+
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDGrounded, Grounded);
+            }
 
             // ----------------------------
             // ANIMATION DIRECTION
@@ -415,24 +392,6 @@ namespace StarterAssets
             }
 
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
-
-            Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
-
-            Gizmos.color = Grounded ? transparentGreen : transparentRed;
-
-            Gizmos.DrawSphere(
-                new Vector3(
-                    transform.position.x,
-                    transform.position.y - GroundedOffset,
-                    transform.position.z
-                ),
-                GroundedRadius
-            );
         }
 
         private void OnFootstep(AnimationEvent animationEvent)

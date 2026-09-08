@@ -7,6 +7,229 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT DESIGN OVERRIDE — 7 Sep 2026 — Handcrafted Roguelite Loop / Level 1 / Post-Game Tiers
+
+This override is newer than the 3 Sep progression notes below. Where they conflict,
+this section wins.
+
+Core identity
+
+Kids VS Aliens should remain a story-driven game built from large, memorable,
+handcrafted 3D locations. Do not redesign the campaign into procedural rooms or a
+sequence of disconnected arena missions merely to support replayability.
+
+The working campaign loop is:
+
+big authored story level
+→ explore / fight / find Knowledge / improve skills
+→ die
+→ restart that story level from the beginning
+→ permanent Knowledge + skill progression remain
+→ player returns stronger and with better route/encounter knowledge
+→ eventually beat the full level
+→ continue to the next major authored level/chapter
+
+ABSOLUTE MUSTS
+
+Knowledge / learned capabilities are permanent.
+
+Skill XP / proficiency is currently intended to persist across deaths and retries.
+
+Death may restart the current story level, but a mobile interruption must NEVER count
+as death. App pause/background/close must support safe suspend/resume of the active
+attempt.
+
+Failure must not create a downward power spiral where the next run becomes harder
+because the player lost all useful power.
+
+Repeated attempts must become faster/smarter through mastery, stronger skills,
+better routes and encounter knowledge.
+
+Combat readability, camera visibility, objective clarity and touch-control quality
+are first-class requirements.
+
+Large levels must contain natural mobile-friendly stopping points even if the total
+authored level is much longer.
+
+After the full campaign is completed, unlock an optional harder full-game tier
+(working name: Invasion Tier 2 / New Game+). The player must still be able to choose
+the original tier.
+
+Current persistence direction
+
+Persist across deaths / retries:
+
+Knowledge Books / learned skills
+
+skill XP / proficiency / meaningful skill levels
+
+major meta/story discoveries and permanent unlocks where appropriate
+
+weapon knowledge / handling unlocks
+
+Reset per attempt:
+
+enemies / encounter state
+
+ammo
+
+consumables
+
+temporary buffs
+
+most local level state / loot state
+
+Physical gun and inventory persistence is NOT locked yet.
+
+Current recommended model to prototype:
+
+permanent weapon Knowledge / handling / progression
+
+- run-specific physical acquisition / loadout opportunities
+
+Avoid a system where dying strips the player of a strong weapon and makes the next run
+materially weaker. Permanent guns, re-find-every-run guns and the hybrid model should be
+playtested before the save/progression system is locked.
+
+Anti-grind rule
+
+Permanent skill XP must not make repeatedly farming the easiest early encounter the
+optimal strategy or allow early content to trivialize the rest of the campaign.
+
+Possible controls to test:
+
+diminishing XP from repeated low-risk encounters
+
+progression caps tied to Knowledge / story milestones
+
+strongly reduced or zero Training/GamePoc progression
+
+meaningful ability unlocks instead of endless tiny damage scaling
+
+Exact XP curves and limits are not locked.
+
+Replayability without procedural geometry
+
+Do not rely only on visual changes. Replays should gain variety through small,
+production-realistic authored systems such as:
+
+route mastery / faster traversal
+
+alternate paths where the level supports them
+
+encounter composition variants
+
+different enemy mixes / elite appearances
+
+limited loot/reward variation
+
+optional side pockets / risk-reward encounters
+
+possible earned shortcuts after discovery
+
+Permanent shortcuts are a TEST item, not a locked requirement. They must not erase the
+intended tension of restarting the level.
+
+Mobile session structure
+
+The full authored level may be approximately 45–90+ minutes on an early/first clear if
+playtesting supports that scale, but gameplay should naturally break into roughly
+5–15 minute chunks with safe suspend/resume.
+
+Construction Site target for testing:
+
+first/early attempts: roughly 12–20 minutes when fully built
+later mastered attempts: roughly 6–10 minutes
+
+These are targets, not fixed requirements.
+
+Level 1 current macro direction
+
+START / Amy wake-up
+→ forced single route THROUGH the unfinished construction building
+→ alien / rocket crash zone
+
+This is the ONLY initial route. The player must not branch directly from the start to
+the school gate, key or site office.
+
+After the crash-zone reveal:
+
+crash zone
+→ wider construction-site exploration / encounters
+→ discover locked school-backyard gate
+→ objective sends player toward the site/helper office / key area
+→ obtain key
+→ return to gate
+→ school backyard
+→ school interior / multiple school areas
+→ later street / neighborhood
+→ continue expanding the authored level/world
+
+Post-game harder tier
+
+Completing the full campaign unlocks a selectable harder full-game tier.
+
+Preferred direction:
+
+same authored levels and story structure
+
+global data-driven difficulty/tier profile; do NOT duplicate scenes
+
+more dangerous enemy compositions
+
+harder enemies / elites
+
+faster or more aggressive behavior where fair/readable
+
+stronger attack patterns / new attacks where practical
+
+tighter resource pressure where appropriate
+
+new enemy variants or tier-exclusive enemies are a strong NICE TO HAVE
+
+exclusive rewards/unlocks are a NICE TO HAVE
+
+avoid making difficulty only "HP x2 / damage x2"
+
+Tier 1 remains selectable
+
+Tier 3+ can be considered later only if Tier 2 proves worthwhile
+
+CURRENT PRODUCTION FOCUS — next roughly 2 weeks
+
+Two parallel tracks:
+
+Construction Site level building / greybox / pacing.
+
+Camera Occlusion Fade V2.
+
+Use the Construction Site itself as the replay-loop testbed. Build enough real gameplay
+to replay the opening multiple times before committing to the full 45–90+ minute level
+structure.
+
+Recommended first validation slice:
+
+START
+→ unfinished building
+→ crash reveal
+→ wider site encounter(s)
+→ locked gate / key loop
+→ school-backyard exit
+
+Aim for roughly 10–15 minutes of playable material, then deliberately replay it around
+5–10 times.
+
+Primary test question:
+
+"After I die, do I actually want to run this again?"
+
+Attempt 5 should feel faster, more skillful and more intentional than Attempt 1.
+If it feels like chores, adjust route/encounter/progression structure before expanding
+the full level.
+
+Generic melee expansion, Ranged Alien V1, save/progression implementation and broad
+combat polish remain parked unless they block this level/replay test.
+
 CURRENT IMPLEMENTATION OVERRIDE — 6 Sep 2026 — Unarmed Combat V0 + Gameplay Scene Setup
 
 Unarmed Combat V0 is now working end-to-end on Amy in a real gameplay level with
@@ -156,9 +379,9 @@ Second-hand IK / left-hand grip is a nice-to-have later, because final rifle ani
 
 Knowledge / progression direction
 
-Permanent Knowledge and combat proficiency are now treated as separate ideas.
+CURRENT DIRECTION — supersedes the earlier per-run proficiency concept.
 
-Permanent
+Permanent progression:
 
 Knowledge Books permanently unlock what Amy knows how to do:
 
@@ -172,9 +395,8 @@ alien technology
 
 abilities / gameplay verbs
 
-Primarily per-level / per-run
-
-Combat proficiency should primarily grow during the active story level/run so repeatedly grinding early content cannot permanently trivialize later levels.
+Skill XP / proficiency is also currently intended to persist across deaths and story-level
+retries.
 
 Examples:
 
@@ -190,33 +412,45 @@ Gauntlets
 
 future melee families
 
-Exact XP curves/reset behavior still require playtesting.
+Anti-grind remains mandatory: repeated early-level farming must not become the optimal
+way to overpower the rest of the game. Exact XP curves, diminishing returns, caps and
+story/Knowledge gating still require playtesting.
 
-Training/GamePoc progression must be extremely slow and must never become the optimal grind path.
+Training/GamePoc progression must remain extremely slow or zero and must never become
+the optimal grind path.
 
 Current immediate roadmap
 
-The current broad implementation order/status is:
+Current focus for roughly the next two weeks:
 
-Grenade gameplay + Electric VFX V1 — closed enough for V1
+Camera Occlusion Fade V2.
 
-Grenade throw animation V1 — implemented/accepted enough for V1; visual polish later
+Construction Site level building / replay-loop validation.
 
-Knowledge + Feedback + Pause + tutorial presentation V1 — implemented; central scene repair helper now owns standard scene wiring
+Use the level itself to expose real camera blockers and repeatedly improve Fade V2
+against actual geometry.
 
-Unarmed Combat V0 — working end-to-end; placeholder combat animations and broader melee polish parked for later V1
+Current loop:
 
-Generic melee weapon framework
+build construction greybox
+→ encounter real camera-blocking failures
+→ improve Fade V2
+→ continue layout
+→ replay
+→ repeat
 
-Ranged alien V1
+Generic melee weapon expansion, Ranged Alien V1, save/progression implementation and
+broader melee/weapon polish are parked during this focus unless they become blockers.
 
 Use TODO.md for the live order if priorities change.
 
 Grenade direction
 
-Grenades are the next major system.
+The reusable grenade gameplay foundation and Electric VFX V1 are already implemented
+and closed enough for V1.
 
-A separate dedicated grenade implementation prompt may be supplied, so do not infer a detailed implementation solely from this context document.
+Future grenade families and further polish are later work unless a real gameplay,
+readability or level-blocking issue appears.
 
 Broad requirements:
 
@@ -1111,21 +1345,28 @@ Do not lock the final camera from the practice range.
 
 Progression / Save Direction
 
-Not locked yet.
+Current working direction:
 
-Current possibilities:
+Career Mode = authored story/progression.
 
-Career Mode = story/progression
+Training Mode = GamePoc sandbox.
 
-Training Mode = GamePoc sandbox
+Death restarts the current large story level from its beginning, while permanent
+Knowledge and skill XP/proficiency remain.
 
-levels may have multiple entry/start zones
+Mobile interruption is separate from death. Suspend/resume must preserve the current
+attempt safely.
 
-routes can converge toward a final boss/objective
+Physical gun/inventory persistence is still a design test item. The current recommended
+prototype is permanent weapon Knowledge/progression with run-specific acquisition or
+loadout opportunities.
 
-later decide checkpoints/safe zones vs stronger roguelite restart structure
+Large-level replayability should come from mastery, encounter variation, optional route
+choice and possibly earned shortcuts rather than procedural geometry.
 
-Avoid building a heavy save system before the level loop is proven.
+Do not build a heavy save system before the replay loop is proven. When saving is
+implemented, keep meta progression, active-run state and mobile suspend/resume as
+separate concerns.
 
 Development Rule
 

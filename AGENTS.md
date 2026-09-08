@@ -153,6 +153,35 @@ grenade collision
 
 Do not fake hits through walls or bypass real geometry unless an explicit gameplay rule requires it.
 
+Camera Occlusion Fade
+
+Current V2 direction is logical occluder-group fading rather than treating every
+renderer as an independent blocker.
+
+When working on this system:
+
+preserve exact camera → player ray-based detection; avoid broad casts that create
+false positives
+
+resolve collider hits to a logical occluder group containing one or more renderers
+
+use MaterialPropertyBlock or the existing equivalent; do not instantiate materials
+per renderer
+
+keep physics/colliders authoritative and active
+
+preserve the existing aim/visibility semantics for camera-faded blockers
+
+avoid one-time-only scene scans if runtime-added occluders must be supported
+
+authoring/setup helpers must be idempotent
+
+if the feature becomes a standard scene dependency, extend GameplaySceneSetup in
+the same task
+
+Do not automatically make every environment object fade. Focus on genuine large camera
+blockers.
+
 Weapons
 
 Use the existing generic weapon pipeline.
@@ -225,15 +254,101 @@ PlayerSkillState
 
 weapon required-skill gating
 
-Permanent Knowledge and run/story-level proficiency are separate concepts.
+CURRENT DESIGN DIRECTION:
 
-Do not silently convert one into the other.
+Knowledge / learned capabilities persist permanently.
+
+Skill XP / proficiency is also currently intended to persist across deaths and
+story-level retries.
+
+Exact XP curves, anti-grind caps/diminishing returns and save implementation are not
+locked yet.
+
+Training/GamePoc progression must remain extremely slow or zero so it cannot become
+the optimal persistent grind path.
+
+This supersedes the older "proficiency primarily resets per run/story level" direction.
 
 Do not redesign progression unless explicitly asked.
+Do not implement a heavy save/meta-progression framework merely because this direction
+is documented; first follow the live TODO and the explicit task.
+
+Run / Replay / Persistence
+
+The current campaign design is built around large handcrafted story levels, not
+procedurally generated rooms.
+
+Working retry rule:
+
+death
+→ restart the current large story level
+→ permanent Knowledge + skill XP/proficiency remain
+
+Mobile lifecycle interruption is a separate concern:
+
+pausing, backgrounding, locking the phone or closing/reopening the app must not be
+treated as gameplay death
+
+when active-run persistence is implemented, suspend/resume must preserve the attempt
+safely
+
+keep meta progression, active-run state and platform suspend/resume conceptually
+separate
+
+Run-reset candidates include enemies, ammo, consumables, temporary buffs and most local
+world state.
+
+Physical gun/inventory persistence is intentionally NOT locked. Do not hardcode one
+model into generic systems without an explicit task. The current design recommendation
+to test first is permanent weapon Knowledge/progression plus run-specific physical
+acquisition/loadout opportunities.
+
+Avoid failure loops where death removes so much power that the next attempt becomes
+materially harder.
+
+Replay Variation
+
+Do not introduce procedural geometry simply to create replayability.
+
+Prefer lightweight authored variation such as:
+
+different enemy compositions
+
+elite/variant appearances
+
+limited loot/reward variation
+
+optional side encounters
+
+route mastery / alternate routes where authored
+
+possible earned shortcuts only if playtesting supports them
+
+Post-Game Difficulty / World Tiers
+
+After the full campaign is completed, the design requires an optional harder full-game
+tier (working name: Invasion Tier 2 / New Game+).
+
+If/when implemented:
+
+reuse the same authored levels/scenes
+
+use a data-driven global difficulty/tier profile
+
+keep Tier 1 selectable
+
+prefer encounter/behavior/variant changes in addition to numeric scaling
+
+do not duplicate campaign scenes per tier
+
+do not make the system only HP/damage multipliers if cleaner reusable hooks exist
+
+Tier-exclusive enemies/rewards and Tier 3+ are optional later additions, not baseline
+implementation requirements.
 
 Grenades
 
-Grenades are the current next major system, but a dedicated task prompt may define the exact implementation.
+The reusable grenade foundation and Electric VFX V1 already exist. Future grenade families or grenade polish should follow the live TODO or an explicit task prompt.
 
 When working on grenades:
 

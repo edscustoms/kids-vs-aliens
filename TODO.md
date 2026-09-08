@@ -10,6 +10,238 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+CURRENT FOCUS — NEXT ~2 WEEKS
+
+Two parallel tracks are the current priority.
+
+A. Camera Occlusion Fade V2 — ABSOLUTE MUST
+
+Replace the current renderer-centric blocker logic with logical occluder groups so
+multi-part construction props/buildings fade as one gameplay-readable blocker.
+
+Target architecture:
+
+FadeWhenBlockingPlayer
+→ CameraFadeOccluder logical group
+→ Renderer[] controlled through MaterialPropertyBlock
+
+Detection direction:
+
+keep exact camera → player sample rays; do NOT return to broad SphereCastAll logic
+
+use about five player samples: head / shoulders / torso / hips
+
+ray hits resolve collider → CameraFadeOccluder group
+
+a configurable sample threshold decides whether the group is blocking
+
+smooth fade toward roughly 0.05–0.10 visibility
+
+short clear-delay / hysteresis around 0.10–0.20 s to prevent flicker
+
+colliders and gameplay remain active
+
+preserve current PlayerAim semantics so camera-faded blockers can still be ignored
+for aim visibility where intended
+
+use property blocks; do not instantiate materials per renderer
+
+support runtime registration; do not depend only on one scene-wide startup scan
+
+Authoring helper target:
+
+Tools > Kids VS Aliens > Level Tools > Configure Camera Occluders
+
+Helper should:
+
+add/reuse CameraFadeOccluder
+
+collect child renderers
+
+configure relevant collider child layers
+
+validate that materials/shaders support \_Fade
+
+warn on incompatible renderers
+
+be idempotent and safe to rerun
+
+Do not make every object fade. Prioritize walls, roofs, cabins, trucks, containers,
+large scaffold/building sections and other true camera blockers. Ground, floors and
+small cover normally should not fade.
+
+B. Construction Site + Replay-Loop Prototype — ABSOLUTE MUST
+
+Current initial route is locked:
+
+START / Amy wake-up
+→ forced single route THROUGH unfinished construction building
+→ alien / rocket crash zone
+
+This is the only initial path.
+
+After the crash reveal, build toward:
+
+crash zone
+→ wider construction encounters
+→ locked school-backyard gate
+→ objective sends player toward site/helper office / key
+→ key pickup
+→ return to gate
+→ school backyard
+
+Do not allow the key/site-office route directly from the start.
+
+First validation target:
+
+roughly 10–15 minutes of genuinely playable content
+
+use real enemies / objectives / traversal, not only geometry
+
+replay the same slice around 5–10 times
+
+compare Attempt 1 vs Attempt 2 / 5 / 10
+
+the later attempt should feel faster, more skillful and more intentional
+
+Primary acceptance question:
+
+"After I die, do I actually want to run this again?"
+
+If the answer becomes "this is a chore", adjust route, encounter or progression design
+before building a 45–90+ minute full authored level.
+
+ABSOLUTE MUSTS — CORE LOOP / MOBILE
+
+Keep large handcrafted story locations. Do not redesign KVA into procedural rooms.
+
+Working death rule: death restarts the current large story level from the beginning.
+
+Mobile pause/background/app close must NEVER count as death.
+
+Add safe active-run suspend/resume before release.
+
+Knowledge / learned skills persist permanently.
+
+Skill XP / proficiency currently persists across deaths/retries.
+
+Failure must not create a downward power spiral where the next attempt is weaker.
+
+Repeated attempts must become faster/smarter through mastery, progression and route
+knowledge.
+
+Combat readability, touch controls, camera visibility and objective clarity are
+release-critical.
+
+Build natural 5–15 minute gameplay chunks even when the total level is much longer.
+
+TO TEST / THINK ABOUT BEFORE LOCKING
+
+Whole-level restart viability
+
+Current working target:
+
+Construction Site first/early run: about 12–20 min when complete
+
+mastered Construction Site: about 6–10 min
+
+full large authored level: potentially about 45–90+ min if playtesting supports it
+
+Do not treat these as fixed numbers.
+
+Gun / inventory persistence
+
+Test three models:
+
+permanent physical guns
+
+re-find physical guns each attempt
+
+hybrid — permanent weapon Knowledge/progression + run-specific acquisition/loadout
+
+Current recommendation to test first: hybrid.
+
+Never create a Dust & Neon-style death spiral where losing a strong gun makes the next
+run materially harder.
+
+Permanent XP anti-grind
+
+Need to test one or more of:
+
+diminishing XP from repeatedly farming trivial encounters
+
+caps linked to Knowledge/story milestones
+
+strongly reduced or zero Training/GamePoc XP
+
+meaningful unlocks rather than endless tiny stat scaling
+
+Anti-repetition systems
+
+Test lightweight authored variation before procedural generation:
+
+changing enemy compositions
+
+elite/variant appearances
+
+limited loot/reward variation
+
+optional side pockets / risk-reward encounters
+
+route mastery / alternate paths
+
+possible earned permanent shortcuts
+
+Permanent shortcuts are NOT locked. Test whether they preserve tension or undermine the
+whole-level-restart idea.
+
+Camera / mobile feel
+
+Continue the separate camera feel test later:
+
+current framing
+
+~5–10% closer
+
+current-ish distance + subtle look-ahead
+
+Test only in real combat / real construction geometry.
+
+POST-GAME — ABSOLUTE MUST LATER
+
+After the player completes the full campaign, unlock a selectable harder full-game tier
+(working name: Invasion Tier 2 / New Game+).
+
+Requirements:
+
+same authored levels; do NOT duplicate campaign scenes
+
+Tier 1 remains selectable
+
+use a global data-driven difficulty/tier profile
+
+increase challenge across the game
+
+harder enemy compositions / more elites
+
+fair/readable aggression or behavior increases where useful
+
+stronger/new attack patterns where practical
+
+tighter resources where appropriate
+
+avoid pure HP-sponge / damage-sponge scaling
+
+POST-GAME — NICE TO HAVE
+
+new Tier-2-only enemies or enemy variants
+
+tier-exclusive rewards / cosmetics / unlocks
+
+additional hazards or remixed encounter rules
+
+Tier 3+ only if Tier 2 proves fun and worth maintaining
+
 Gameplay Scene Setup Rule — permanent project convention
 
 Canonical command:
@@ -294,7 +526,7 @@ weapon and grenade FIRE priority preserved
 Current combat animations are placeholder-quality and are intentionally swappable
 without changing PlayerMeleeController/input/targeting/damage/skill/inventory flow.
 
-NEXT
+NEXT AFTER CURRENT FOCUS
 
 Generic Melee Weapon Framework
 
@@ -708,11 +940,15 @@ Direction:
 
 Knowledge = permanent capability unlock
 
-proficiency = primarily per story level/run
+skill XP / proficiency = currently permanent across deaths/retries
 
 prevent early-level grinding from trivializing later content
 
-meaningful level unlocks > tiny stat bumps
+Training/GamePoc must be extremely slow or zero for persistent progression
+
+meaningful skill/ability unlocks > endless tiny stat bumps
+
+keep meta progression, active-run state and mobile suspend/resume as separate concerns
 
 UI / PRODUCT LATER
 
