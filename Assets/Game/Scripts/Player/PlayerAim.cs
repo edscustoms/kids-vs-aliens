@@ -12,9 +12,6 @@ public class PlayerAim : MonoBehaviour
     [SerializeField]
     private Camera mainCamera;
 
-    [SerializeField]
-    private FadeWhenBlockingPlayer fadeWhenBlockingPlayer;
-
     // =====================================================
     // DESKTOP
     // =====================================================
@@ -149,11 +146,6 @@ public class PlayerAim : MonoBehaviour
             mainCamera = Camera.main;
         }
 
-        if (fadeWhenBlockingPlayer == null && mainCamera != null)
-        {
-            fadeWhenBlockingPlayer = mainCamera.GetComponent<FadeWhenBlockingPlayer>();
-        }
-
         characterController = GetComponent<CharacterController>();
         starterAssetsInputs = GetComponent<StarterAssetsInputs>();
 
@@ -241,10 +233,12 @@ public class PlayerAim : MonoBehaviour
                 renderer = hit.collider.GetComponentInParent<Renderer>();
             }
 
+            CameraOcclusionController occlusionController = CameraOcclusionController.Active;
+
             if (
                 renderer != null
-                && fadeWhenBlockingPlayer != null
-                && fadeWhenBlockingPlayer.IsBlockingPlayer(renderer)
+                && occlusionController != null
+                && occlusionController.IsOccluded(renderer)
             )
             {
                 continue;

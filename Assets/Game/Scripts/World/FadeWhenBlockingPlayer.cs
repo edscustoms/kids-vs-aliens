@@ -1,96 +1,73 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-public class FadeWhenBlockingPlayer : MonoBehaviour
+public sealed class FadeWhenBlockingPlayer : MonoBehaviour
 {
+    private const int VisibilitySampleCount = 5;
+
+    [Header("References")]
     [SerializeField]
     private Transform player;
 
-    [FormerlySerializedAs("wallLayer")]
     [SerializeField]
-    private LayerMask fadeWhenBlockingPlayerLayer;
+    private CameraOcclusionAuthoring occlusionAuthoring;
+
+    [Header("Physics")]
+    [SerializeField]
+    private LayerMask occlusionMask = ~0;
+
+    [Header("Detection")]
+    [Range(1, VisibilitySampleCount)]
+    [SerializeField]
+    private int requiredBlockedSamples = 3;
 
     [Header("Fade")]
+    [Tooltip("1 = fully visible, 0 = fully faded. Start around 0.10.")]
     [Range(0f, 1f)]
     [SerializeField]
-    private float fadedAlpha = 0.15f;
+    private float fadedAmount = 0.10f;
 
     [SerializeField]
-    private float fadeSpeed = 8f;
+    private float fadeOutSpeed = 10f;
 
-    // =====================================================
-    // V1 CAMERA OCCLUSION DESIGN
-    //
-    // The old implementation used one SphereCastAll with a
-    // fairly large radius. That produced two false positives:
-    //
-    // 1. low walls faded even when most of Amy was visible;
-    // 2. when Amy stood close to a wall IN FRONT of her, the
-    //    sphere around the end of the cast overlapped that wall
-    //    even though it was not between the camera and Amy.
-    //
-    // We now use three thin, exact camera -> Amy sight lines:
-    // upper body, torso and lower torso.
-    //
-    // A wall fades only when it blocks at least TWO of those
-    // three lines. So low cover that only hides Amy's legs does
-    // not disappear, while a genuinely camera-blocking wall does.
-    //
-    // The rays stop exactly at Amy, so geometry in FRONT of Amy
-    // cannot be accidentally classified as a camera blocker.
-    // =====================================================
+    [SerializeField]
+    private float restoreSpeed = 6f;
 
-    private const int VisibilitySampleCount = 3;
-    private const int RequiredBlockedSamples = 2;
+    [Tooltip("Prevents rapid flickering when moving past wall edges.")]
+    [SerializeField]
+    private float restoreDelay = 0.15f;
 
-    private static readonly int FadeId = Shader.PropertyToID("_Fade");
-
-    private Renderer[] fadeWalls;
     private CharacterController playerController;
 
-    private readonly Vector3[] playerVisibilitySamples = new Vector3[VisibilitySampleCount];
+    private readonly Vector3[] visibilitySamples = new Vector3[VisibilitySampleCount];
 
-    private readonly RaycastHit[] occlusionHits = new RaycastHit[32];
+    private readonly RaycastHit[] rayHits = new RaycastHit[64];
 
-    private readonly HashSet<Renderer> obstructingWalls = new HashSet<Renderer>();
+    // Prevent one Renderer receiving multiple votes
+    // from the same sightline.
+    private readonly HashSet<Renderer> renderersHitThisSample = new HashSet<Renderer>();
 
-    private readonly HashSet<Renderer> wallsHitByCurrentSample = new HashSet<Renderer>();
+    private readonly Dictionary<Renderer, RuntimeState> states =
+        new Dictionary<Renderer, RuntimeState>();
 
-    private readonly Dictionary<Renderer, int> blockedSampleCounts =
-        new Dictionary<Renderer, int>();
+    private readonly List<Renderer> trackedRenderers = new List<Renderer>();
 
-    private readonly Dictionary<Renderer, float> currentFade = new Dictionary<Renderer, float>();
-
-    private MaterialPropertyBlock propertyBlock;
+    private sealed class RuntimeState
+    {
+        public int blockedSamples;
+        public bool isBlocking;
+        public float clearTimer;
+    }
 
     // =====================================================
     // INITIALIZATION
     // =====================================================
 
-    private void Start()
+    private void Awake()
     {
         if (player != null)
         {
             playerController = player.GetComponent<CharacterController>();
-        }
-
-        fadeWalls = fadeWalls = FindObjectsByType<Renderer>();
-
-        propertyBlock = new MaterialPropertyBlock();
-
-        foreach (Renderer wall in fadeWalls)
-        {
-            if (wall == null)
-                continue;
-
-            if (((1 << wall.gameObject.layer) & fadeWhenBlockingPlayerLayer.value) == 0)
-            {
-                continue;
-            }
-
-            currentFade[wall] = 1f;
-            SetFade(wall, 1f);
         }
     }
 
@@ -98,94 +75,100 @@ public class FadeWhenBlockingPlayer : MonoBehaviour
     // UPDATE
     // =====================================================
 
-    private void Update()
+    private void LateUpdate()
     {
-        if (player == null)
+        if (player == null || occlusionAuthoring == null)
+        {
             return;
-
-        obstructingWalls.Clear();
-        blockedSampleCounts.Clear();
-
-        BuildPlayerVisibilitySamples();
-
-        for (int sampleIndex = 0; sampleIndex < playerVisibilitySamples.Length; sampleIndex++)
-        {
-            CollectWallsBlockingSample(playerVisibilitySamples[sampleIndex]);
         }
 
-        foreach (KeyValuePair<Renderer, int> pair in blockedSampleCounts)
+        ResetBlockedSampleCounts();
+
+        BuildVisibilitySamples();
+
+        for (int i = 0; i < VisibilitySampleCount; i++)
         {
-            if (pair.Value >= RequiredBlockedSamples)
-            {
-                obstructingWalls.Add(pair.Key);
-            }
+            CollectBlockingRenderers(visibilitySamples[i]);
         }
 
-        foreach (Renderer wall in fadeWalls)
-        {
-            if (wall == null)
-                continue;
-
-            if (!currentFade.ContainsKey(wall))
-                continue;
-
-            float targetFade = obstructingWalls.Contains(wall) ? fadedAlpha : 1f;
-
-            float fade = Mathf.MoveTowards(
-                currentFade[wall],
-                targetFade,
-                fadeSpeed * Time.deltaTime
-            );
-
-            currentFade[wall] = fade;
-
-            SetFade(wall, fade);
-        }
+        UpdateFadeStates();
     }
 
     // =====================================================
     // PLAYER VISIBILITY SAMPLES
     // =====================================================
 
-    private void BuildPlayerVisibilitySamples()
+    private void BuildVisibilitySamples()
     {
         if (playerController != null)
         {
             Bounds bounds = playerController.bounds;
 
-            Vector3 horizontalCenter = new Vector3(bounds.center.x, 0f, bounds.center.z);
-
             float bottom = bounds.min.y;
+
             float height = bounds.size.y;
 
-            // Head / upper body.
-            playerVisibilitySamples[0] = horizontalCenter + Vector3.up * (bottom + height * 0.82f);
+            Vector3 center = new Vector3(bounds.center.x, 0f, bounds.center.z);
 
-            // Chest / torso.
-            playerVisibilitySamples[1] = horizontalCenter + Vector3.up * (bottom + height * 0.62f);
+            Vector3 cameraRight = transform.right;
 
-            // Lower torso / hips.
-            playerVisibilitySamples[2] = horizontalCenter + Vector3.up * (bottom + height * 0.42f);
+            cameraRight.y = 0f;
+
+            if (cameraRight.sqrMagnitude > 0.001f)
+            {
+                cameraRight.Normalize();
+            }
+            else
+            {
+                cameraRight = Vector3.right;
+            }
+
+            float shoulderOffset = Mathf.Max(
+                0.12f,
+                Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.65f
+            );
+
+            // Head / upper body
+            visibilitySamples[0] = center + Vector3.up * (bottom + height * 0.84f);
+
+            // Left shoulder
+            visibilitySamples[1] =
+                center + Vector3.up * (bottom + height * 0.68f) - cameraRight * shoulderOffset;
+
+            // Torso
+            visibilitySamples[2] = center + Vector3.up * (bottom + height * 0.60f);
+
+            // Right shoulder
+            visibilitySamples[3] =
+                center + Vector3.up * (bottom + height * 0.68f) + cameraRight * shoulderOffset;
+
+            // Hips
+            visibilitySamples[4] = center + Vector3.up * (bottom + height * 0.42f);
 
             return;
         }
 
-        // Defensive fallback for a player without a
-        // CharacterController.
-        playerVisibilitySamples[0] = player.position + Vector3.up * 1.4f;
+        // Fallback if no CharacterController exists.
+        Vector3 p = player.position;
 
-        playerVisibilitySamples[1] = player.position + Vector3.up * 1.0f;
+        visibilitySamples[0] = p + Vector3.up * 1.55f;
 
-        playerVisibilitySamples[2] = player.position + Vector3.up * 0.7f;
+        visibilitySamples[1] = p + Vector3.up * 1.25f - transform.right * 0.15f;
+
+        visibilitySamples[2] = p + Vector3.up * 1.10f;
+
+        visibilitySamples[3] = p + Vector3.up * 1.25f + transform.right * 0.15f;
+
+        visibilitySamples[4] = p + Vector3.up * 0.75f;
     }
 
     // =====================================================
-    // CAMERA -> PLAYER OCCLUSION
+    // OCCLUSION DETECTION
     // =====================================================
 
-    private void CollectWallsBlockingSample(Vector3 playerSample)
+    private void CollectBlockingRenderers(Vector3 samplePosition)
     {
-        Vector3 direction = playerSample - transform.position;
+        Vector3 direction = samplePosition - transform.position;
 
         float distance = direction.magnitude;
 
@@ -197,73 +180,138 @@ public class FadeWhenBlockingPlayer : MonoBehaviour
         int hitCount = Physics.RaycastNonAlloc(
             transform.position,
             direction,
-            occlusionHits,
+            rayHits,
             distance,
-            fadeWhenBlockingPlayerLayer,
+            occlusionMask,
             QueryTriggerInteraction.Ignore
         );
 
-        wallsHitByCurrentSample.Clear();
+        renderersHitThisSample.Clear();
 
         for (int i = 0; i < hitCount; i++)
         {
-            RaycastHit hit = occlusionHits[i];
+            RaycastHit hit = rayHits[i];
 
-            if (hit.collider == null)
+            Collider collider = hit.collider;
+
+            if (collider == null)
                 continue;
 
-            // Safety against a hit that numerically lands
-            // at / beyond the player sample.
             if (hit.distance >= distance - 0.01f)
                 continue;
 
-            Renderer wall = hit.collider.GetComponent<Renderer>();
-
-            if (wall == null)
+            if (!occlusionAuthoring.TryGetRenderer(collider, out Renderer renderer))
             {
-                wall = hit.collider.GetComponentInParent<Renderer>();
+                continue;
             }
 
-            if (wall == null)
+            if (renderer == null)
                 continue;
 
-            wallsHitByCurrentSample.Add(wall);
-        }
+            // Same wall may contain multiple colliders.
+            // It still gets only ONE vote from this ray.
+            if (!renderersHitThisSample.Add(renderer))
+                continue;
 
-        foreach (Renderer wall in wallsHitByCurrentSample)
-        {
-            if (blockedSampleCounts.TryGetValue(wall, out int count))
-            {
-                blockedSampleCounts[wall] = count + 1;
-            }
-            else
-            {
-                blockedSampleCounts[wall] = 1;
-            }
+            RuntimeState state = GetOrCreateState(renderer);
+
+            state.blockedSamples++;
         }
     }
 
     // =====================================================
-    // PUBLIC QUERY
+    // RUNTIME STATE
+    // =====================================================
+
+    private RuntimeState GetOrCreateState(Renderer renderer)
+    {
+        if (states.TryGetValue(renderer, out RuntimeState state))
+        {
+            return state;
+        }
+
+        state = new RuntimeState();
+
+        states.Add(renderer, state);
+        trackedRenderers.Add(renderer);
+
+        return state;
+    }
+
+    private void ResetBlockedSampleCounts()
+    {
+        for (int i = trackedRenderers.Count - 1; i >= 0; i--)
+        {
+            Renderer renderer = trackedRenderers[i];
+
+            if (renderer == null)
+            {
+                trackedRenderers.RemoveAt(i);
+                continue;
+            }
+
+            if (states.TryGetValue(renderer, out RuntimeState state))
+            {
+                state.blockedSamples = 0;
+            }
+        }
+    }
+
+    private void UpdateFadeStates()
+    {
+        float dt = Time.deltaTime;
+
+        for (int i = 0; i < trackedRenderers.Count; i++)
+        {
+            Renderer renderer = trackedRenderers[i];
+
+            if (renderer == null)
+                continue;
+
+            if (!states.TryGetValue(renderer, out RuntimeState state))
+            {
+                continue;
+            }
+
+            bool blockedNow = state.blockedSamples >= requiredBlockedSamples;
+
+            if (blockedNow)
+            {
+                state.isBlocking = true;
+                state.clearTimer = 0f;
+            }
+            else if (state.isBlocking)
+            {
+                state.clearTimer += dt;
+
+                if (state.clearTimer >= restoreDelay)
+                {
+                    state.isBlocking = false;
+                    state.clearTimer = 0f;
+                }
+            }
+
+            float targetFade = state.isBlocking ? fadedAmount : 1f;
+
+            float currentFade = occlusionAuthoring.GetCurrentFade(renderer);
+
+            float speed = targetFade < currentFade ? fadeOutSpeed : restoreSpeed;
+
+            float newFade = Mathf.MoveTowards(currentFade, targetFade, speed * dt);
+
+            occlusionAuthoring.ApplyFade(renderer, newFade);
+        }
+    }
+
+    // =====================================================
+    // GAMEPLAY / AIM QUERY
     // =====================================================
 
     public bool IsBlockingPlayer(Renderer renderer)
     {
-        return renderer != null && obstructingWalls.Contains(renderer);
-    }
+        if (renderer == null)
+            return false;
 
-    // =====================================================
-    // SHADER PROPERTY
-    // =====================================================
-
-    private void SetFade(Renderer renderer, float fade)
-    {
-        propertyBlock.Clear();
-
-        renderer.GetPropertyBlock(propertyBlock);
-
-        propertyBlock.SetFloat(FadeId, fade);
-
-        renderer.SetPropertyBlock(propertyBlock);
+        return states.TryGetValue(renderer, out RuntimeState state) && state.isBlocking;
     }
 }
