@@ -107,9 +107,16 @@ public sealed class CameraOcclusionController : MonoBehaviour
     [SerializeField]
     private float dashFill = 0.55f;
 
+    [Tooltip(
+        "Minimum angle between adjacent mesh faces that counts as a structural edge. "
+            + "Internal triangle diagonals on flat ProBuilder faces are ignored."
+    )]
+    [Range(1f, 89f)]
+    [SerializeField]
+    private float structuralEdgeAngle = 12f;
+
     private CharacterController playerController;
 
-    private Mesh occlusionLineMesh;
     private Material occlusionLineMaterial;
     private MaterialPropertyBlock occlusionLineProperties;
 
@@ -146,6 +153,10 @@ public sealed class CameraOcclusionController : MonoBehaviour
         public Material[] fadeMaterials;
         public Color[] originalFadeColors;
         public bool fadeMaterialsAssigned;
+
+        // Cached once from the renderer's REAL mesh geometry.
+        // This is what makes ProBuilder cuts/openings show in the fade lines.
+        public Mesh structuralLineMesh;
     }
 
     private struct FrameMetrics
@@ -211,7 +222,11 @@ public sealed class CameraOcclusionController : MonoBehaviour
             {
                 rendererStates.Add(
                     renderer,
-                    new OcclusionState { originalMaterials = renderer.sharedMaterials }
+                    new OcclusionState
+                    {
+                        originalMaterials = renderer.sharedMaterials,
+                        structuralLineMesh = BuildStructuralLineMesh(renderer),
+                    }
                 );
             }
         }
@@ -830,66 +845,299 @@ public sealed class CameraOcclusionController : MonoBehaviour
         };
 
         occlusionLineProperties = new MaterialPropertyBlock();
-
-        occlusionLineMesh = BuildUnitLineBoxMesh();
     }
 
-    private static Mesh BuildUnitLineBoxMesh()
+    private readonly struct QuantizedVertex
+        : System.IEquatable<QuantizedVertex>,
+            System.IComparable<QuantizedVertex>
     {
-        Mesh mesh = new Mesh
+        private const float Precision = 10000f;
+
+        public readonly int x;
+        public readonly int y;
+        public readonly int z;
+
+        public QuantizedVertex(Vector3 value)
         {
-            name = "KVA Camera Occlusion Line Box",
+            x = Mathf.RoundToInt(value.x * Precision);
+            y = Mathf.RoundToInt(value.y * Precision);
+            z = Mathf.RoundToInt(value.z * Precision);
+        }
+
+        public bool Equals(QuantizedVertex other)
+        {
+            return x == other.x && y == other.y && z == other.z;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is QuantizedVertex other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + x;
+                hash = hash * 31 + y;
+                hash = hash * 31 + z;
+                return hash;
+            }
+        }
+
+        public int CompareTo(QuantizedVertex other)
+        {
+            int xCompare = x.CompareTo(other.x);
+
+            if (xCompare != 0)
+                return xCompare;
+
+            int yCompare = y.CompareTo(other.y);
+
+            if (yCompare != 0)
+                return yCompare;
+
+            return z.CompareTo(other.z);
+        }
+    }
+
+    private readonly struct EdgeKey : System.IEquatable<EdgeKey>
+    {
+        public readonly QuantizedVertex a;
+        public readonly QuantizedVertex b;
+
+        public EdgeKey(Vector3 first, Vector3 second)
+        {
+            QuantizedVertex qa = new QuantizedVertex(first);
+
+            QuantizedVertex qb = new QuantizedVertex(second);
+
+            if (qa.CompareTo(qb) <= 0)
+            {
+                a = qa;
+                b = qb;
+            }
+            else
+            {
+                a = qb;
+                b = qa;
+            }
+        }
+
+        public bool Equals(EdgeKey other)
+        {
+            return a.Equals(other.a) && b.Equals(other.b);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is EdgeKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return a.GetHashCode() * 397 ^ b.GetHashCode();
+            }
+        }
+    }
+
+    private struct EdgeInfo
+    {
+        public Vector3 a;
+        public Vector3 b;
+
+        public Vector3 firstNormal;
+
+        public int faceCount;
+        public bool isSharp;
+    }
+
+    private Mesh BuildStructuralLineMesh(Renderer renderer)
+    {
+        if (renderer == null)
+            return null;
+
+        MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
+
+        if (meshFilter == null || meshFilter.sharedMesh == null)
+        {
+            return BuildBoundsFallbackLineMesh(renderer.localBounds, renderer.name);
+        }
+
+        Mesh sourceMesh = meshFilter.sharedMesh;
+
+        if (!sourceMesh.isReadable)
+        {
+            return BuildBoundsFallbackLineMesh(renderer.localBounds, renderer.name);
+        }
+
+        Vector3[] sourceVertices = sourceMesh.vertices;
+
+        if (sourceVertices == null || sourceVertices.Length == 0)
+        {
+            return BuildBoundsFallbackLineMesh(renderer.localBounds, renderer.name);
+        }
+
+        Dictionary<EdgeKey, EdgeInfo> edges = new Dictionary<EdgeKey, EdgeInfo>();
+
+        float sharpDotThreshold = Mathf.Cos(structuralEdgeAngle * Mathf.Deg2Rad);
+
+        for (int subMesh = 0; subMesh < sourceMesh.subMeshCount; subMesh++)
+        {
+            int[] triangles = sourceMesh.GetTriangles(subMesh);
+
+            for (int i = 0; i + 2 < triangles.Length; i += 3)
+            {
+                Vector3 a = sourceVertices[triangles[i]];
+
+                Vector3 b = sourceVertices[triangles[i + 1]];
+
+                Vector3 c = sourceVertices[triangles[i + 2]];
+
+                Vector3 normal = Vector3.Cross(b - a, c - a);
+
+                if (normal.sqrMagnitude <= 0.0000001f)
+                {
+                    continue;
+                }
+
+                normal.Normalize();
+
+                RegisterStructuralEdge(edges, a, b, normal, sharpDotThreshold);
+
+                RegisterStructuralEdge(edges, b, c, normal, sharpDotThreshold);
+
+                RegisterStructuralEdge(edges, c, a, normal, sharpDotThreshold);
+            }
+        }
+
+        List<Vector3> lineVertices = new List<Vector3>(edges.Count * 2);
+
+        foreach (KeyValuePair<EdgeKey, EdgeInfo> pair in edges)
+        {
+            EdgeInfo edge = pair.Value;
+
+            // Keep:
+            // 1) open/boundary edges
+            // 2) hard/sharp edges between faces
+            //
+            // Skip coplanar triangle diagonals generated by Unity/ProBuilder.
+            bool shouldDraw = edge.faceCount == 1 || edge.isSharp;
+
+            if (!shouldDraw)
+                continue;
+
+            lineVertices.Add(edge.a);
+            lineVertices.Add(edge.b);
+        }
+
+        if (lineVertices.Count == 0)
+        {
+            return BuildBoundsFallbackLineMesh(renderer.localBounds, renderer.name);
+        }
+
+        int[] indices = new int[lineVertices.Count];
+
+        for (int i = 0; i < indices.Length; i++)
+        {
+            indices[i] = i;
+        }
+
+        Mesh lineMesh = new Mesh
+        {
+            name = "KVA Occlusion Structural Lines - " + renderer.name,
+
             hideFlags = HideFlags.HideAndDontSave,
         };
 
+        if (lineVertices.Count > 65535)
+        {
+            lineMesh.indexFormat = IndexFormat.UInt32;
+        }
+
+        lineMesh.SetVertices(lineVertices);
+
+        lineMesh.SetIndices(indices, MeshTopology.Lines, 0, true);
+
+        lineMesh.bounds = sourceMesh.bounds;
+
+        return lineMesh;
+    }
+
+    private static void RegisterStructuralEdge(
+        Dictionary<EdgeKey, EdgeInfo> edges,
+        Vector3 a,
+        Vector3 b,
+        Vector3 faceNormal,
+        float sharpDotThreshold
+    )
+    {
+        EdgeKey key = new EdgeKey(a, b);
+
+        if (edges.TryGetValue(key, out EdgeInfo edge))
+        {
+            edge.faceCount++;
+
+            float dot = Vector3.Dot(edge.firstNormal, faceNormal);
+
+            if (dot < sharpDotThreshold)
+            {
+                edge.isSharp = true;
+            }
+
+            edges[key] = edge;
+
+            return;
+        }
+
+        edges.Add(
+            key,
+            new EdgeInfo
+            {
+                a = a,
+                b = b,
+                firstNormal = faceNormal,
+                faceCount = 1,
+                isSharp = false,
+            }
+        );
+    }
+
+    private static Mesh BuildBoundsFallbackLineMesh(Bounds bounds, string rendererName)
+    {
+        Vector3 min = bounds.min;
+
+        Vector3 max = bounds.max;
+
         Vector3[] vertices =
         {
-            new Vector3(-0.5f, -0.5f, -0.5f),
-            new Vector3(0.5f, -0.5f, -0.5f),
-            new Vector3(0.5f, -0.5f, 0.5f),
-            new Vector3(-0.5f, -0.5f, 0.5f),
-            new Vector3(-0.5f, 0.5f, -0.5f),
-            new Vector3(0.5f, 0.5f, -0.5f),
-            new Vector3(0.5f, 0.5f, 0.5f),
-            new Vector3(-0.5f, 0.5f, 0.5f),
+            new Vector3(min.x, min.y, min.z),
+            new Vector3(max.x, min.y, min.z),
+            new Vector3(max.x, min.y, max.z),
+            new Vector3(min.x, min.y, max.z),
+            new Vector3(min.x, max.y, min.z),
+            new Vector3(max.x, max.y, min.z),
+            new Vector3(max.x, max.y, max.z),
+            new Vector3(min.x, max.y, max.z),
         };
 
-        int[] indices =
+        int[] indices = { 0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7 };
+
+        Mesh mesh = new Mesh
         {
-            // Bottom
-            0,
-            1,
-            1,
-            2,
-            2,
-            3,
-            3,
-            0,
-            // Top
-            4,
-            5,
-            5,
-            6,
-            6,
-            7,
-            7,
-            4,
-            // Vertical
-            0,
-            4,
-            1,
-            5,
-            2,
-            6,
-            3,
-            7,
+            name = "KVA Occlusion Bounds Fallback - " + rendererName,
+
+            hideFlags = HideFlags.HideAndDontSave,
         };
 
         mesh.vertices = vertices;
 
         mesh.SetIndices(indices, MeshTopology.Lines, 0, true);
 
-        mesh.RecalculateBounds();
+        mesh.bounds = bounds;
 
         return mesh;
     }
@@ -900,7 +1148,6 @@ public sealed class CameraOcclusionController : MonoBehaviour
             !showOcclusionLines
             || gameplayCamera == null
             || occlusionLineMaterial == null
-            || occlusionLineMesh == null
             || activeFadeRenderers.Count == 0
         )
         {
@@ -940,24 +1187,14 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
             occlusionLineProperties.SetFloat(DashFillId, dashFill);
 
-            Bounds localBounds = renderer.localBounds;
+            Mesh structuralLineMesh = state.structuralLineMesh;
 
-            if (localBounds.size.sqrMagnitude <= 0.000001f)
-            {
+            if (structuralLineMesh == null)
                 continue;
-            }
-
-            Matrix4x4 boundsMatrix = Matrix4x4.TRS(
-                localBounds.center,
-                Quaternion.identity,
-                localBounds.size
-            );
-
-            Matrix4x4 drawMatrix = renderer.localToWorldMatrix * boundsMatrix;
 
             Graphics.DrawMesh(
-                occlusionLineMesh,
-                drawMatrix,
+                structuralLineMesh,
+                renderer.localToWorldMatrix,
                 occlusionLineMaterial,
                 renderer.gameObject.layer,
                 gameplayCamera,
@@ -987,18 +1224,23 @@ public sealed class CameraOcclusionController : MonoBehaviour
             occlusionLineMaterial = null;
         }
 
-        if (occlusionLineMesh != null)
+        foreach (KeyValuePair<Renderer, OcclusionState> pair in rendererStates)
         {
+            Mesh structuralLineMesh = pair.Value.structuralLineMesh;
+
+            if (structuralLineMesh == null)
+                continue;
+
             if (Application.isPlaying)
             {
-                Destroy(occlusionLineMesh);
+                Destroy(structuralLineMesh);
             }
             else
             {
-                DestroyImmediate(occlusionLineMesh);
+                DestroyImmediate(structuralLineMesh);
             }
 
-            occlusionLineMesh = null;
+            pair.Value.structuralLineMesh = null;
         }
     }
 
