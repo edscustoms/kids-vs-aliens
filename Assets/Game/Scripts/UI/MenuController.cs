@@ -56,7 +56,7 @@ public class MenuController : MonoBehaviour
 
     [Header("Game")]
     [SerializeField]
-    private string gameSceneName = "GamePoc";
+    private string gameSceneName = "ConstructionSite";
 
     private readonly List<MenuPreviewItem> currentItems = new();
 

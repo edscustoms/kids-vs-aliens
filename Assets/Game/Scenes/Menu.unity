@@ -2500,7 +2500,7 @@ MonoBehaviour:
   selectButtonText: {fileID: 805970628}
   previewButton: {fileID: 99691368}
   exitBackButtonText: {fileID: 1547789601}
-  gameSceneName: GamePoc
+  gameSceneName: ConstructionSite
 --- !u!4 &1058547681
 Transform:
   m_ObjectHideFlags: 0
