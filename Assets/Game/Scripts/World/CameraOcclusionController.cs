@@ -616,9 +616,20 @@ public sealed class CameraOcclusionController : MonoBehaviour
                     hideFlags = HideFlags.DontSave,
                 };
 
-                ConfigureMaterialForTransparentFade(clone);
+                // Our environment Shader Graph has its own dither fade.
+                // Keep it opaque and drive _Fade directly.
+                if (clone.HasProperty("_Fade"))
+                {
+                    clone.SetFloat("_Fade", 1f);
+                }
+                else
+                {
+                    // Fallback for normal URP/Lit materials that do not
+                    // expose the custom _Fade property.
+                    ConfigureMaterialForTransparentFade(clone);
 
-                state.originalFadeColors[i] = GetMaterialColor(clone);
+                    state.originalFadeColors[i] = GetMaterialColor(clone);
+                }
 
                 state.fadeMaterials[i] = clone;
             }
@@ -749,6 +760,15 @@ public sealed class CameraOcclusionController : MonoBehaviour
             if (material == null)
                 continue;
 
+            // Preferred path for SG_EnvironmentSurface.
+            // Its _Fade property is wired to the dither/alpha-clip logic.
+            if (material.HasProperty("_Fade"))
+            {
+                material.SetFloat("_Fade", fade);
+                continue;
+            }
+
+            // Fallback for standard transparent-capable materials.
             Color color = state.originalFadeColors[i];
 
             color.a *= fade;
