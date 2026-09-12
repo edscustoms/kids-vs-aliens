@@ -8,9 +8,9 @@ TerrainLayer:
   m_PrefabAsset: {fileID: 0}
   m_Name: TL_Gravel_Stone
   m_DiffuseTexture: {fileID: 2800000, guid: 35dfc6be4fd49534c9333f05f9b97715, type: 3}
-  m_NormalMapTexture: {fileID: 0}
-  m_MaskMapTexture: {fileID: 0}
-  m_TileSize: {x: 2, y: 2}
+  m_NormalMapTexture: {fileID: 2800000, guid: 7e470bbbe279b994bb3e06076e7ac4a1, type: 3}
+  m_MaskMapTexture: {fileID: 2800000, guid: 8188cb27e8c9e78429a664c6bf3c3f14, type: 3}
+  m_TileSize: {x: 4, y: 4}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
   m_Metallic: 0
