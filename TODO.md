@@ -48,6 +48,39 @@ use property blocks; do not instantiate materials per renderer
 
 support runtime registration; do not depend only on one scene-wide startup scan
 
+Android URP/Lit fade issue — confirmed:
+
+Editor fade works, but stock URP/Lit occluders remain visually opaque on Android.
+
+Device logs confirmed that blocker detection and fade state are correct on Android:
+ENTER / EXIT fires correctly, alpha reaches roughly 0.05 / 1.0, Surface is switched to
+Transparent, blend factors are correct, ZWrite is 0, render queue is 3000 and
+_SURFACE_TYPE_TRANSPARENT is enabled.
+
+The problem is the runtime conversion of authored Opaque URP/Lit materials to
+Transparent. Android player builds can strip unused transparent Lit shader variants,
+so runtime material values can change correctly while the compiled shader still renders
+effectively opaque.
+
+Production solution:
+
+create a custom KVA / URP Lit Fade shader based on URP Lit
+
+add a built-in _Fade property with default value 1.0
+
+implement fade through opaque dither / clip logic that is always compiled into the shader
+
+keep environment blocker materials Opaque permanently
+
+Camera Occlusion controls only _Fade; do not switch Surface Type / render queue / blend
+state at runtime for supported environment materials
+
+add an editor migration tool that replaces relevant environment URP/Lit materials with
+KVA / URP Lit Fade while preserving compatible Lit properties/textures
+
+do not blindly convert characters, weapons, VFX or other Lit materials that can never
+act as camera blockers
+
 Authoring helper target:
 
 Tools > Kids VS Aliens > Level Tools > Configure Camera Occluders
@@ -60,9 +93,9 @@ collect child renderers
 
 configure relevant collider child layers
 
-validate that materials/shaders support \_Fade
+validate that camera-blocking materials/shaders support _Fade
 
-warn on incompatible renderers
+warn on incompatible renderers/materials
 
 be idempotent and safe to rerun
 
