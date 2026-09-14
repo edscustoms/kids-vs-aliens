@@ -1,0 +1,35 @@
+KVA Construction Prop Library - V4 surface-print + scale pass
+
+What changed:
+- Cement bags no longer use a floating Print_Top quad.
+- V4 generates one normalized cement-bag mesh asset in Unity, with X=long side, Y=height, Z=short side.
+- A dedicated URP shader projects each brand overlay directly onto the bag surface in object space.
+- Full print appears on BOTH broad bag faces.
+- Narrow sides receive cropped packaging print plus a subtle brand-colored band, so the bag is not blank from the side.
+- The transparent AI-art glow is cleaned with an alpha threshold in the material.
+- Cement bag base is kraft/cardboard brown and remains one renderer / one material per bag.
+- CementBag_A FBX Read/Write is enabled only temporarily while the editor creates the normalized mesh, then restored OFF.
+- Slight stylized scale bump for better gameplay-camera readability:
+  * cement bags: 1.10x
+  * pallets: 1.15x
+  * timber: 1.12x
+  * cable reels: 1.12x
+- Timber continues to reuse Environment/Materials/Wood/M_Plywood.mat directly.
+- Prefabs remain under Prefabs/Environment/ConstructionSite.
+
+New shader:
+Environment/ConstructionSite/Shaders/KVA_CementBagProjectedPrint.shader
+
+Install:
+1. Copy/replace the files from this patch into the same Art/Environment/ConstructionSite folder.
+2. Let Unity finish compiling/importing the shader.
+3. Run Tools > Kids VS Aliens > Construction Site > Build Prop Library.
+4. Existing generated cement-bag/pallet/timber/cable prefabs are overwritten in place.
+
+Generated bag assets/materials:
+- Environment/ConstructionSite/Generated/SM_CementBag_A_Normalized.asset
+- Environment/Materials/ConstructionSite/CementBags/M_CS_CementBag_Gritmix.mat
+- Environment/Materials/ConstructionSite/CementBags/M_CS_CementBag_Brixora.mat
+- Environment/Materials/ConstructionSite/CementBags/M_CS_CementBag_Kavrix.mat
+
+The old floating-print assets from V1-V3 are no longer used. They may remain in the project harmlessly unless you choose to clean them later.

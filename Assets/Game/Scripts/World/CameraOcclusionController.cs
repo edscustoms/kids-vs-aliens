@@ -45,14 +45,16 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private int requiredAmyBlockedSamples = 4;
 
     [Tooltip(
-        "When the main 9/10 rule triggers, a renderer must appear in at least this many context samples to join the fade set."
+        "When the main 9/10 rule triggers, a logical occluder must appear "
+            + "in at least this many context samples to join the fade set."
     )]
     [Range(1, ContextSampleCount)]
     [SerializeField]
     private int rendererJoinMinimumSamples = 2;
 
     [Tooltip(
-        "When the Amy-body rule triggers, a renderer must cover at least this many Amy samples to join the fade set."
+        "When the Amy-body rule triggers, a logical occluder must cover "
+            + "at least this many Amy samples to join the fade set."
     )]
     [Range(1, AmySampleCount)]
     [SerializeField]
@@ -87,7 +89,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private bool showOcclusionLines = true;
 
     [Tooltip(
-        "Subtle structural guide color. This does not modify the object's real material/color."
+        "Subtle structural guide color. " + "This does not modify the object's real material/color."
     )]
     [SerializeField]
     private Color occlusionLineColor = new Color(0.72f, 0.80f, 0.95f, 0.30f);
@@ -108,8 +110,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private float dashFill = 0.55f;
 
     [Tooltip(
-        "Minimum angle between adjacent mesh faces that counts as a structural edge. "
-            + "Internal triangle diagonals on flat ProBuilder faces are ignored."
+        "Minimum angle between adjacent mesh faces that counts as a "
+            + "structural edge. Internal triangle diagonals on flat "
+            + "ProBuilder faces are ignored."
     )]
     [Range(1f, 89f)]
     [SerializeField]
@@ -120,17 +123,29 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private Material occlusionLineMaterial;
     private MaterialPropertyBlock occlusionLineProperties;
 
-    private readonly Dictionary<Collider, Renderer> colliderToRenderer =
-        new Dictionary<Collider, Renderer>();
+    // Collider -> logical occlusion object.
+    private readonly Dictionary<Collider, OcclusionTarget> colliderToTarget =
+        new Dictionary<Collider, OcclusionTarget>();
 
+    // Root transform -> one logical occlusion object.
+    private readonly Dictionary<Transform, OcclusionTarget> targetByRoot =
+        new Dictionary<Transform, OcclusionTarget>();
+
+    // Renderer state stays per-renderer because every child renderer
+    // still needs its own materials/fade/structural line mesh.
     private readonly Dictionary<Renderer, OcclusionState> rendererStates =
         new Dictionary<Renderer, OcclusionState>();
 
-    private readonly Dictionary<Renderer, FrameMetrics> frameMetrics =
-        new Dictionary<Renderer, FrameMetrics>();
+    // Metrics are now tracked per LOGICAL OCCLUDER instead of
+    // per individual mesh renderer.
+    private readonly Dictionary<OcclusionTarget, FrameMetrics> frameMetrics =
+        new Dictionary<OcclusionTarget, FrameMetrics>();
 
-    private readonly HashSet<Renderer> renderersHitThisRay = new HashSet<Renderer>();
+    // Prevent one logical object from counting more than once
+    // during a single ray.
+    private readonly HashSet<OcclusionTarget> targetsHitThisRay = new HashSet<OcclusionTarget>();
 
+    // Individual renderers currently being visually faded.
     private readonly HashSet<Renderer> activeFadeRenderers = new HashSet<Renderer>();
 
     private readonly List<Renderer> activeFadeBuffer = new List<Renderer>();
@@ -143,10 +158,24 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
     public static CameraOcclusionController Active { get; private set; }
 
+    // =====================================================
+    // LOGICAL OCCLUSION TARGET
+    // =====================================================
+
+    private sealed class OcclusionTarget
+    {
+        public Renderer[] renderers;
+
+        // Cached highest point across every renderer in the group.
+        public float maxWorldY;
+    }
+
     private sealed class OcclusionState
     {
         public float currentFade = 1f;
+
         public float lastRequestedTime = float.NegativeInfinity;
+
         public bool isOccluding;
 
         public Material[] originalMaterials;
@@ -154,8 +183,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
         public Color[] originalFadeColors;
         public bool fadeMaterialsAssigned;
 
-        // Cached once from the renderer's REAL mesh geometry.
-        // This is what makes ProBuilder cuts/openings show in the fade lines.
+        // Cached once from the renderer's real mesh geometry.
         public Mesh structuralLineMesh;
     }
 
@@ -165,12 +193,18 @@ public sealed class CameraOcclusionController : MonoBehaviour
         public int amyHits;
     }
 
+    // =====================================================
+    // UNITY
+    // =====================================================
+
     private void Awake()
     {
         Active = this;
 
         if (player != null)
+        {
             playerController = player.GetComponent<CharacterController>();
+        }
 
         InitializeOcclusionLines();
         BuildLevelCache();
@@ -181,7 +215,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
         RestoreEverything();
 
         if (Active == this)
+        {
             Active = null;
+        }
     }
 
     private void OnDestroy()
@@ -191,12 +227,13 @@ public sealed class CameraOcclusionController : MonoBehaviour
     }
 
     // =====================================================
-    // CACHE — ONCE
+    // CACHE
     // =====================================================
 
     private void BuildLevelCache()
     {
-        colliderToRenderer.Clear();
+        colliderToTarget.Clear();
+        targetByRoot.Clear();
         rendererStates.Clear();
 
         Collider[] colliders = GetComponentsInChildren<Collider>(true);
@@ -208,31 +245,106 @@ public sealed class CameraOcclusionController : MonoBehaviour
             if (collider == null)
                 continue;
 
-            Renderer renderer = collider.GetComponent<Renderer>();
+            // If this collider belongs to an authored logical group,
+            // the ENTIRE group becomes one occlusion target.
+            CameraOcclusionGroup group = collider.GetComponentInParent<CameraOcclusionGroup>();
 
-            if (renderer == null)
-                renderer = collider.GetComponentInParent<Renderer>();
+            Transform logicalRoot = null;
 
-            if (renderer == null)
+            Renderer[] targetRenderers = null;
+
+            // -------------------------------------------------
+            // GROUPED OBJECT
+            // -------------------------------------------------
+
+            if (group != null)
+            {
+                logicalRoot = group.transform;
+
+                targetRenderers = group.GetComponentsInChildren<Renderer>(true);
+            }
+            // -------------------------------------------------
+            // NORMAL OBJECT / OLD BEHAVIOUR
+            // -------------------------------------------------
+
+            else
+            {
+                Renderer renderer = collider.GetComponent<Renderer>();
+
+                if (renderer == null)
+                {
+                    renderer = collider.GetComponentInParent<Renderer>();
+                }
+
+                if (renderer == null)
+                    continue;
+
+                logicalRoot = renderer.transform;
+
+                targetRenderers = new Renderer[] { renderer };
+            }
+
+            if (logicalRoot == null)
                 continue;
 
-            colliderToRenderer[collider] = renderer;
-
-            if (!rendererStates.ContainsKey(renderer))
+            if (targetRenderers == null || targetRenderers.Length == 0)
             {
-                rendererStates.Add(
-                    renderer,
-                    new OcclusionState
-                    {
-                        originalMaterials = renderer.sharedMaterials,
-                        structuralLineMesh = BuildStructuralLineMesh(renderer),
-                    }
-                );
+                continue;
             }
+
+            // Reuse the same logical target when several colliders
+            // belong to the same container/group/renderer.
+            if (!targetByRoot.TryGetValue(logicalRoot, out OcclusionTarget target))
+            {
+                float maxWorldY = float.NegativeInfinity;
+
+                List<Renderer> validRenderers = new List<Renderer>(targetRenderers.Length);
+
+                for (int rendererIndex = 0; rendererIndex < targetRenderers.Length; rendererIndex++)
+                {
+                    Renderer renderer = targetRenderers[rendererIndex];
+
+                    if (renderer == null)
+                        continue;
+
+                    validRenderers.Add(renderer);
+
+                    maxWorldY = Mathf.Max(maxWorldY, renderer.bounds.max.y);
+
+                    if (!rendererStates.ContainsKey(renderer))
+                    {
+                        rendererStates.Add(
+                            renderer,
+                            new OcclusionState
+                            {
+                                originalMaterials = renderer.sharedMaterials,
+
+                                structuralLineMesh = BuildStructuralLineMesh(renderer),
+                            }
+                        );
+                    }
+                }
+
+                if (validRenderers.Count == 0)
+                    continue;
+
+                target = new OcclusionTarget
+                {
+                    renderers = validRenderers.ToArray(),
+
+                    maxWorldY = maxWorldY,
+                };
+
+                targetByRoot.Add(logicalRoot, target);
+            }
+
+            colliderToTarget[collider] = target;
         }
 
         Debug.Log(
-            $"Camera Occlusion: cached {colliderToRenderer.Count} colliders / "
+            $"Camera Occlusion: cached "
+                + $"{colliderToTarget.Count} colliders / "
+                + $"{targetByRoot.Count} logical occluders / "
                 + $"{rendererStates.Count} renderers.",
             this
         );
@@ -245,7 +357,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private void LateUpdate()
     {
         if (player == null || gameplayCamera == null)
+        {
             return;
+        }
 
         frameMetrics.Clear();
 
@@ -302,7 +416,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
         cameraForward.y = 0f;
 
         if (cameraForward.sqrMagnitude < 0.001f)
+        {
             cameraForward = Vector3.forward;
+        }
 
         cameraForward.Normalize();
 
@@ -311,7 +427,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
         cameraRight.y = 0f;
 
         if (cameraRight.sqrMagnitude < 0.001f)
+        {
             cameraRight = Vector3.right;
+        }
 
         cameraRight.Normalize();
 
@@ -421,7 +539,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
             QueryTriggerInteraction.Ignore
         );
 
-        renderersHitThisRay.Clear();
+        targetsHitThisRay.Clear();
 
         float preserveHeight = player.position.y + preserveBelowHeight;
 
@@ -430,31 +548,41 @@ public sealed class CameraOcclusionController : MonoBehaviour
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit hit = hitBuffer[i];
+
             Collider collider = hit.collider;
 
             if (collider == null)
                 continue;
 
             if (hit.distance >= distance - 0.02f)
-                continue;
-
-            if (!colliderToRenderer.TryGetValue(collider, out Renderer renderer))
             {
                 continue;
             }
 
-            if (renderer == null)
+            if (!colliderToTarget.TryGetValue(collider, out OcclusionTarget target))
+            {
+                continue;
+            }
+
+            if (target == null)
                 continue;
 
-            if (renderer.bounds.max.y <= preserveHeight)
+            // Preserve logical occluders that are entirely below Amy.
+            if (target.maxWorldY <= preserveHeight)
+            {
                 continue;
+            }
 
-            if (!renderersHitThisRay.Add(renderer))
+            // A logical group can contain many child colliders.
+            // It must only count once per ray.
+            if (!targetsHitThisRay.Add(target))
+            {
                 continue;
+            }
 
             blocked = true;
 
-            if (frameMetrics.TryGetValue(renderer, out FrameMetrics metrics))
+            if (frameMetrics.TryGetValue(target, out FrameMetrics metrics))
             {
                 if (amySample)
                 {
@@ -465,12 +593,12 @@ public sealed class CameraOcclusionController : MonoBehaviour
                     metrics.contextHits++;
                 }
 
-                frameMetrics[renderer] = metrics;
+                frameMetrics[target] = metrics;
             }
             else
             {
                 frameMetrics.Add(
-                    renderer,
+                    target,
                     new FrameMetrics
                     {
                         contextHits = amySample ? 0 : 1,
@@ -492,11 +620,11 @@ public sealed class CameraOcclusionController : MonoBehaviour
     {
         float now = Time.time;
 
-        foreach (KeyValuePair<Renderer, FrameMetrics> pair in frameMetrics)
+        foreach (KeyValuePair<OcclusionTarget, FrameMetrics> pair in frameMetrics)
         {
-            Renderer renderer = pair.Key;
+            OcclusionTarget target = pair.Key;
 
-            if (renderer == null)
+            if (target == null)
                 continue;
 
             FrameMetrics metrics = pair.Value;
@@ -512,14 +640,27 @@ public sealed class CameraOcclusionController : MonoBehaviour
                 continue;
             }
 
-            if (!rendererStates.TryGetValue(renderer, out OcclusionState state))
-            {
+            Renderer[] renderers = target.renderers;
+
+            if (renderers == null)
                 continue;
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+
+                if (renderer == null)
+                    continue;
+
+                if (!rendererStates.TryGetValue(renderer, out OcclusionState state))
+                {
+                    continue;
+                }
+
+                state.lastRequestedTime = now;
+
+                activeFadeRenderers.Add(renderer);
             }
-
-            state.lastRequestedTime = now;
-
-            activeFadeRenderers.Add(renderer);
         }
     }
 
@@ -530,12 +671,16 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private void UpdateAnimatedFade()
     {
         if (activeFadeRenderers.Count == 0)
+        {
             return;
+        }
 
         activeFadeBuffer.Clear();
+
         activeFadeBuffer.AddRange(activeFadeRenderers);
 
         float now = Time.time;
+
         float dt = Time.deltaTime;
 
         float fadeOutSpeed = (1f - hiddenVisibility) / Mathf.Max(fadeOutDuration, 0.01f);
@@ -549,12 +694,14 @@ public sealed class CameraOcclusionController : MonoBehaviour
             if (renderer == null)
             {
                 activeFadeRenderers.Remove(renderer);
+
                 continue;
             }
 
             if (!rendererStates.TryGetValue(renderer, out OcclusionState state))
             {
                 activeFadeRenderers.Remove(renderer);
+
                 continue;
             }
 
@@ -580,6 +727,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
             if (!shouldOcclude && state.currentFade >= 0.9999f)
             {
                 state.currentFade = 1f;
+
                 state.isOccluding = false;
 
                 RestoreOriginalMaterials(renderer, state);
@@ -613,19 +761,20 @@ public sealed class CameraOcclusionController : MonoBehaviour
                 Material clone = new Material(original)
                 {
                     name = original.name + " [CameraFadeRuntime]",
+
                     hideFlags = HideFlags.DontSave,
                 };
 
-                // Our environment Shader Graph has its own dither fade.
-                // Keep it opaque and drive _Fade directly.
+                // Preferred production path:
+                // SG_EnvironmentSurface remains Opaque
+                // and uses _Fade for dither/alpha clipping.
                 if (clone.HasProperty("_Fade"))
                 {
                     clone.SetFloat("_Fade", 1f);
                 }
                 else
                 {
-                    // Fallback for normal URP/Lit materials that do not
-                    // expose the custom _Fade property.
+                    // Legacy/fallback path for normal URP/Lit.
                     ConfigureMaterialForTransparentFade(clone);
 
                     state.originalFadeColors[i] = GetMaterialColor(clone);
@@ -648,8 +797,6 @@ public sealed class CameraOcclusionController : MonoBehaviour
         if (material == null)
             return;
 
-        // Works directly with URP/Lit and any compatible
-        // shader exposing the standard URP surface controls.
         if (material.HasProperty("_Surface"))
         {
             material.SetFloat("_Surface", 1f);
@@ -657,7 +804,6 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
         if (material.HasProperty("_Blend"))
         {
-            // Alpha blend.
             material.SetFloat("_Blend", 0f);
         }
 
@@ -733,12 +879,14 @@ public sealed class CameraOcclusionController : MonoBehaviour
         if (material.HasProperty("_BaseColor"))
         {
             material.SetColor("_BaseColor", color);
+
             return;
         }
 
         if (material.HasProperty("_Color"))
         {
             material.SetColor("_Color", color);
+
             return;
         }
 
@@ -751,7 +899,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private static void ApplyFadeToMaterials(OcclusionState state, float fade)
     {
         if (state.fadeMaterials == null)
+        {
             return;
+        }
 
         for (int i = 0; i < state.fadeMaterials.Length; i++)
         {
@@ -760,15 +910,13 @@ public sealed class CameraOcclusionController : MonoBehaviour
             if (material == null)
                 continue;
 
-            // Preferred path for SG_EnvironmentSurface.
-            // Its _Fade property is wired to the dither/alpha-clip logic.
             if (material.HasProperty("_Fade"))
             {
                 material.SetFloat("_Fade", fade);
+
                 continue;
             }
 
-            // Fallback for standard transparent-capable materials.
             Color color = state.originalFadeColors[i];
 
             color.a *= fade;
@@ -780,7 +928,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private static void RestoreOriginalMaterials(Renderer renderer, OcclusionState state)
     {
         if (!state.fadeMaterialsAssigned)
+        {
             return;
+        }
 
         renderer.sharedMaterials = state.originalMaterials;
 
@@ -801,6 +951,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
             }
 
             state.currentFade = 1f;
+
             state.isOccluding = false;
         }
 
@@ -861,6 +1012,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
         occlusionLineMaterial = new Material(lineShader)
         {
             name = "M_CameraOcclusionLines_Runtime",
+
             hideFlags = HideFlags.HideAndDontSave,
         };
 
@@ -880,7 +1032,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
         public QuantizedVertex(Vector3 value)
         {
             x = Mathf.RoundToInt(value.x * Precision);
+
             y = Mathf.RoundToInt(value.y * Precision);
+
             z = Mathf.RoundToInt(value.z * Precision);
         }
 
@@ -899,9 +1053,13 @@ public sealed class CameraOcclusionController : MonoBehaviour
             unchecked
             {
                 int hash = 17;
+
                 hash = hash * 31 + x;
+
                 hash = hash * 31 + y;
+
                 hash = hash * 31 + z;
+
                 return hash;
             }
         }
@@ -980,6 +1138,23 @@ public sealed class CameraOcclusionController : MonoBehaviour
         if (renderer == null)
             return null;
 
+        // Surface decoration fades with its group but is not structural geometry.
+        // Opt-out is authored on the shader; no new scene component or registration is required.
+        Material[] lineMaterials = renderer.sharedMaterials;
+        if (lineMaterials.Length > 0)
+        {
+            bool suppressLines = true;
+            for (int i = 0; i < lineMaterials.Length; i++)
+            {
+                if (lineMaterials[i] == null || lineMaterials[i].GetTag("CameraOcclusionLines", false, "") != "Off")
+                {
+                    suppressLines = false;
+                    break;
+                }
+            }
+            if (suppressLines) return null;
+        }
+
         MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
 
         if (meshFilter == null || meshFilter.sharedMesh == null)
@@ -1040,17 +1215,13 @@ public sealed class CameraOcclusionController : MonoBehaviour
         {
             EdgeInfo edge = pair.Value;
 
-            // Keep:
-            // 1) open/boundary edges
-            // 2) hard/sharp edges between faces
-            //
-            // Skip coplanar triangle diagonals generated by Unity/ProBuilder.
             bool shouldDraw = edge.faceCount == 1 || edge.isSharp;
 
             if (!shouldDraw)
                 continue;
 
             lineVertices.Add(edge.a);
+
             lineVertices.Add(edge.b);
         }
 
@@ -1185,7 +1356,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
             }
 
             if (state.currentFade >= lineStartFade)
+            {
                 continue;
+            }
 
             float lineStrength = Mathf.Clamp01(
                 (lineStartFade - state.currentFade)
@@ -1193,7 +1366,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
             );
 
             if (lineStrength <= 0.001f)
+            {
                 continue;
+            }
 
             Color lineColor = occlusionLineColor;
 
@@ -1210,7 +1385,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
             Mesh structuralLineMesh = state.structuralLineMesh;
 
             if (structuralLineMesh == null)
+            {
                 continue;
+            }
 
             Graphics.DrawMesh(
                 structuralLineMesh,
@@ -1249,7 +1426,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
             Mesh structuralLineMesh = pair.Value.structuralLineMesh;
 
             if (structuralLineMesh == null)
+            {
                 continue;
+            }
 
             if (Application.isPlaying)
             {
@@ -1278,8 +1457,8 @@ public sealed class CameraOcclusionController : MonoBehaviour
             return false;
         }
 
-        // Aim should ignore the blocker for the ENTIRE time it is
-        // visually faded, including the smooth restore transition.
+        // Aim ignores the blocker during the entire visual fade,
+        // including the smooth restore transition.
         return state.isOccluding || state.currentFade < 0.9999f;
     }
 }

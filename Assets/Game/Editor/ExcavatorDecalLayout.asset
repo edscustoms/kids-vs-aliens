@@ -1,0 +1,236 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b9a9b7c425f76d4ea2a3ca387564237, type: 3}
+  m_Name: ExcavatorDecalLayout
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::ExcavatorDecalLayout
+  labels:
+  - path: Branding/BoomBrand_L
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 60
+      y: 395
+      width: 638
+      height: 130
+    surfacePosition: {x: 2.3400002, y: 5.3100004, z: 0.28479958}
+    outwardNormal: {x: 0, y: 0, z: 1}
+    textUp: {x: -0.09, y: 1, z: 0}
+    width: 2.4
+    surfaceOffset: 0.003
+  - path: Branding/BoomBrand_R
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 752
+      y: 395
+      width: 642
+      height: 130
+    surfacePosition: {x: 2.3400002, y: 5.3100004, z: -0.35109997}
+    outwardNormal: {x: 0, y: 0, z: -1}
+    textUp: {x: -0.09, y: 1, z: 0}
+    width: 2.4
+    surfaceOffset: 0.002
+  - path: Branding/BodyBrand_L
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 20
+      y: 48
+      width: 680
+      height: 333
+    surfacePosition: {x: -3.3999996, y: 2.3, z: 1.8511}
+    outwardNormal: {x: 0, y: 0, z: 1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.72
+    surfaceOffset: 0.002
+  - path: Branding/BodyBrand_R
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 747
+      y: 48
+      width: 680
+      height: 333
+    surfacePosition: {x: -4.76, y: 2.25, z: -1.8216505}
+    outwardNormal: {x: 0, y: 0, z: -1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 1.5
+    surfaceOffset: 0.002
+  - path: Branding/RearBrand
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 30
+      y: 699
+      width: 307
+      height: 100
+    surfacePosition: {x: -6.150999, y: 2.48, z: 0.010000229}
+    outwardNormal: {x: -1, y: 0, z: 0}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.5
+    surfaceOffset: 0.003
+  - path: Branding/EX27_L
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 29
+      y: 536
+      width: 375
+      height: 85
+    surfacePosition: {x: -3.8099995, y: 1.6399999, z: 1.8511}
+    outwardNormal: {x: 0, y: 0, z: 1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.65
+    surfaceOffset: 0.002
+  - path: Branding/EX27_R
+    safetyAtlas: 0
+    atlasPixels:
+      serializedVersion: 2
+      x: 1043
+      y: 536
+      width: 382
+      height: 85
+    surfacePosition: {x: -2.9100018, y: 1.5999999, z: -1.8216505}
+    outwardNormal: {x: 0, y: 0, z: -1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.65
+    surfaceOffset: 0.002
+  - path: Safety/MovingBoom_L
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 15
+      y: 35
+      width: 615
+      height: 289
+    surfacePosition: {x: 0.8899994, y: 5.25, z: 0.28479958}
+    outwardNormal: {x: 0, y: 0, z: 1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.4
+    surfaceOffset: 0.002
+  - path: Safety/MovingBoom_R
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 15
+      y: 35
+      width: 615
+      height: 289
+    surfacePosition: {x: 0.8899994, y: 5.25, z: -0.35109997}
+    outwardNormal: {x: 0, y: 0, z: -1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.4
+    surfaceOffset: 0.002
+  - path: Safety/KeepClear_Rear
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 635
+      y: 35
+      width: 515
+      height: 295
+    surfacePosition: {x: -6.1499996, y: 2.11, z: 0.010000229}
+    outwardNormal: {x: -1, y: 0, z: 0}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.5
+    surfaceOffset: 0.003
+  - path: Safety/HighPressure
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 575
+      y: 334
+      width: 578
+      height: 226
+    surfacePosition: {x: -2.210001, y: 1.98, z: -1.8216505}
+    outwardNormal: {x: 0, y: 0, z: -1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.46
+    surfaceOffset: 0.002
+  - path: Safety/AuthorizedPersonnel
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 569
+      y: 565
+      width: 563
+      height: 184
+    surfacePosition: {x: -3.0814, y: 2.23, z: 1.2600002}
+    outwardNormal: {x: -1, y: 0, z: 0}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.48
+    surfaceOffset: 0.002
+  - path: Safety/NoStep_Top
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 19
+      y: 565
+      width: 545
+      height: 184
+    surfacePosition: {x: -3.5100002, y: 2.8273, z: -0.9399996}
+    outwardNormal: {x: 0, y: 1, z: 0}
+    textUp: {x: 1, y: 0, z: 0}
+    width: 0.6
+    surfaceOffset: 0.002
+  - path: Safety/LiftPoint_L
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 998
+      y: 766
+      width: 136
+      height: 151
+    surfacePosition: {x: -3.1600018, y: 1.5999999, z: 1.8511}
+    outwardNormal: {x: 0, y: 0, z: 1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.16
+    surfaceOffset: 0.002
+  - path: Safety/LiftPoint_R
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 998
+      y: 766
+      width: 136
+      height: 151
+    surfacePosition: {x: -1.7600002, y: 1.6199999, z: -1.8216505}
+    outwardNormal: {x: 0, y: 0, z: -1}
+    textUp: {x: 0, y: 1, z: 0}
+    width: 0.16
+    surfaceOffset: 0.002
+  - path: Safety/ServiceLabels/EngineOil
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 357
+      y: 989
+      width: 181
+      height: 58
+    surfacePosition: {x: -3.5100002, y: 2.8273, z: -0.21000004}
+    outwardNormal: {x: 0, y: 1, z: 0}
+    textUp: {x: 1, y: 0, z: 0}
+    width: 0.34
+    surfaceOffset: 0.002
+  - path: Safety/ServiceLabels/Coolant
+    safetyAtlas: 1
+    atlasPixels:
+      serializedVersion: 2
+      x: 899
+      y: 989
+      width: 175
+      height: 58
+    surfacePosition: {x: -3.5100002, y: 2.8273, z: 0.2300005}
+    outwardNormal: {x: 0, y: 1, z: 0}
+    textUp: {x: 1, y: 0, z: 0}
+    width: 0.34
+    surfaceOffset: 0.002

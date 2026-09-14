@@ -1,0 +1,15 @@
+KVA Construction Props V5 - targeted update
+
+Run:
+Tools > Kids VS Aliens > Construction Site > Update Cement Pallets + Timber Scale
+
+This targeted command ONLY rebuilds:
+- PF_CementPallet_Gritmix_A (4 full layers + 2 top bags = 18 bags)
+- PF_CementPallet_Brixora_A (4 full layers + 3 top bags = 19 bags)
+- PF_CementPallet_Kavrix_A (5 full layers = 20 bags)
+- timber board / strap / bundles / loose pile
+
+It does NOT rebuild individual cement bag prefabs, bag materials/shader, cable reels, empty pallet, or other props.
+
+Timber and TimberStrap use a final authored scale factor of 1.50x (instead of 1.12x).
+Timber continues to use the existing M_Plywood material.
