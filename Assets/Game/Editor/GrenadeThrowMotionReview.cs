@@ -17,10 +17,10 @@ public static class GrenadeThrowMotionReview
         "ForwardLeft", "ForwardRight", "Backward", "BackwardLeft", "BackwardRight" };
     private static readonly float[] Samples = { 0, .18f, .32f, .43f, GenerateGrenadeThrowAnimation.ReleaseTime, .66f, .8f, 1f, 1.35f, 1.6f };
 
-    [MenuItem("Tools/Kids VS Aliens/Helpers/Capture Grenade Throw Motion")]
+    [MenuItem("Tools/Helpers/Capture Grenade Throw Motion")]
     public static void Capture() => Capture("Current");
 
-    [MenuItem("Tools/Kids VS Aliens/Helpers/Capture Grenade Throw Motion (Side)")]
+    [MenuItem("Tools/Helpers/Capture Grenade Throw Motion (Side)")]
     public static void CaptureSide() => Capture("Current-Side", false, true);
 
     public static void Capture(string label, bool dense = false, bool side = false)

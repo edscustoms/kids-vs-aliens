@@ -2,7 +2,7 @@ using KidsVsAliens.Environment;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools.Fence
+namespace EditorTools.Fence
 {
     [CustomEditor(typeof(FenceRun))]
     public sealed class FenceRunEditor : Editor

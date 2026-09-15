@@ -5,9 +5,9 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-public static class KVAPropAnalyzer
+public static class PropAnalyzer
 {
-    [MenuItem("Tools/Kids VS Aliens/Performance/Analyze Selected Props")]
+    [MenuItem("Tools/Performance/Analyze Selected Props")]
     private static void AnalyzeSelectedProps()
     {
         var selected = Selection.gameObjects;
@@ -15,14 +15,14 @@ public static class KVAPropAnalyzer
         if (selected == null || selected.Length == 0)
         {
             Debug.LogWarning(
-                "[KVA Prop Analyzer] Select one or more prefab/scene roots first."
+                "[Prop Analyzer] Select one or more prefab/scene roots first."
             );
             return;
         }
 
         Debug.Log(
             "\n============================================================\n" +
-            "KVA PROP ANALYZER\n" +
+            "PROP ANALYZER\n" +
             "============================================================"
         );
 
@@ -33,7 +33,7 @@ public static class KVAPropAnalyzer
 
         Debug.Log(
             "\n============================================================\n" +
-            "KVA PROP ANALYZER COMPLETE\n" +
+            "PROP ANALYZER COMPLETE\n" +
             "============================================================"
         );
     }

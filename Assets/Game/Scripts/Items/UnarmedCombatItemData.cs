@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Items/Unarmed Combat")]
+[CreateAssetMenu(menuName = "Items/Unarmed Combat")]
 public sealed class UnarmedCombatItemData : ItemData
 {
     public SkillData requiredSkill;

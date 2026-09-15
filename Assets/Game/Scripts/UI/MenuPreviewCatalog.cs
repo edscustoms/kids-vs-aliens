@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "MenuPreviewCatalog", menuName = "Kids VS Aliens/Menu/Preview Catalog")]
+[CreateAssetMenu(fileName = "MenuPreviewCatalog", menuName = "Menu/Preview Catalog")]
 public class MenuPreviewCatalog : ScriptableObject
 {
     [SerializeField]

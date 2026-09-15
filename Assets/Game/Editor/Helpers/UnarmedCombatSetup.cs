@@ -7,7 +7,7 @@ public static class UnarmedCombatSetup
     public const string ItemPath = "Assets/Game/Data/Items/UnarmedCombat/Fighting.asset";
     public const string BookPath = "Assets/Game/Data/Items/KnowledgeBooks/FightingBook.asset";
 
-    [MenuItem("Tools/Kids VS Aliens/Setup/Unarmed Combat Player References")]
+    [MenuItem("Tools/Setup/Unarmed Combat Player References")]
     public static void ConfigureCurrentPlayers()
     {
         foreach (var inventory in Object.FindObjectsByType<PlayerInventory>(FindObjectsInactive.Include))

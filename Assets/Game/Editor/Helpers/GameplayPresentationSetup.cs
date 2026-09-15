@@ -16,7 +16,7 @@ using UnityEngine.UI;
 
 public static class GameplayPresentationSetup
 {
-    public const string MenuPath = "Tools/Kids VS Aliens/Setup/Knowledge Feedback & Pause V1";
+    public const string MenuPath = "Tools/Setup/Knowledge Feedback & Pause V1";
     public const string DataFolder = "Assets/Game/Data/Presentation";
     public const string RootName = "GameplayPresentationV1";
     private const string LayerName = "KnowledgePreview";

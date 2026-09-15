@@ -7,7 +7,7 @@ using UnityEngine;
 
 // make sure the 2 paths do contain the new images.
 
-public static class KidsVsAliensAdaptiveIconSetup
+public static class AdaptiveIconSetup
 {
     private const string BackgroundPath = "Assets/Game/UI/AppIcon/IconBackground.png";
 
@@ -15,7 +15,7 @@ public static class KidsVsAliensAdaptiveIconSetup
 
     private const string GeneratedFolder = "Assets/Game/UI/AppIcon/Generated";
 
-    [MenuItem("Tools/Kids VS Aliens/Helpers/Setup Android Adaptive Icons")]
+    [MenuItem("Tools/Helpers/Setup Android Adaptive Icons")]
     public static void Setup()
     {
         Texture2D background = AssetDatabase.LoadAssetAtPath<Texture2D>(BackgroundPath);

@@ -1,7 +1,7 @@
-KVA Construction Props V5 - targeted update
+Construction Props V5 - targeted update
 
 Run:
-Tools > Kids VS Aliens > Construction Site > Update Cement Pallets + Timber Scale
+Tools > Construction Site > Update Cement Pallets + Timber Scale
 
 This targeted command ONLY rebuilds:
 - PF_CementPallet_Gritmix_A (4 full layers + 2 top bags = 18 bags)

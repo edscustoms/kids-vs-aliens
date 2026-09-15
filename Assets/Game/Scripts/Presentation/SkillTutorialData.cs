@@ -7,7 +7,7 @@ public enum SkillDemoType
     GrenadeThrow = 2,
 }
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Presentation/Skill Tutorial")]
+[CreateAssetMenu(menuName = "Presentation/Skill Tutorial")]
 public sealed class SkillTutorialData : ScriptableObject
 {
     public string titleOverride;

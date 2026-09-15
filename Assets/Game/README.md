@@ -56,12 +56,12 @@ flowchart LR
 |---|---|
 | Movement | Amy / character art |
 | Camera base | Aliens |
-| Desktop + mobile input | KVA weapons/art |
+| Desktop + mobile input | weapons/art |
 | Aim / auto-aim architecture | Practice range if unwanted |
 | Character swapping | Story / lore |
 | Equipment + loadout | Levels |
-| Combat hit abstraction | KVA progression |
-| VFX pooling | KVA UI artwork |
+| Combat hit abstraction | progression |
+| VFX pooling | UI artwork |
 | Menu/loadout framework | Alien-specific content |
 | Quality/settings architecture |  |
 
@@ -179,7 +179,7 @@ Future workflow:
 ```mermaid
 flowchart LR
     A[Clone repo] --> B[Rename product]
-    B --> C[Delete KVA content]
+    B --> C[Delete content]
     C --> D[Keep proven framework]
     D --> E[Add new art + gameplay]
     E --> F[Retune movement / camera / aim]

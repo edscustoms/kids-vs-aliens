@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Presentation/Equipment/Weapon Adapter")]
+[CreateAssetMenu(menuName = "Presentation/Equipment/Weapon Adapter")]
 public sealed class WeaponPreviewEquipmentAdapter : PreviewEquipmentAdapter
 {
     public override bool Supports(ItemData item) => item is WeaponItemData;

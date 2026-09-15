@@ -154,7 +154,7 @@ public class BreakableTarget : MonoBehaviour
                 Debug.LogError(
                     $"{name}/{pieceTransform.name}: "
                         + "Missing baked MeshCollider. "
-                        + "Run Tools > Kids VS Aliens > "
+                        + "Run Tools > "
                         + "Bake Selected Target Colliders."
                 );
 

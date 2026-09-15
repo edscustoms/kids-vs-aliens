@@ -17,6 +17,6 @@ Install:
 3. Replace ElectricGrenadeVfxSetup.cs
 4. Replace ElectricEnergyCloudVFX.cs
 5. Keep your existing .meta files when Unity already has these scripts.
-6. Run: Tools > Kids VS Aliens > Setup > Electric Grenade VFX V5
+6. Run: Tools > Setup > Electric Grenade VFX V5
 
 No manual prefab wiring should be required after setup.

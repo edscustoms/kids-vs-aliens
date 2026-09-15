@@ -1,4 +1,4 @@
-Shader "Kids VS Aliens/Environment/Cement Bag Projected Print"
+Shader "Environment/Cement Bag Projected Print"
 {
     Properties
     {

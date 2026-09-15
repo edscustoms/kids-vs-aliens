@@ -9,7 +9,7 @@ public static class ExcavatorDecalReview
 {
     public const string OutputFolder = "Logs/ExcavatorDecals";
 
-    [MenuItem("Tools/Kids VS Aliens/Environment/Excavator Decals/Capture Camera Angle Review")]
+    [MenuItem("Tools/Environment/Excavator Decals/Capture Camera Angle Review")]
     public static void Capture()
     {
         Directory.CreateDirectory(OutputFolder);

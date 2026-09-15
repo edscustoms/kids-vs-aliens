@@ -5,7 +5,7 @@ using KidsVsAliens.Environment;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools.Fence
+namespace EditorTools.Fence
 {
     public sealed class FenceSectionPrefabBuilderWindow : EditorWindow
     {
@@ -26,7 +26,7 @@ namespace KidsVsAliens.EditorTools.Fence
             DefaultGeneratedMeshFolder;
 
         [MenuItem(
-            "Tools/Kids VS Aliens/Level Tools/Fence Prefab Builder")]
+            "Tools/Level Tools/Fence Prefab Builder")]
         public static void Open()
         {
             GetWindow<FenceSectionPrefabBuilderWindow>(

@@ -1,4 +1,4 @@
-# KVA Alien Chest Prefab Builder V2
+# Alien Chest Prefab Builder V2
 
 ## What V2 generates
 
@@ -37,7 +37,7 @@ which is useful for future menu animation/rarity previews.
 Source:
 
 ```text
-KVA_AlienChest_POC_V1.fbx
+AlienChest_POC_V1.fbx
 ```
 
 Generates:
@@ -47,7 +47,7 @@ PF_AlienChest_POC_V1
 PF_AlienChest_POC_V1_MenuPreview
 ```
 
-`KVA_` is stripped automatically.
+Source names are normalized without a project-specific prefix.
 
 ## Default transform
 
@@ -62,7 +62,7 @@ Prefab roots remain `(1,1,1)`.
 
 1. Select imported chest FBX in Project.
 2. Open:
-   `Tools > Kids VS Aliens > Helpers > Alien Chest Prefab Builder`
+   `Tools > Helpers > Alien Chest Prefab Builder`
 3. Click `Use Selected Model`.
 4. Optional for a brand-new chest:
    drag `PlasmaPistol_Dropped` into `Initial Loot Prefab`.

@@ -12,7 +12,7 @@ public sealed class SkillUnlockDefinition
     public string displayName;
 }
 
-[CreateAssetMenu(fileName = "NewSkill", menuName = "Kids VS Aliens/Progression/Skill")]
+[CreateAssetMenu(fileName = "NewSkill", menuName = "Progression/Skill")]
 public sealed class SkillData : ScriptableObject
 {
     [Header("Identity")]

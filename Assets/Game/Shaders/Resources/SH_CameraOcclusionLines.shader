@@ -1,4 +1,4 @@
-Shader "KVA/CameraOcclusionLines"
+Shader "CameraOcclusionLines"
 {
     Properties
     {

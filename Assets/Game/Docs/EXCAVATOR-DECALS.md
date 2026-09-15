@@ -5,7 +5,7 @@
 10 render groups, four colliders and root `CameraOcclusionGroup` are retained.
 There is no runtime placement component, projector, billboard or mesh intersection.
 
-Use **Tools > Kids VS Aliens > Environment > Excavator Decals**:
+Use **Tools > Environment > Excavator Decals**:
 
 - **Create Missing Decals (Preserve Existing)** adds absent labels. Existing
   transforms, meshes and hierarchy groups are preserved.
@@ -30,7 +30,7 @@ frame at creation/rebuild: +X front/bucket, +Y up, +Z left/cab side. Source impo
 scale is 1.7. Replacing/rescaling/reposing the source geometry requires reviewing
 the authored layout; the tool deliberately does not search for new surfaces.
 
-`KVA/Environment/Mesh Decal` uses alpha clipping, outward normals/back-face culling,
+`Environment/Mesh Decal` uses alpha clipping, outward normals/back-face culling,
 queue 2475 (`AlphaTest+25`), `ZTest LEqual`, `ZWrite On`, and `Offset -1,-1`.
 Measured surface offsets are 2–3 mm, with a small tolerance for the rear facets.
 Lighting is main-light diffuse/shadows plus light probes; no additional-light loop,

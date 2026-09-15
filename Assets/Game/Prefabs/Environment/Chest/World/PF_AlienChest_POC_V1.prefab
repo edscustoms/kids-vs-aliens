@@ -349,7 +349,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 7f0eed60f5583d34f9fd4d4dc241f1bd, type: 3}
       propertyPath: m_Name
-      value: KVA_AlienChest_POC_V1
+      value: AlienChest_POC_V1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

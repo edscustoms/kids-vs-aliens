@@ -66,7 +66,7 @@ selection survives and charging is cancelled to Held, requiring fresh FIRE.
 
 ## Editor setup
 
-Run **Tools → Kids VS Aliens → Helpers → Wire Grenade Throw Animation** to repair
+Run **Tools → Helpers → Wire Grenade Throw Animation** to repair
 the marker/mapping and relays without regenerating poses or saving gameplay scenes.
 The existing **Generate Grenade Throw Animation** command includes the same wiring.
 Both existing compatible character prefabs (Amy and SportyGranny) share the mapping.
@@ -113,7 +113,7 @@ shared animation contract; half input is an additional blend-tree check, not a
 claim that runtime currently selects a separate walk clip. That movement contract
 was not changed by this animation task.
 
-Reproduce key-pose captures with **Tools > Kids VS Aliens > Helpers > Capture Grenade
+Reproduce key-pose captures with **Tools > Helpers > Capture Grenade
 Throw Motion** or its **(Side)** variant. Output goes under `Logs/GrenadeMotion`.
 The helper samples the real Animator and CPU-bakes each evaluated skinned pose
 because repeated captures inside one Editor frame otherwise reuse GPU skinning.

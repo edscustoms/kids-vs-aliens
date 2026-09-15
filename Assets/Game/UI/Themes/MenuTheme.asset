@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5929e58fe15b16e4ab939597cbf5f38c, type: 3}
+  m_Name: MenuTheme
+  m_EditorClassIdentifier: Assembly-CSharp::UITheme
+  pill:
+    sprite: {fileID: 21300000, guid: de2a5b71f7b0c8649ababb4456243334, type: 3}
+    colors:
+      m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+      m_HighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+      m_PressedColor: {r: 0.74, g: 0.78, b: 0.9, a: 1}
+      m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
+      m_DisabledColor: {r: 0.4, g: 0.4, b: 0.5, a: 0.38}
+      m_ColorMultiplier: 1
+      m_FadeDuration: 0.06
+    selectedColor: {r: 0.2, g: 0.9, b: 1, a: 1}
+  iconCircle:
+    sprite: {fileID: 21300000, guid: 409fd95e15e45e347b7de10bf0d6ad1c, type: 3}
+    colors:
+      m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+      m_HighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+      m_PressedColor: {r: 0.72, g: 0.78, b: 0.92, a: 1}
+      m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
+      m_DisabledColor: {r: 0.42, g: 0.42, b: 0.5, a: 0.38}
+      m_ColorMultiplier: 1
+      m_FadeDuration: 0.06
+    selectedColor: {r: 0.2, g: 0.9, b: 1, a: 1}

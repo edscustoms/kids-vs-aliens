@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Characters/Animation Actions")]
+[CreateAssetMenu(menuName = "Characters/Animation Actions")]
 public sealed class CharacterAnimationActions : ScriptableObject
 {
     [Serializable]

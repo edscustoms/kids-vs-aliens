@@ -15,7 +15,7 @@ public static class ExcavatorDecalSetup
     public const string ShaderPath = "Assets/Game/Shaders/ExcavatorMeshDecal.shader";
     const string TextureFolder = "Assets/Game/Art/Environment/Machinery/Textures/";
     const string MaterialFolder = "Assets/Game/Art/Environment/Materials/Machinery/";
-    const string Menu = "Tools/Kids VS Aliens/Environment/Excavator Decals/";
+    const string Menu = "Tools/Environment/Excavator Decals/";
     public const int AtlasWidth = 1448, AtlasHeight = 1086;
 
     [MenuItem(Menu + "Create Missing Decals (Preserve Existing)")]

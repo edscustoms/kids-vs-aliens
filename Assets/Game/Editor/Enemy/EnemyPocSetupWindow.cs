@@ -28,7 +28,7 @@ public sealed class EnemyPocSetupWindow : EditorWindow
     private bool addOptionalLocomotionAnimator = true;
 
     [MenuItem(
-        "Tools/Kids VS Aliens/Helpers/Enemy POC Setup")]
+        "Tools/Helpers/Enemy POC Setup")]
     public static void Open()
     {
         GetWindow<EnemyPocSetupWindow>(

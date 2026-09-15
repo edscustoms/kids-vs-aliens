@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools.ModularLevelKit
+namespace EditorTools.ModularLevelKit
 {
     public sealed class ModularSnapWindow : EditorWindow
     {
@@ -17,7 +17,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
         [SerializeField]
         private List<GameObject> targetObjects = new List<GameObject>();
 
-        [MenuItem("Tools/Kids VS Aliens/Level Tools/Modular Snap")]
+        [MenuItem("Tools/Level Tools/Modular Snap")]
         public static void Open()
         {
             GetWindow<ModularSnapWindow>("Modular Snap");

@@ -1,4 +1,4 @@
-KVA Construction Prop Library - V4 surface-print + scale pass
+Construction Prop Library - V4 surface-print + scale pass
 
 What changed:
 - Cement bags no longer use a floating Print_Top quad.
@@ -18,12 +18,12 @@ What changed:
 - Prefabs remain under Prefabs/Environment/ConstructionSite.
 
 New shader:
-Environment/ConstructionSite/Shaders/KVA_CementBagProjectedPrint.shader
+Environment/ConstructionSite/Shaders/CementBagProjectedPrint.shader
 
 Install:
 1. Copy/replace the files from this patch into the same Art/Environment/ConstructionSite folder.
 2. Let Unity finish compiling/importing the shader.
-3. Run Tools > Kids VS Aliens > Construction Site > Build Prop Library.
+3. Run Tools > Construction Site > Build Prop Library.
 4. Existing generated cement-bag/pallet/timber/cable prefabs are overwritten in place.
 
 Generated bag assets/materials:

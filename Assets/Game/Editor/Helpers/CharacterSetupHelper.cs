@@ -52,7 +52,7 @@ public class CharacterSetupHelper : EditorWindow
     private Vector2 scrollPosition;
     private string statusMessage = "";
 
-    [MenuItem("Tools/Kids VS Aliens/Helpers/Character Setup")]
+    [MenuItem("Tools/Helpers/Character Setup")]
     public static void Open()
     {
         GetWindow<CharacterSetupHelper>("Character Setup");
@@ -78,7 +78,7 @@ public class CharacterSetupHelper : EditorWindow
         scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
         EditorGUILayout.Space(8);
-        EditorGUILayout.LabelField("Kids VS Aliens Character Setup", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Character Setup", EditorStyles.boldLabel);
 
         EditorGUILayout.HelpBox(
             "Takes a Mixamo/model FBX and performs the full setup:\n"

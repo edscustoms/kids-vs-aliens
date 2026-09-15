@@ -996,7 +996,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
         if (lineShader == null)
         {
-            lineShader = Shader.Find("KVA/CameraOcclusionLines");
+            lineShader = Shader.Find("CameraOcclusionLines");
         }
 
         if (lineShader == null)
@@ -1239,7 +1239,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
         Mesh lineMesh = new Mesh
         {
-            name = "KVA Occlusion Structural Lines - " + renderer.name,
+            name = "Occlusion Structural Lines - " + renderer.name,
 
             hideFlags = HideFlags.HideAndDontSave,
         };
@@ -1319,7 +1319,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
         Mesh mesh = new Mesh
         {
-            name = "KVA Occlusion Bounds Fallback - " + rendererName,
+            name = "Occlusion Bounds Fallback - " + rendererName,
 
             hideFlags = HideFlags.HideAndDontSave,
         };

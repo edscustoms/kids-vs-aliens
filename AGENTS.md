@@ -454,7 +454,7 @@ Canonical Gameplay Scene Setup / Repair
 
 The canonical setup/repair path for gameplay scenes is:
 
-Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
+Tools > Setup > Setup or Repair Active Gameplay Scene
 
 The central helper is responsible for making old and new gameplay scenes receive the standard shared player/presentation wiring without level designers remembering manual Inspector steps.
 

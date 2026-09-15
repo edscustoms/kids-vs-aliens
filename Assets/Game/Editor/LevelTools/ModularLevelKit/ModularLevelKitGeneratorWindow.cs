@@ -3,7 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools.ModularLevelKit
+namespace EditorTools.ModularLevelKit
 {
     public sealed class ModularLevelKitGeneratorWindow : EditorWindow
     {
@@ -20,7 +20,7 @@ namespace KidsVsAliens.EditorTools.ModularLevelKit
 
         private Material fallbackMaterial;
 
-        [MenuItem("Tools/Kids VS Aliens/Level Tools/Generate Starter Modular Kit")]
+        [MenuItem("Tools/Level Tools/Generate Starter Modular Kit")]
         public static void Open()
         {
             GetWindow<ModularLevelKitGeneratorWindow>("Modular Kit");

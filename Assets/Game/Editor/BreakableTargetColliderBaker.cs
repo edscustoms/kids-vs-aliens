@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class BreakableTargetColliderBaker
 {
-    [MenuItem("Tools/Kids VS Aliens/Bake Selected Target Colliders")]
+    [MenuItem("Tools/Bake Selected Target Colliders")]
     private static void BakeSelectedTargetColliders()
     {
         Object[] selectedObjects = Selection.objects;
@@ -112,7 +112,7 @@ public static class BreakableTargetColliderBaker
         return null;
     }
 
-    [MenuItem("Tools/Kids VS Aliens/Bake Selected Target Colliders", true)]
+    [MenuItem("Tools/Bake Selected Target Colliders", true)]
     private static bool ValidateBakeSelectedTargetColliders()
     {
         return Selection.objects != null && Selection.objects.Length > 0;

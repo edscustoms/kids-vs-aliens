@@ -9,7 +9,7 @@ This repository should eventually let us start a future game like this:
 ```mermaid
 flowchart TD
     A[Clone Kids VS Aliens repo] --> B[Rename product/package]
-    B --> C[Remove KVA-specific content]
+    B --> C[Remove game-specific content]
     C --> D[Keep framework]
     D --> E[Retune game feel]
     E --> F[Add new game content]
@@ -50,11 +50,11 @@ common helpers
 Amy
 Sporty Granny
 aliens
-KVA weapons/art
-KVA levels
-KVA story/lore
-KVA UI art
-KVA progression
+weapons/art
+levels
+story/lore
+UI art
+progression
 alien-specific VFX/audio
 practice range if irrelevant
 ```

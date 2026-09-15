@@ -14,7 +14,7 @@ Visual appearance, actual rendering and device input still require the checks be
 ## Setup in the existing Unity project
 
 1. Open a gameplay scene containing exactly one `PlayerCharacter`, outside Play Mode.
-2. Run **Tools → Kids VS Aliens → Setup → Knowledge Feedback & Pause V1**.
+2. Run **Tools → Setup → Knowledge Feedback & Pause V1**.
 3. Inspect the selected `GameplayPresentationV1` root and save the scene yourself.
 4. Enter Play Mode. Escape toggles desktop pause; mobile uses the top-right Pause/Play button.
 

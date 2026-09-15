@@ -7,12 +7,12 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public static class KVACementBagMeshSimplifier
+public static class CementBagMeshSimplifier
 {
     private const int TargetTriangles = 250;
     private const int SearchIterations = 28;
 
-    [MenuItem("Tools/Kids VS Aliens/Performance/Create Safe Optimized Cement Bag Mesh")]
+    [MenuItem("Tools/Performance/Create Safe Optimized Cement Bag Mesh")]
     private static void CreateOptimizedMesh()
     {
         Mesh source = GetSelectedMesh();
@@ -20,7 +20,7 @@ public static class KVACementBagMeshSimplifier
         if (source == null)
         {
             Debug.LogError(
-                "[KVA Bag Simplifier] Select SM_CementBag_A_Normalized in the Project window."
+                "[Bag Simplifier] Select SM_CementBag_A_Normalized in the Project window."
             );
 
             return;
@@ -35,7 +35,7 @@ public static class KVACementBagMeshSimplifier
         if (sourceTriangles < 1000)
         {
             Debug.LogError(
-                $"[KVA Bag Simplifier] Selected mesh only has "
+                $"[Bag Simplifier] Selected mesh only has "
                     + $"{sourceTriangles:N0} triangles. "
                     + "Select the ORIGINAL 14,700-triangle bag."
             );
@@ -94,7 +94,7 @@ public static class KVACementBagMeshSimplifier
 
         if (best == null || best.TriangleCount == 0)
         {
-            Debug.LogError("[KVA Bag Simplifier] Simplification failed.");
+            Debug.LogError("[Bag Simplifier] Simplification failed.");
 
             return;
         }
@@ -206,7 +206,7 @@ public static class KVACementBagMeshSimplifier
         Debug.Log(
             "\n"
                 + "============================================\n"
-                + "KVA SAFE CEMENT BAG SIMPLIFICATION COMPLETE\n"
+                + "SAFE CEMENT BAG SIMPLIFICATION COMPLETE\n"
                 + "============================================\n"
                 + $"Original:   {sourceTriangles:N0} tris\n"
                 + $"Optimized:  {finalTriangles:N0} tris\n"

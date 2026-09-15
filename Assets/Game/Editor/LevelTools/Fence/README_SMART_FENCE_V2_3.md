@@ -1,4 +1,4 @@
-# KVA Smart Fence V2.3 — horizontal rotation fix
+# Smart Fence V2.3 — horizontal rotation fix
 
 This fixes the actual geometry bug where extending from a reversed/left-facing
 vertical fence could create the new section underneath the floor.

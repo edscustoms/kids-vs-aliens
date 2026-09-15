@@ -9,14 +9,14 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// One-click setup/repair for an existing Kids VS Aliens gameplay scene.
 ///
-/// The scene must already contain the normal KVA player foundation. This helper
+/// The scene must already contain the normal player foundation. This helper
 /// then applies the same scene-owned presentation used by GamePoc and wires the
 /// newer unarmed-combat player pieces, so each level does not need manual setup.
 /// </summary>
 public static class GameplaySceneSetup
 {
     public const string MenuPath =
-        "Tools/Kids VS Aliens/Setup/Setup or Repair Active Gameplay Scene";
+        "Tools/Setup/Setup or Repair Active Gameplay Scene";
 
     [MenuItem(MenuPath)]
     public static void SetupOrRepairActiveScene()
@@ -46,7 +46,7 @@ public static class GameplaySceneSetup
         {
             Debug.LogError(
                 $"'{scene.name}' must contain exactly one PlayerCharacter. " +
-                $"Found {players.Length}. Add/use the normal KVA player first."
+                $"Found {players.Length}. Add/use the normal player first."
             );
             return;
         }
@@ -56,7 +56,7 @@ public static class GameplaySceneSetup
         {
             Debug.LogError(
                 $"'{scene.name}' is missing base player component(s): {missing}. " +
-                "This helper repairs a normal KVA player; it does not build the " +
+                "This helper repairs a normal player; it does not build the " +
                 "Starter Assets player foundation from scratch.",
                 player
             );
@@ -64,7 +64,7 @@ public static class GameplaySceneSetup
         }
 
         int undoGroup = Undo.GetCurrentGroup();
-        Undo.SetCurrentGroupName("Setup / Repair KVA Gameplay Scene");
+        Undo.SetCurrentGroupName("Setup / Repair Gameplay Scene");
 
         try
         {
@@ -87,12 +87,14 @@ public static class GameplaySceneSetup
             // stale/null value from before Knowledge/Pause existed.
             RepairMeleeSuspension(melee, player.gameObject);
 
+            GameplayCameraSetup.ConfigureScene(player);
+
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);
             Selection.activeGameObject = player.gameObject;
 
             Debug.Log(
-                $"KVA gameplay setup repaired in '{scene.name}'. " +
+                $"gameplay setup repaired in '{scene.name}'. " +
                 "Save the scene, then Play test a Knowledge Book and Fighting. " +
                 "No manual player wiring should be required.",
                 presentation != null ? presentation : player.gameObject

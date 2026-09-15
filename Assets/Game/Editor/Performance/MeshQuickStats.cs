@@ -3,9 +3,9 @@
 using UnityEditor;
 using UnityEngine;
 
-public static class KVAMeshQuickStats
+public static class MeshQuickStats
 {
-    [MenuItem("Tools/Kids VS Aliens/Performance/Quick Mesh Stats")]
+    [MenuItem("Tools/Performance/Quick Mesh Stats")]
     private static void QuickMeshStats()
     {
         var selected = Selection.gameObjects;
@@ -33,7 +33,7 @@ public static class KVAMeshQuickStats
                     triangles += (long)mesh.GetIndexCount(i) / 3;
 
                 Debug.Log(
-                    $"[KVA MESH] {go.name} / {filter.name} | "
+                    $"[MESH] {go.name} / {filter.name} | "
                         + $"Mesh: {mesh.name} | "
                         + $"Tris: {triangles:N0} | "
                         + $"Verts: {mesh.vertexCount:N0} | "

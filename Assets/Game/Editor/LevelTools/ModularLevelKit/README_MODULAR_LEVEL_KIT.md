@@ -38,7 +38,7 @@ If Level 1 later genuinely needs a T/Y junction, add that as a dedicated module 
 
 Unity:
 
-`Tools > Kids VS Aliens > Level Tools > Generate Starter Modular Kit`
+`Tools > Level Tools > Generate Starter Modular Kit`
 
 Recommended:
 
@@ -96,7 +96,7 @@ They are intentionally not deleted automatically so the editor tool never destro
 
 The snapping workflow is unchanged:
 
-`Tools > Kids VS Aliens > Level Tools > Modular Snap`
+`Tools > Level Tools > Modular Snap`
 
 Fast mode:
 1. select two module roots;
@@ -214,7 +214,7 @@ text labels      = optional toggle
 
 Open:
 
-`Tools > Kids VS Aliens > Level Tools > Modular Snap`
+`Tools > Level Tools > Modular Snap`
 
 Enable **Show socket names** only when debugging exact sockets.
 

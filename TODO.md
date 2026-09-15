@@ -12,6 +12,115 @@ NOW
 
 CURRENT FOCUS — NEXT ~2 WEEKS
 
+IMMEDIATE ADDITION — LEVEL 1 GAME LOOP / EXCAVATOR ESCAPE — ABSOLUTE MUST
+
+Keep the existing roadmap below intact. This is an added near-term gameplay-loop requirement.
+
+Level 1 core framing:
+
+Amy wakes up on the Construction Site after being beamed into the starting location.
+
+The main Level 1 goal is to get out of the Construction Site / find a way toward school.
+
+The entire playable Level 1 remains on the Construction Site for now.
+Do not add school gameplay/interactions yet.
+
+Target first/early successful run:
+
+roughly 12–20 minutes
+
+mastered/replay target:
+
+roughly 6–10 minutes
+
+Inside that main goal, keep changing the immediate task roughly every 1–3 minutes so the
+level does not become one long traversal/combat sequence.
+
+Use short, concrete site-specific tasks such as:
+
+find a weapon / useful item
+
+reach or clear a route
+
+survive a combat encounter
+
+retrieve a required construction-site item
+
+activate / repair a piece of machinery
+
+move through a new functional area of the site
+
+The first run should be genuinely interesting, but failure should also make the player
+want to retry because they understand the route/encounters better.
+
+MUST-HAVE SET-PIECE — BREAK YOUR WAY OUT WITH THE EXCAVATOR
+
+A Construction Site exit/route is physically blocked by stacked concrete roadblocks /
+barriers.
+
+Do not solve this specific escape beat with a random key or keycard.
+
+Amy must repair/activate the excavator and use it to physically clear the obstruction.
+
+Repair objective:
+
+REPAIR EXCAVATOR — 0/3
+
+Battery cables / jumper leads
+
+Hydraulic fluid
+
+Fuse
+
+Each required item should be placed in a believable Construction Site zone so the task
+naturally makes the player move through/use the site, for example:
+
+battery cables → maintenance / electrical / workshop area
+
+hydraulic fluid → machinery service / fuel area
+
+fuse → site office / electrical storage area
+
+V1 interaction must stay deliberately simple:
+
+find required item
+→ pick it up
+→ bring it to the excavator repair/drop-off zone
+→ matching repair step completes automatically
+→ show basic text/status feedback
+
+Example feedback:
+
+Battery cables installed — 1/3
+
+Hydraulic fluid added — 2/3
+
+Fuse replaced — 3/3
+
+Do not build bespoke cable-connecting, fluid-pouring, fuse-insertion or mechanic repair
+animations for V1.
+
+After 3/3:
+
+excavator becomes activatable
+
+excavator base can remain static
+
+arm/bucket only needs simple authored rotation/translation
+
+arm/bucket is authoritative for the set-piece and physically pushes/topples the stacked
+concrete roadblocks with Rigidbody physics
+
+use sound / dust / impact VFX / camera feedback later as needed
+
+do not build a complex real-time wall-fracture/destruction system for this V1 beat
+
+progression must not depend entirely on perfect physics; add a deterministic exit-clear
+check/fail-safe so a badly wedged barrier can never soft-lock the level
+
+This excavator escape is now a must-have Level 1 gameplay beat and should be implemented
+relatively early rather than treated as distant polish.
+
 Two parallel tracks are the current priority.
 
 A. Camera Occlusion Fade V2 — ABSOLUTE MUST
@@ -64,7 +173,7 @@ effectively opaque.
 
 Production solution:
 
-create a custom KVA / URP Lit Fade shader based on URP Lit
+create a custom URP Lit Fade shader based on URP Lit
 
 add a built-in _Fade property with default value 1.0
 
@@ -76,14 +185,14 @@ Camera Occlusion controls only _Fade; do not switch Surface Type / render queue 
 state at runtime for supported environment materials
 
 add an editor migration tool that replaces relevant environment URP/Lit materials with
-KVA / URP Lit Fade while preserving compatible Lit properties/textures
+URP Lit Fade while preserving compatible Lit properties/textures
 
 do not blindly convert characters, weapons, VFX or other Lit materials that can never
 act as camera blockers
 
 Authoring helper target:
 
-Tools > Kids VS Aliens > Level Tools > Configure Camera Occluders
+Tools > Level Tools > Configure Camera Occluders
 
 Helper should:
 
@@ -146,7 +255,7 @@ before building a 45–90+ minute full authored level.
 
 ABSOLUTE MUSTS — CORE LOOP / MOBILE
 
-Keep large handcrafted story locations. Do not redesign KVA into procedural rooms.
+Keep large handcrafted story locations. Do not redesign the campaign into procedural rooms.
 
 Working death rule: death restarts the current large story level from the beginning.
 
@@ -279,7 +388,7 @@ Gameplay Scene Setup Rule — permanent project convention
 
 Canonical command:
 
-Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
+Tools > Setup > Setup or Repair Active Gameplay Scene
 
 Whenever a new standard player/scene dependency, gameplay presentation system,
 controller, shared reference or required scene component is added, extend the central
@@ -406,7 +515,7 @@ Final cleanup removed the obsolete Ionized Mist path.
 
 Current setup command:
 
-Tools > Kids VS Aliens > Setup > Electric Grenade VFX V5
+Tools > Setup > Electric Grenade VFX V5
 
 Do not continue polishing Electric Grenade VFX until the broader game V1 polish pass unless a real gameplay/readability problem appears.
 
