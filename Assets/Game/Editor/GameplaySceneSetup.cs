@@ -15,8 +15,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class GameplaySceneSetup
 {
-    public const string MenuPath =
-        "Tools/Setup/Setup or Repair Active Gameplay Scene";
+    public const string MenuPath = "Tools/Setup/Setup or Repair Active Gameplay Scene";
 
     [MenuItem(MenuPath)]
     public static void SetupOrRepairActiveScene()
@@ -45,8 +44,8 @@ public static class GameplaySceneSetup
         if (players.Length != 1)
         {
             Debug.LogError(
-                $"'{scene.name}' must contain exactly one PlayerCharacter. " +
-                $"Found {players.Length}. Add/use the normal player first."
+                $"'{scene.name}' must contain exactly one PlayerCharacter. "
+                    + $"Found {players.Length}. Add/use the normal player first."
             );
             return;
         }
@@ -55,9 +54,9 @@ public static class GameplaySceneSetup
         if (!HasBasePlayer(player.gameObject, out string missing))
         {
             Debug.LogError(
-                $"'{scene.name}' is missing base player component(s): {missing}. " +
-                "This helper repairs a normal player; it does not build the " +
-                "Starter Assets player foundation from scratch.",
+                $"'{scene.name}' is missing base player component(s): {missing}. "
+                    + "This helper repairs a normal player; it does not build the "
+                    + "Starter Assets player foundation from scratch.",
                 player
             );
             return;
@@ -72,7 +71,7 @@ public static class GameplaySceneSetup
             // - GameplayPresentationV1
             // - Knowledge tutorial/modal + character preview
             // - feedback presenter
-            // - pause/suspension UI
+            // - lease-backed in-game Menu / Options / Resume via InGameMenuSetup
             // - PlayerFeedback / GameplaySuspensionController / pointer filtering
             // - missing EventSystem
             GameObject presentation = GameplayPresentationSetup.ConfigureScene(player);
@@ -94,9 +93,9 @@ public static class GameplaySceneSetup
             Selection.activeGameObject = player.gameObject;
 
             Debug.Log(
-                $"gameplay setup repaired in '{scene.name}'. " +
-                "Save the scene, then Play test a Knowledge Book and Fighting. " +
-                "No manual player wiring should be required.",
+                $"gameplay setup repaired in '{scene.name}'. "
+                    + "Save the scene, then Play test a Knowledge Book and Fighting. "
+                    + "No manual player wiring should be required.",
                 presentation != null ? presentation : player.gameObject
             );
         }
@@ -128,13 +127,10 @@ public static class GameplaySceneSetup
         return string.IsNullOrEmpty(missing);
     }
 
-    private static string Missing<T>(GameObject player) where T : Component =>
-        player.GetComponent<T>() == null ? typeof(T).Name : null;
+    private static string Missing<T>(GameObject player)
+        where T : Component => player.GetComponent<T>() == null ? typeof(T).Name : null;
 
-    private static void RepairMeleeSuspension(
-        PlayerMeleeController melee,
-        GameObject player
-    )
+    private static void RepairMeleeSuspension(PlayerMeleeController melee, GameObject player)
     {
         if (melee == null)
             return;
@@ -143,8 +139,7 @@ public static class GameplaySceneSetup
         SerializedProperty suspension = serialized.FindProperty("suspension");
         if (suspension != null)
         {
-            suspension.objectReferenceValue =
-                player.GetComponent<GameplaySuspensionController>();
+            suspension.objectReferenceValue = player.GetComponent<GameplaySuspensionController>();
             serialized.ApplyModifiedProperties();
             EditorUtility.SetDirty(melee);
         }

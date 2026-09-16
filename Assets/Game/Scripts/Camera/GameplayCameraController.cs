@@ -5,25 +5,35 @@ using UnityEngine;
 [DisallowMultipleComponent, RequireComponent(typeof(CinemachineVirtualCamera))]
 public sealed class GameplayCameraController : MonoBehaviour
 {
-    [SerializeField] private GameplayCameraProfile profile;
+    [SerializeField]
+    private GameplayCameraProfile profile;
     private CinemachineVirtualCamera cameraRig;
     private CinemachineTransposer body;
     private CinemachineBasicMultiChannelPerlin noise;
     private CinemachineComponentBase aim;
     private Camera outputCamera;
-    private bool actionOrthographic, actionPhysical, changedProjection;
+    private bool actionOrthographic,
+        actionPhysical,
+        changedProjection;
     private LensSettings actionLens;
     private Quaternion actionRotation;
-    private Vector3 actionOffset, actionDamping;
+    private Vector3 actionOffset,
+        actionDamping;
     private CinemachineTransposer.BindingMode actionBinding;
-    private bool actionNoise, actionAim, captured, started;
+    private bool actionNoise,
+        actionAim,
+        captured,
+        started;
 
     public void Configure(GameplayCameraProfile value) => profile = value;
+
     private void OnEnable()
     {
         GameplayCameraSettings.Changed += Apply;
-        if (started) Apply(GameplayCameraSettings.Mode);
+        if (started)
+            Apply(GameplayCameraSettings.Mode);
     }
+
     private void Start()
     {
         // All scene brains have registered by Start, before their first LateUpdate.
@@ -31,6 +41,7 @@ public sealed class GameplayCameraController : MonoBehaviour
         CaptureAction();
         Apply(GameplayCameraSettings.Mode);
     }
+
     private void OnDisable()
     {
         GameplayCameraSettings.Changed -= Apply;
@@ -39,17 +50,21 @@ public sealed class GameplayCameraController : MonoBehaviour
 
     private void CaptureAction()
     {
-        if (captured) return;
+        if (captured)
+            return;
         cameraRig = GetComponent<CinemachineVirtualCamera>();
         body = cameraRig.GetCinemachineComponent<CinemachineTransposer>();
-        if (body == null) return;
+        if (body == null)
+            return;
         noise = cameraRig.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
         aim = cameraRig.GetCinemachineComponent(CinemachineCore.Stage.Aim);
         actionLens = cameraRig.m_Lens;
         var brain = CinemachineCore.Instance.FindPotentialTargetBrain(cameraRig);
         outputCamera = brain != null ? brain.OutputCamera : null;
-        actionOrthographic = outputCamera != null ? outputCamera.orthographic : actionLens.Orthographic;
-        actionPhysical = outputCamera != null ? outputCamera.usePhysicalProperties : actionLens.IsPhysicalCamera;
+        actionOrthographic =
+            outputCamera != null ? outputCamera.orthographic : actionLens.Orthographic;
+        actionPhysical =
+            outputCamera != null ? outputCamera.usePhysicalProperties : actionLens.IsPhysicalCamera;
         actionRotation = transform.localRotation;
         actionOffset = body.m_FollowOffset;
         actionDamping = new Vector3(body.m_XDamping, body.m_YDamping, body.m_ZDamping);
@@ -62,11 +77,21 @@ public sealed class GameplayCameraController : MonoBehaviour
     public void Apply(GameplayCameraMode mode)
     {
         CaptureAction();
-        if (!captured) return;
+        if (!captured)
+            return;
         RestoreAction();
-        if (mode == GameplayCameraMode.Action || profile == null) return;
-        GameplayCameraPreset preset = mode == GameplayCameraMode.Isometric ? profile.isometric : profile.tactical;
-        if (preset == null) return;
+        if (mode == GameplayCameraMode.Action || profile == null)
+        {
+            RefreshWhilePaused();
+            return;
+        }
+        GameplayCameraPreset preset =
+            mode == GameplayCameraMode.Isometric ? profile.isometric : profile.tactical;
+        if (preset == null)
+        {
+            RefreshWhilePaused();
+            return;
+        }
         LensSettings lens = actionLens;
         lens.ModeOverride = preset.projection;
         lens.FieldOfView = preset.fieldOfView;
@@ -78,18 +103,40 @@ public sealed class GameplayCameraController : MonoBehaviour
         body.m_FollowOffset = preset.followOffset + preset.targetOffset;
         SetDamping(preset.damping);
         // The preset defines fixed orientation; do not let a scene's optional Aim stage override it.
-        if (aim != null) aim.enabled = false;
-        if (noise != null) noise.enabled = preset.useNoise && actionNoise;
+        if (aim != null)
+            aim.enabled = false;
+        if (noise != null)
+            noise.enabled = preset.useNoise && actionNoise;
         cameraRig.PreviousStateIsValid = false;
+        RefreshWhilePaused();
+    }
+
+    private void RefreshWhilePaused()
+    {
+        if (!Application.isPlaying || Time.timeScale != 0f)
+            return;
+        var brain = CinemachineCore.Instance.FindPotentialTargetBrain(cameraRig);
+        if (brain == null)
+            return;
+        // SmartUpdate can wait for a physics tick that never occurs during suspension.
+        // Evaluate this invalidated rig once, then let the existing brain publish its state.
+        // Negative delta time resets damping; gameplay time and brain settings stay intact.
+        cameraRig.InternalUpdateCameraState(brain.DefaultWorldUp, -1f);
+        brain.ManualUpdate();
     }
 
     private void RestoreAction()
     {
-        if (!captured || body == null) return;
+        if (!captured || body == null)
+            return;
         cameraRig.m_Lens = actionLens;
         // Cinemachine's None override inherits the output camera's current projection.
         // Undo a previous preset's output change before restoring that inherited baseline.
-        if (changedProjection && outputCamera != null && actionLens.ModeOverride == LensSettings.OverrideModes.None)
+        if (
+            changedProjection
+            && outputCamera != null
+            && actionLens.ModeOverride == LensSettings.OverrideModes.None
+        )
         {
             outputCamera.orthographic = actionOrthographic;
             outputCamera.usePhysicalProperties = actionPhysical;
@@ -99,10 +146,13 @@ public sealed class GameplayCameraController : MonoBehaviour
         body.m_FollowOffset = actionOffset;
         body.m_BindingMode = actionBinding;
         SetDamping(actionDamping);
-        if (noise != null) noise.enabled = actionNoise;
-        if (aim != null) aim.enabled = actionAim;
+        if (noise != null)
+            noise.enabled = actionNoise;
+        if (aim != null)
+            aim.enabled = actionAim;
         cameraRig.PreviousStateIsValid = false;
     }
+
     private void SetDamping(Vector3 damping)
     {
         body.m_XDamping = damping.x;
