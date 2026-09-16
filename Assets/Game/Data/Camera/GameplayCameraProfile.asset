@@ -17,7 +17,7 @@ MonoBehaviour:
     fieldOfView: 45
     orthographicSize: 8
     rotation: {x: 35, y: 0, z: 0}
-    followOffset: {x: 0, y: 5, z: -10}
+    followOffset: {x: 0, y: 6, z: -10}
     damping: {x: 0.1, y: 0.1, z: 0.1}
     binding: 4
     targetOffset: {x: 0, y: 0, z: 0}
@@ -25,10 +25,10 @@ MonoBehaviour:
   isometric:
     projection: 1
     fieldOfView: 45
-    orthographicSize: 3
-    rotation: {x: 40, y: -45, z: 0}
-    followOffset: {x: 8, y: 8, z: -8}
+    orthographicSize: 2.7
+    rotation: {x: 15, y: -35, z: 0}
+    followOffset: {x: 5.2, y: 2, z: -8}
     damping: {x: 0.1, y: 0.1, z: 0.1}
-    binding: 4
+    binding: 0
     targetOffset: {x: 0, y: 0, z: 0}
     useNoise: 0
