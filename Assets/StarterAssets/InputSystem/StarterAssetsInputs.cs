@@ -18,6 +18,7 @@ namespace StarterAssets
         public event Action<bool> ShootStateChanged;
         public event Action ShootCanceled;
         public event Action PauseRequested;
+        public event Action HoistRequested;
 
         public bool GameplayInputBlocked { get; private set; }
         private int blockedThroughFrame = -1;
@@ -71,6 +72,11 @@ namespace StarterAssets
         {
             if (value.isPressed && !InputModeController.IsMobile)
                 PauseInput();
+        }
+
+        public void OnHoist(InputValue value)
+        {
+            if (value.isPressed && !InputModeController.IsMobile) HoistInput();
         }
 
         public void OnMove(InputValue value)
@@ -201,6 +207,11 @@ namespace StarterAssets
 
         // UI intent remains available while gameplay input is blocked.
         public void PauseInput() => PauseRequested?.Invoke();
+
+        public void HoistInput()
+        {
+            if (CanProcessGameplayInput) HoistRequested?.Invoke();
+        }
 
         private void OnApplicationFocus(bool hasFocus)
         {

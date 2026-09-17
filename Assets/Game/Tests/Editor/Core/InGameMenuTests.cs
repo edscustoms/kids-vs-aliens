@@ -111,15 +111,38 @@ public sealed class InGameMenuTests
         {
             foreach (string name in new[] { "ConstructionSite", "GamePoc" })
             {
-                EditorSceneManager.LoadSceneInPlayMode(
-                    "Assets/Game/Scenes/" + name + ".unity",
-                    new LoadSceneParameters(LoadSceneMode.Single)
-                );
-                yield return null;
-                yield return null;
+                bool arrivalOwnedBeforeStart = false;
+                // sceneLoaded runs after Awake and before Start/the first player Update.
+                UnityEngine.Events.UnityAction<Scene, LoadSceneMode> observeStartup = (scene, mode) =>
+                {
+                    if (scene.name != "ConstructionSite") return;
+                    var sequence = Object.FindAnyObjectByType<PlayerBeamInSequence>();
+                    var data = new SerializedObject(sequence);
+                    var start = (Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+                    var beam = Object.FindAnyObjectByType<BeamTransportController>();
+                    arrivalOwnedBeforeStart = beam.IsTransporting
+                        && !beam.GetComponent<CharacterController>().enabled
+                        && beam.GetComponent<StarterAssetsInputs>().GameplayInputBlocked
+                        && Vector3.Distance(beam.transform.position,
+                            start.position + Vector3.up * data.FindProperty("startHeight").floatValue) < 0.001f;
+                };
+                SceneManager.sceneLoaded += observeStartup;
+                try
+                {
+                    EditorSceneManager.LoadSceneInPlayMode(
+                        "Assets/Game/Scenes/" + name + ".unity",
+                        new LoadSceneParameters(LoadSceneMode.Single)
+                    );
+                    yield return null;
+                    yield return null;
+                }
+                finally { SceneManager.sceneLoaded -= observeStartup; }
+                if (name == "ConstructionSite") Assert.That(arrivalOwnedBeforeStart, Is.True);
                 var menu = Object.FindAnyObjectByType<InGameMenuController>();
                 var owner = Object.FindAnyObjectByType<GameplaySuspensionController>();
                 var input = owner.GetComponent<StarterAssetsInputs>();
+                var beamTransport = owner.GetComponent<BeamTransportController>();
+                bool arrivalActive = beamTransport != null && beamTransport.IsTransporting;
                 var presentation = GameObject.Find(GameplayPresentationSetup.RootName);
                 var camera = Camera.main;
                 Assert.That(menu, Is.Not.Null);
@@ -196,14 +219,18 @@ public sealed class InGameMenuTests
                     .GetComponent<UIButton>()
                     .OnClick.Invoke();
                 Assert.That(Time.timeScale, Is.EqualTo(1));
-                Assert.That(
-                    owner.IsSuspended || menu.IsOpen || input.GameplayInputBlocked,
-                    Is.False
-                );
+                Assert.That(menu.IsOpen, Is.False);
+                Assert.That(owner.IsSuspended, Is.EqualTo(arrivalActive));
+                Assert.That(input.GameplayInputBlocked, Is.EqualTo(arrivalActive));
                 Assert.That(
                     presentation.transform.Find("SuspensionInputBlocker").gameObject.activeSelf,
-                    Is.False
+                    Is.EqualTo(arrivalActive)
                 );
+                // Resuming a menu cannot release a still-active arrival's lease.
+                float deadline = Time.realtimeSinceStartup + 10f;
+                while (beamTransport != null && beamTransport.IsTransporting && Time.realtimeSinceStartup < deadline)
+                    yield return null;
+                Assert.That(owner.IsSuspended || input.GameplayInputBlocked, Is.False);
             }
         }
         finally

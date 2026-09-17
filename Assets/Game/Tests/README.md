@@ -57,6 +57,11 @@ project when Unity is closed. Use the open Editor's Test Runner otherwise. The
 compile helper is a separate Roslyn check against this project's Unity references;
 neither helper creates another Unity project or rebuilds Library.
 
+Beam Transport V1 adds arrival ownership before the first Update, vertical-first
+hoisting, physics rejection, Knowledge gating, nested transport/pause leases,
+actual authored particle direction and ConstructionSite/GamePoc scene repair
+coverage. See [beam transport](../Docs/12-BEAM-TRANSPORT.md).
+
 ## What we deliberately DO NOT automate
 
 Do not add automated tests for subjective game feel:

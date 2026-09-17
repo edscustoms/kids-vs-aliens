@@ -166,6 +166,13 @@ namespace StarterAssets
             CameraRotation();
         }
 
+        public void ResetMotion()
+        {
+            _speed = _animationBlend = _verticalVelocity = 0f;
+            _jumpTimeoutDelta = JumpTimeout;
+            _fallTimeoutDelta = FallTimeout;
+        }
+
         private void AssignAnimationIDs()
         {
             _animIDSpeed = Animator.StringToHash("Speed");

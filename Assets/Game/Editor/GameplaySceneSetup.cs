@@ -87,6 +87,7 @@ public static class GameplaySceneSetup
             RepairMeleeSuspension(melee, player.gameObject);
 
             GameplayCameraSetup.ConfigureScene(player);
+            BeamTransportSetup.ConfigureScene(player);
 
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);
