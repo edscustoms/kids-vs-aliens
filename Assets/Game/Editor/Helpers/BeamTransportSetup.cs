@@ -1,17 +1,17 @@
 using System.Linq;
 using StarterAssets;
-using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public static class BeamTransportSetup
 {
     public const string SkillPath = "Assets/Game/Data/Progression/BeamHoist.asset";
     public const string BookPath = "Assets/Game/Data/Items/KnowledgeBooks/BeamHoistBook.asset";
     public const string BookPrefabPath = "Assets/Game/Prefabs/Items/KnowledgeBooks/BeamHoistBook_Dropped.prefab";
-    public const string VfxPath = "Assets/Game/Prefabs/BeamTransportVFX.prefab";
+    public const string VfxPath = "Assets/Game/Prefabs/PF_BeamTransportVFX.prefab";
+
+    public const string LevelStartPath = "Assets/Game/Prefabs/PF_LevelStart.prefab";
 
     public static void ConfigureScene(PlayerCharacter player)
     {
@@ -19,86 +19,52 @@ public static class BeamTransportSetup
         var controller = Component<BeamTransportController>(player.gameObject);
         var ability = Component<BeamHoistAbility>(player.gameObject);
         SetMissing(ability, "requiredSkill", AssetDatabase.LoadAssetAtPath<SkillData>(SkillPath));
-
+        var canonical = AssetDatabase.LoadAssetAtPath<BeamTransportVFX>(VfxPath);
+        Set(controller, "vfxPrefab", canonical);
         Scene scene = player.gameObject.scene;
-        // Only authored LevelStart/BeamInSpawn opts a scene into automatic arrival.
-        var start = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<Transform>(true))
-            .FirstOrDefault(t => t.name == "BeamInSpawn" && t.parent != null && t.parent.name == "LevelStart");
-        if (start != null)
+        var roots = scene.GetRootGameObjects();
+        var sequences = roots.SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).ToArray();
+        if (sequences.Length > 1) throw new System.InvalidOperationException("Multiple level arrival owners; remove the unintended duplicate before repair.");
+        GameObject level = sequences.Length == 1 ? sequences[0].gameObject
+            : roots.SelectMany(r => r.GetComponentsInChildren<Transform>(true)).FirstOrDefault(t => t.name == "LevelStart" || t.name == "PF_LevelStart")?.gameObject;
+        if (level == null)
         {
-            var level = start.parent;
-            var vfx = level.GetComponentInChildren<BeamTransportVFX>(true);
-            if (vfx == null)
-            {
-                var visual = level.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "BeamInVFX");
-                if (visual != null)
-                {
-                    var root = new GameObject("BeamTransportVFX");
-                    Undo.RegisterCreatedObjectUndo(root, "Beam transport VFX");
-                    SceneManager.MoveGameObjectToScene(root, scene);
-                    root.transform.position = start.position;
-                    Undo.SetTransformParent(root.transform, level, "Beam VFX parent");
-                    Undo.SetTransformParent(visual, root.transform, "Reuse authored beam");
-                    var ring = level.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "GroundRing");
-                    if (ring != null && !ring.IsChildOf(visual)) Undo.SetTransformParent(ring, root.transform, "Reuse authored ring");
-                    vfx = Component<BeamTransportVFX>(root);
-                    Set(vfx, "beamVisual", visual.gameObject);
-                    Set(vfx, "groundRing", ring != null ? ring.gameObject : null);
-                    var sparks = visual.GetComponentsInChildren<ParticleSystem>(true).FirstOrDefault(p => p.name == "BeamSparks");
-                    Set(vfx, "beamSparks", sparks);
-                }
-            }
-            if (vfx != null)
-            {
-                if (AssetDatabase.LoadAssetAtPath<BeamTransportVFX>(VfxPath) == null)
-                {
-                    var clone = Object.Instantiate(vfx.gameObject);
-                    clone.name = "BeamTransportVFX";
-                    clone.transform.SetParent(null);
-                    clone.transform.position = Vector3.zero;
-                    clone.GetComponent<BeamTransportVFX>().Hide();
-                    PrefabUtility.SaveAsPrefabAsset(clone, VfxPath);
-                    Object.DestroyImmediate(clone);
-                }
-                var sequence = Component<PlayerBeamInSequence>(level.gameObject);
-                Set(sequence, "player", player.transform);
-                Set(sequence, "beamInSpawn", start);
-                Set(sequence, "transportVfx", vfx);
-            }
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LevelStartPath);
+            if (prefab == null) throw new System.InvalidOperationException("Create PF_LevelStart with the authored LevelStart migration first.");
+            level = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+            Undo.RegisterCreatedObjectUndo(level, "Add LevelStart");
+            level.name = "LevelStart";
+            level.transform.SetPositionAndRotation(player.transform.position, player.transform.rotation);
+            // Only a newly created template is aligned: its marker, not its root, is the landing pose.
+            var templateMarker = level.GetComponentsInChildren<Transform>(true).First(t => t.name == "BeamInSpawn");
+            level.transform.position += player.transform.position - templateMarker.position;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(level.transform);
         }
-        SetMissing(controller, "vfxPrefab", AssetDatabase.LoadAssetAtPath<BeamTransportVFX>(VfxPath));
-        ConfigureButton(player);
-    }
-
-    private static void ConfigureButton(PlayerCharacter player)
-    {
-        var presentation = player.gameObject.scene.GetRootGameObjects().FirstOrDefault(r => r.name == GameplayPresentationSetup.RootName);
-        Transform parent = presentation != null ? presentation.transform.Find("SafeArea") : null;
-        if (parent == null) return;
-        var existing = parent.Find("BeamHoistButton");
-        GameObject go;
-        if (existing != null) go = existing.gameObject;
-        else
+        var sequence = Component<PlayerBeamInSequence>(level);
+        var start = level.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "BeamInSpawn");
+        if (start == null)
         {
-            go = new GameObject("BeamHoistButton", typeof(RectTransform), typeof(Image), typeof(Button));
-            Undo.RegisterCreatedObjectUndo(go, "Beam Hoist control");
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(1f, 0f);
-            rect.anchoredPosition = new Vector2(-290f, 240f);
-            rect.sizeDelta = new Vector2(150f, 65f);
-            go.GetComponent<Image>().color = new Color(0.08f, 0.25f, 0.32f, 0.95f);
-            var label = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-            label.transform.SetParent(go.transform, false);
-            var labelRect = (RectTransform)label.transform;
-            labelRect.anchorMin = Vector2.zero; labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
-            var text = label.GetComponent<TextMeshProUGUI>();
-            text.text = "HOIST"; text.fontSize = 26; text.alignment = TextAlignmentOptions.Center; text.raycastTarget = false;
+            var marker = new GameObject("BeamInSpawn");
+            Undo.RegisterCreatedObjectUndo(marker, "Repair arrival marker");
+            marker.transform.SetParent(level.transform, false);
+            start = marker.transform;
         }
-        var binding = Component<BeamHoistButton>(go);
-        Set(binding, "ability", player.GetComponent<BeamHoistAbility>());
-        Set(binding, "input", player.GetComponent<StarterAssetsInputs>());
+        var effect = level.GetComponentInChildren<BeamTransportVFX>(true);
+        if (effect == null)
+        {
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(canonical.gameObject, scene);
+            Undo.RegisterCreatedObjectUndo(instance, "Repair canonical beam reference");
+            instance.transform.SetParent(level.transform, false);
+            instance.transform.SetPositionAndRotation(start.position, level.transform.rotation);
+            effect = instance.GetComponent<BeamTransportVFX>();
+        }
+        Set(sequence, "player", player.transform);
+        SetMissing(sequence, "beamInSpawn", start);
+        SetMissing(sequence, "transportVfx", effect);
+        // Retain the old generated button for backwards compatibility, but production uses Jump.
+        foreach (var root in roots)
+            foreach (var button in root.GetComponentsInChildren<BeamHoistButton>(true))
+                if (button.gameObject.activeSelf) { Undo.RecordObject(button.gameObject, "Retire HOIST button"); button.gameObject.SetActive(false); }
     }
 
     private static void CreateKnowledgeAssets()
@@ -110,7 +76,7 @@ public static class BeamTransportSetup
             var data = new SerializedObject(skill);
             data.FindProperty("id").stringValue = "beam_hoist";
             data.FindProperty("displayName").stringValue = "Beam Hoist";
-            data.FindProperty("description").stringValue = "Use alien beam energy to lift Amy onto elevated areas. Stand near a beam hoist point and press HOIST (H on keyboard).";
+            data.FindProperty("description").stringValue = "Use alien beam energy to lift Amy onto elevated areas. Stand beside a hoistable surface and press Jump to lift onto it.";
             data.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.CreateAsset(skill, SkillPath);
         }
@@ -149,5 +115,6 @@ public static class BeamTransportSetup
         data.FindProperty(field).objectReferenceValue = value;
         data.ApplyModifiedProperties();
         EditorUtility.SetDirty(target);
+        PrefabUtility.RecordPrefabInstancePropertyModifications(target);
     }
 }

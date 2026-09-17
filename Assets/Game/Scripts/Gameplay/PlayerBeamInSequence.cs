@@ -17,6 +17,16 @@ public sealed class PlayerBeamInSequence : MonoBehaviour
     {
         if (started) return;
         started = true;
+        if (player == null)
+        {
+            // Prefab assets cannot reference a scene player. Resolve once, in this scene only.
+            foreach (var candidate in FindObjectsByType<BeamTransportController>(FindObjectsInactive.Exclude))
+                if (candidate.gameObject.scene == gameObject.scene)
+                {
+                    if (player != null) { Debug.LogError("Multiple beam players in the arrival scene.", this); return; }
+                    player = candidate.transform;
+                }
+        }
         var transport = player != null ? player.GetComponent<BeamTransportController>() : null;
         if (transport == null || !transport.TryArrival(beamInSpawn, transportVfx, startHeight,
             descentDuration, initialDelay, landingHold))

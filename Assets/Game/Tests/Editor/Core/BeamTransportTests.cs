@@ -62,7 +62,7 @@ public sealed class BeamTransportTests
     }
 
     [Test]
-    public void Hoist_IsVerticalThenAcrossThenLanding_AndBeamStaysFixed()
+    public void Hoist_IsVerticalThenOneCurve_AndBeamStaysFixed()
     {
         Vector3 origin = player.transform.position;
         Assert.That(transport.TryHoist(target), Is.True);
@@ -74,7 +74,7 @@ public sealed class BeamTransportTests
         transport.Advance(target.LiftDuration / 2);
         Assert.That(player.transform.position.y, Is.GreaterThan(target.Landing.position.y));
         transport.Advance(target.TransferDuration);
-        Assert.That(player.transform.position.x, Is.EqualTo(target.Landing.position.x));
+        Assert.That(player.transform.position.x, Is.GreaterThan(origin.x).And.LessThan(target.Landing.position.x));
         Assert.That(player.transform.position.y, Is.GreaterThan(target.Landing.position.y));
         transport.Advance(target.LandingDuration);
         transport.Advance(0.01f);

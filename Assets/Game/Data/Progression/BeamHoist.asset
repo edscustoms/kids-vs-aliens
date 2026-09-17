@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   id: beam_hoist
   displayName: Beam Hoist
-  description: Use alien beam energy to lift Amy onto elevated areas. Stand near
-    a beam hoist point and press HOIST (H on keyboard).
+  description: Use alien beam energy to lift Amy onto elevated areas. Stand beside
+    a hoistable surface and press Jump to lift onto it.
   tutorialData: {fileID: 0}
   startingLevel: 1
   xpPerLevel: 100

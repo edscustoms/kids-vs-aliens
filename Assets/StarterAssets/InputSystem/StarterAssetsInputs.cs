@@ -19,6 +19,8 @@ namespace StarterAssets
         public event Action ShootCanceled;
         public event Action PauseRequested;
         public event Action HoistRequested;
+        // One contextual traversal consumer can claim a fresh jump before locomotion sees it.
+        public event Func<bool> ContextualJumpRequested;
 
         public bool GameplayInputBlocked { get; private set; }
         private int blockedThroughFrame = -1;
@@ -149,12 +151,19 @@ namespace StarterAssets
 
         public void JumpInput(bool newJumpState)
         {
+            bool pressed = newJumpState && !rawJump;
             rawJump = newJumpState;
             if (!newJumpState)
                 waitJumpNeutral = false;
             if (!CanProcessGameplayInput || waitJumpNeutral)
             {
                 jump = false;
+                return;
+            }
+            if (pressed && ContextualJumpRequested?.Invoke() == true)
+            {
+                jump = false;
+                waitJumpNeutral = true;
                 return;
             }
             jump = newJumpState;

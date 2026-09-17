@@ -19,17 +19,10 @@ public static class BeamTransportReview
         var sequence = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).Single();
         var data = new SerializedObject(sequence);
         var point = (Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
-        var vfx = (BeamTransportVFX)data.FindProperty("transportVfx").objectReferenceValue;
         var transport = player.GetComponent<BeamTransportController>();
         Physics.SyncTransforms();
         if (!transport.IsLandingSafe(point.position))
-        {
-            if (!Physics.Raycast(point.position + Vector3.up * 2, Vector3.down, out var hit, 4, ~0, QueryTriggerInteraction.Ignore))
-                throw new Exception("No support under the arrival marker.");
-            point.position = new Vector3(point.position.x, hit.point.y, point.position.z);
-            vfx.transform.position = point.position;
-            if (!transport.IsLandingSafe(point.position)) throw new Exception("Arrival still has no safe supported capsule pose.");
-        }
+            Debug.LogWarning("Authored arrival marker has no safe supported pose. Placement is preserved; adjust it explicitly in the Scene view.", point);
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log("Beam migration complete; arrival at " + point.position);
@@ -143,19 +136,7 @@ public static class BeamTransportReview
             }
             else if (request == "repairLanding")
             {
-                var sequence = UnityEngine.Object.FindAnyObjectByType<PlayerBeamInSequence>();
-                var data = new SerializedObject(sequence);
-                var point = (Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
-                var vfx = (BeamTransportVFX)data.FindProperty("transportVfx").objectReferenceValue;
-                if (!Physics.Raycast(point.position + Vector3.up * 2, Vector3.down, out var hit, 4, ~0, QueryTriggerInteraction.Ignore))
-                    throw new Exception("No support under the arrival marker.");
-                Undo.RecordObject(point, "Align beam arrival to existing terrain");
-                point.position = new Vector3(point.position.x, hit.point.y, point.position.z);
-                Undo.RecordObject(vfx.transform, "Align beam presentation to arrival");
-                vfx.transform.position = point.position;
-                EditorSceneManager.MarkSceneDirty(point.gameObject.scene);
-                EditorSceneManager.SaveScene(point.gameObject.scene);
-                File.WriteAllText("Temp/Beam.result", "Arrival marker aligned to " + hit.collider.name + " at " + point.position);
+                File.WriteAllText("Temp/Beam.result", "Automatic landing snapping retired: preserve authored marker and VFX placement. Adjust explicitly in Scene view if needed.");
             }
         }
         catch (Exception error) { File.WriteAllText("Temp/Beam.result", error.ToString()); Debug.LogException(error); }

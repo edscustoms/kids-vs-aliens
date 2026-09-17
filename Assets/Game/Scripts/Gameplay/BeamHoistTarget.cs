@@ -51,10 +51,16 @@ public sealed class BeamHoistTarget : MonoBehaviour
     {
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, activationRange);
-        if (!TryGetPath(transform.position, out var lift, out var across, out var end)) return;
+        if (!TryGetPath(transform.position, out var lift, out _, out var end)) return;
         Gizmos.DrawLine(transform.position, lift);
-        Gizmos.DrawLine(lift, across);
-        Gizmos.DrawLine(across, end);
+        var path = BeamHoistPath.Create(transform.position, end, lift.y, liftDuration, transferDuration + landingDuration);
+        Vector3 previous = lift;
+        for (int i = 1; i <= 16; i++)
+        {
+            Vector3 next = path.Evaluate(i / 16f);
+            Gizmos.DrawLine(previous, next);
+            previous = next;
+        }
         Gizmos.DrawWireSphere(end, 0.2f);
     }
 }

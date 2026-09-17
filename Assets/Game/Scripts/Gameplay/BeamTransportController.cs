@@ -22,6 +22,8 @@ public sealed class BeamTransportController : MonoBehaviour
     private float elapsed, delay, hold;
     private bool controllerWasEnabled, exitTransport, awaitingExit;
     private Action completed;
+    private bool curvedHoist;
+    private BeamHoistPath hoistPath;
     public bool IsTransporting => lease != null;
 
     // Initialize after suspension (-200), before the arrival adapter (-150).
@@ -41,30 +43,67 @@ public sealed class BeamTransportController : MonoBehaviour
         Vector3 end = destination.position, start = end + Vector3.up * height;
         if (!CanBegin() || !IsLandingSafe(end) || !IsSegmentClear(start, end)) return false;
         points[0] = start; points[1] = end; durations[0] = duration;
-        if (!Begin(effect, end, BeamTransportDirection.Down, 1, initialDelay, landingHold)) return false;
+        if (!Begin(effect, effect != null ? effect.transform.position : end, BeamTransportDirection.Down, 1, initialDelay, landingHold)) return false;
         // Synchronous startup handoff: no yield, Start coroutine or later pose reset.
         transform.SetPositionAndRotation(start, destination.rotation);
         return true;
     }
 
-    public bool TryHoist(BeamHoistTarget target)
+    public float FeetOffset
     {
-        Resolve();
-        if (!CanBegin() || target == null || !target.TryGetPath(transform.position, out var lift, out var across, out var end)
-            || !IsLandingSafe(end) || !IsSegmentClear(transform.position, lift)
-            || !IsSegmentClear(lift, across) || !IsSegmentClear(across, end)) return false;
-        points[0] = transform.position; points[1] = lift; points[2] = across; points[3] = end;
-        durations[0] = target.LiftDuration; durations[1] = target.TransferDuration; durations[2] = target.LandingDuration;
-        return Begin(null, points[0], BeamTransportDirection.Up, 3, 0f, 0f);
+        get { Resolve(); return transform.TransformVector(capsule.center).y - capsule.height * Mathf.Abs(transform.lossyScale.y) * 0.5f; }
     }
 
-    public bool CanHoist(BeamHoistTarget target)
+    public bool TryBuildHoist(BeamHoistTarget target, out BeamHoistPath path)
+    {
+        path = default;
+        if (target == null || !target.TryGetPath(transform.position, out var lift, out _, out var end)) return false;
+        path = BeamHoistPath.Create(transform.position, end, lift.y,
+            target.LiftDuration, target.TransferDuration + target.LandingDuration);
+        return true;
+    }
+
+    public bool TryHoist(BeamHoistTarget target) => TryBuildHoist(target, out var path) && TryHoist(path);
+    public bool CanHoist(BeamHoistTarget target) => TryBuildHoist(target, out var path) && CanHoist(path);
+
+    public bool CanHoist(BeamHoistPath path)
     {
         Resolve();
-        return CanBegin() && target != null
-            && target.TryGetPath(transform.position, out var lift, out var across, out var end)
-            && IsLandingSafe(end) && IsSegmentClear(transform.position, lift)
-            && IsSegmentClear(lift, across) && IsSegmentClear(across, end);
+        return CanBegin() && (path.start - transform.position).sqrMagnitude < 0.001f
+            && path.landing.y > path.start.y + 0.1f
+            && IsLandingSafe(path.landing) && IsSegmentClear(path.start, path.release)
+            && IsCurveClear(path, 0f, 1f);
+    }
+
+    public bool TryHoist(BeamHoistPath path)
+    {
+        if (!CanHoist(path)) return false;
+        points[0] = path.start; points[1] = path.release; points[2] = path.landing;
+        durations[0] = path.liftDuration; durations[1] = path.transferDuration;
+        if (!Begin(null, path.start, BeamTransportDirection.Up, 2, 0f, 0f)) return false;
+        hoistPath = path;
+        curvedHoist = true;
+        return true;
+    }
+
+    public bool IsCurveClear(BeamHoistPath path, float from, float to)
+    {
+        Resolve();
+        Physics.SyncTransforms();
+        // A Bezier second-derivative bound gives a conservative chord-error padding.
+        // Swept capsules cover the curve between samples, even with a long frame.
+        int samples = Mathf.Max(1, Mathf.CeilToInt(path.ControlPolygonLength * (to - from) / 0.12f));
+        if (samples > 256) return false;
+        float step = (to - from) / samples;
+        float padding = path.SecondDerivativeBound * step * step / 8f;
+        Vector3 previous = path.Evaluate(from);
+        for (int i = 1; i <= samples; i++)
+        {
+            Vector3 next = path.Evaluate(Mathf.Lerp(from, to, i / (float)samples));
+            if (!IsSegmentClear(previous, next, padding)) return false;
+            previous = next;
+        }
+        return true;
     }
 
     public bool TryDeparture(float height, float duration, Action onCompleted)
@@ -102,7 +141,7 @@ public sealed class BeamTransportController : MonoBehaviour
         activeVfx = effect;
         segment = 0; segmentCount = count; elapsed = 0f;
         delay = Mathf.Max(0f, initialDelay); hold = Mathf.Max(0f, landingHold);
-        exitTransport = awaitingExit = false;
+        exitTransport = awaitingExit = curvedHoist = false;
         activeVfx.Show(beamPosition, direction);
         return true;
     }
@@ -118,12 +157,23 @@ public sealed class BeamTransportController : MonoBehaviour
         if (delay > 0f) { delay -= deltaTime; return; }
         if (segment < segmentCount)
         {
+            float duration = Mathf.Max(0.01f, durations[segment]);
+            float previousT = Mathf.Clamp01(elapsed / duration);
             elapsed += deltaTime;
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, durations[segment]));
-            Vector3 next = Vector3.Lerp(points[segment], points[segment + 1], Mathf.SmoothStep(0f, 1f, t));
-            if (!IsSegmentClear(transform.position, next)) { CancelTransport(); return; }
+            float t = Mathf.Clamp01(elapsed / duration);
+            bool onCurve = curvedHoist && segment == 1;
+            Vector3 next = onCurve ? hoistPath.Evaluate(t)
+                : Vector3.Lerp(points[segment], points[segment + 1], Mathf.SmoothStep(0f, 1f, t));
+            bool clear = onCurve ? IsCurveClear(hoistPath, previousT, t) : IsSegmentClear(transform.position, next);
+            if (!clear || (onCurve && t >= 1f && !IsLandingSafe(next))) { CancelTransport(); return; }
             transform.position = next;
-            if (t >= 1f) { segment++; elapsed = 0f; }
+            if (t >= 1f)
+            {
+                // Release exactly at the end of the vertical phase, before any lateral motion.
+                if (curvedHoist && segment == 0 && activeVfx != null) activeVfx.Hide();
+                segment++; elapsed = 0f;
+                if (onCurve) CancelTransport();
+            }
             return;
         }
         if (hold > 0f) { hold -= deltaTime; return; }
@@ -166,14 +216,19 @@ public sealed class BeamTransportController : MonoBehaviour
     {
         Resolve();
         Physics.SyncTransforms();
+        return IsSegmentClear(from, to, 0f);
+    }
+
+    private bool IsSegmentClear(Vector3 from, Vector3 to, float padding)
+    {
         CapsuleAt(to, out var bottom, out var top, out float radius);
-        int count = Physics.OverlapCapsuleNonAlloc(bottom, top, radius, overlaps, obstructionMask, QueryTriggerInteraction.Ignore);
+        int count = Physics.OverlapCapsuleNonAlloc(bottom, top, radius + padding, overlaps, obstructionMask, QueryTriggerInteraction.Ignore);
         if (count == overlaps.Length) return false;
         for (int i = 0; i < count; i++) if (!IsOwn(overlaps[i])) return false;
         CapsuleAt(from, out bottom, out top, out radius);
         Vector3 delta = to - from;
         if (delta.sqrMagnitude < 0.000001f) return true;
-        count = Physics.CapsuleCastNonAlloc(bottom, top, radius, delta.normalized, hits, delta.magnitude,
+        count = Physics.CapsuleCastNonAlloc(bottom, top, radius + padding, delta.normalized, hits, delta.magnitude,
             obstructionMask, QueryTriggerInteraction.Ignore);
         if (count == hits.Length) return false;
         for (int i = 0; i < count; i++) if (!IsOwn(hits[i].collider)) return false;
