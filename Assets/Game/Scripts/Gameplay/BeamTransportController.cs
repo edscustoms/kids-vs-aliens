@@ -99,7 +99,8 @@ public sealed class BeamTransportController : MonoBehaviour
             return false;
         }
 
-        // Synchronous startup handoff: no yield, Start coroutine or later pose reset.
+        // Synchronous startup handoff:
+        // no yield, coroutine or later pose reset.
         transform.SetPositionAndRotation(start, destination.rotation);
 
         return true;
@@ -150,10 +151,14 @@ public sealed class BeamTransportController : MonoBehaviour
         Resolve();
 
         return CanBegin()
+            // Path must begin exactly where Amy currently is.
             && (path.start - transform.position).sqrMagnitude < 0.001f
+            // Hoisting must actually gain useful height.
             && path.landing.y > path.start.y + 0.1f
+            // Destination must support Amy.
             && IsLandingSafe(path.landing)
-            && IsSegmentClear(path.start, path.release)
+            // ONE complete path:
+            // START -> Bézier -> LANDING.
             && IsCurveClear(path, 0f, 1f);
     }
 
@@ -162,15 +167,37 @@ public sealed class BeamTransportController : MonoBehaviour
         if (!CanHoist(path))
             return false;
 
+        /*
+         * IMPORTANT:
+         *
+         * There is exactly ONE hoist movement.
+         *
+         * A = path.start
+         * B = path.landing
+         *
+         * release/control1/control2 only SHAPE the curve.
+         * They are never separate movement destinations.
+         */
+
         points[0] = path.start;
-        points[1] = path.release;
-        points[2] = path.landing;
+        points[1] = path.landing;
 
-        durations[0] = path.liftDuration;
-        durations[1] = path.transferDuration;
+        durations[0] = Mathf.Max(0.01f, path.liftDuration + path.transferDuration);
 
-        if (!Begin(null, path.start, BeamTransportDirection.Up, 2, 0f, 0f))
+        if (
+            !Begin(
+                null,
+                path.start,
+                BeamTransportDirection.Up,
+                // ONE segment.
+                1,
+                0f,
+                0f
+            )
+        )
+        {
             return false;
+        }
 
         hoistPath = path;
         curvedHoist = true;
@@ -183,8 +210,11 @@ public sealed class BeamTransportController : MonoBehaviour
         Resolve();
         Physics.SyncTransforms();
 
-        // A Bezier second-derivative bound gives a conservative chord-error padding.
-        // Swept capsules cover the curve between samples, even with a long frame.
+        // A Bezier second-derivative bound gives a conservative
+        // chord-error padding.
+        //
+        // Swept capsules cover the curve between samples,
+        // even with a long frame.
         int samples = Mathf.Max(
             1,
             Mathf.CeilToInt(path.ControlPolygonLength * (to - from) / 0.12f)
@@ -194,6 +224,7 @@ public sealed class BeamTransportController : MonoBehaviour
             return false;
 
         float step = (to - from) / samples;
+
         float padding = path.SecondDerivativeBound * step * step / 8f;
 
         Vector3 previous = path.Evaluate(from);
@@ -219,14 +250,18 @@ public sealed class BeamTransportController : MonoBehaviour
         Vector3 end = start + Vector3.up * height;
 
         if (!CanBegin() || height <= 0f || !IsSegmentClear(start, end))
+        {
             return false;
+        }
 
         points[0] = start;
         points[1] = end;
         durations[0] = duration;
 
         if (!Begin(null, start, BeamTransportDirection.Up, 1, 0f, 0f))
+        {
             return false;
+        }
 
         exitTransport = true;
         completed = onCompleted;
@@ -268,7 +303,9 @@ public sealed class BeamTransportController : MonoBehaviour
         }
 
         if (effect == null || effect.transform.IsChildOf(transform))
+        {
             return false;
+        }
 
         lease = suspension.Acquire(SuspensionReason.BeamTransport);
 
@@ -284,6 +321,7 @@ public sealed class BeamTransportController : MonoBehaviour
         elapsed = 0f;
 
         delay = Mathf.Max(0f, initialDelay);
+
         hold = Mathf.Max(0f, landingHold);
 
         exitTransport = false;
@@ -295,7 +333,10 @@ public sealed class BeamTransportController : MonoBehaviour
         return true;
     }
 
-    private void Update() => Advance(Time.deltaTime);
+    private void Update()
+    {
+        Advance(Time.deltaTime);
+    }
 
     // Deterministic stepping allows tests without wall-clock delays.
     public void Advance(float deltaTime)
@@ -310,7 +351,9 @@ public sealed class BeamTransportController : MonoBehaviour
         }
 
         if (suspension.IsWorldPaused || awaitingExit || deltaTime <= 0f)
+        {
             return;
+        }
 
         if (delay > 0f)
         {
@@ -328,15 +371,45 @@ public sealed class BeamTransportController : MonoBehaviour
 
             float t = Mathf.Clamp01(elapsed / duration);
 
-            bool onCurve = curvedHoist && segment == 1;
+            /*
+             * HOIST:
+             *
+             * segment 0 = the complete Bézier.
+             *
+             * There is NO vertical segment before this.
+             */
+            bool onCurve = curvedHoist && segment == 0;
 
-            Vector3 next = onCurve
-                ? hoistPath.Evaluate(t)
-                : Vector3.Lerp(points[segment], points[segment + 1], Mathf.SmoothStep(0f, 1f, t));
+            Vector3 next;
 
-            bool clear = onCurve
-                ? IsCurveClear(hoistPath, previousT, t)
-                : IsSegmentClear(transform.position, next);
+            if (onCurve)
+            {
+                // ONE continuous trajectory:
+                //
+                // Evaluate(0) = START
+                // Evaluate(1) = LANDING
+                next = hoistPath.Evaluate(t);
+            }
+            else
+            {
+                // Arrival / departure still use ordinary linear movement.
+                next = Vector3.Lerp(
+                    points[segment],
+                    points[segment + 1],
+                    Mathf.SmoothStep(0f, 1f, t)
+                );
+            }
+
+            bool clear;
+
+            if (onCurve)
+            {
+                clear = IsCurveClear(hoistPath, previousT, t);
+            }
+            else
+            {
+                clear = IsSegmentClear(transform.position, next);
+            }
 
             if (!clear || (onCurve && t >= 1f && !IsLandingSafe(next)))
             {
@@ -346,13 +419,18 @@ public sealed class BeamTransportController : MonoBehaviour
 
             transform.position = next;
 
-            // During a hoist, keep the beam centred underneath Amy.
-            // X/Z follow Amy while Y remains fixed at the beam's authored ground height.
+            /*
+             * During a HOIST the beam follows Amy horizontally.
+             *
+             * X/Z follow the player.
+             * Y remains at the beam's ground/root height.
+             */
             if (curvedHoist && activeVfx != null)
             {
                 Vector3 beamPosition = activeVfx.transform.position;
 
                 beamPosition.x = transform.position.x;
+
                 beamPosition.z = transform.position.z;
 
                 activeVfx.transform.position = beamPosition;
@@ -364,7 +442,14 @@ public sealed class BeamTransportController : MonoBehaviour
                 elapsed = 0f;
 
                 if (onCurve)
+                {
+                    /*
+                     * The ONE hoist curve has reached LANDING.
+                     *
+                     * Restore controls/capsule and hide the beam.
+                     */
                     CancelTransport();
+                }
             }
 
             return;
@@ -380,7 +465,8 @@ public sealed class BeamTransportController : MonoBehaviour
         {
             awaitingExit = true;
 
-            activeVfx.Hide();
+            if (activeVfx != null)
+                activeVfx.Hide();
 
             var callback = completed;
             completed = null;
@@ -417,7 +503,8 @@ public sealed class BeamTransportController : MonoBehaviour
         previous.Dispose();
     }
 
-    // Skin contraction allows contact with the support surface without penetration.
+    // Skin contraction allows contact with the support surface
+    // without penetration.
     private void CapsuleAt(Vector3 position, out Vector3 bottom, out Vector3 top, out float radius)
     {
         Vector3 scale = transform.lossyScale;
@@ -473,7 +560,9 @@ public sealed class BeamTransportController : MonoBehaviour
         Vector3 delta = to - from;
 
         if (delta.sqrMagnitude < 0.000001f)
+        {
             return true;
+        }
 
         count = Physics.CapsuleCastNonAlloc(
             bottom,
@@ -503,7 +592,9 @@ public sealed class BeamTransportController : MonoBehaviour
         Resolve();
 
         if (!IsSegmentClear(position, position))
+        {
             return false;
+        }
 
         CapsuleAt(position, out var bottom, out _, out float radius);
 
@@ -533,7 +624,10 @@ public sealed class BeamTransportController : MonoBehaviour
         return false;
     }
 
-    private void OnDisable() => CancelTransport();
+    private void OnDisable()
+    {
+        CancelTransport();
+    }
 
     private void OnDestroy()
     {
