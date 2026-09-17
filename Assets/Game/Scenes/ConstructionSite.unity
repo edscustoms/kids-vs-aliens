@@ -21271,59 +21271,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3240533763336650010, guid: 12d76895085cf36478e8c1c43702a431, type: 3}
   m_PrefabInstance: {fileID: 868946239}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &869499584
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 869499585}
-  - component: {fileID: 869499586}
-  m_Layer: 0
-  m_Name: Hoist
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &869499585
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 869499584}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 1.17, y: 2.67, z: -0.91}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2038572906}
-  m_Father: {fileID: 2071002914}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &869499586
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 869499584}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d062dace9f74b42bd75366e59965f8c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BeamHoistTarget
-  activationArea: {fileID: 0}
-  activationRange: 6
-  landing: {fileID: 2038572906}
-  liftPoint: {fileID: 0}
-  clearanceHeight: 0.35
-  liftDuration: 1.5
-  transferDuration: 0.6
-  landingDuration: 0.3
 --- !u!4 &869580818 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 486268, guid: 4357217ce6e63554f97828955f1d9394, type: 3}
@@ -29864,10 +29811,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: f9610abc71a0ac7408558c90071492be, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 3455652856686585101, guid: edb5848b3aecfde4ca1d821600c6fe60, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 869499585}
+    m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3455652856686585102, guid: edb5848b3aecfde4ca1d821600c6fe60, type: 3}
       insertIndex: -1
@@ -38862,37 +38806,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameplayCameraController
   profile: {fileID: 11400000, guid: 3668f0c7bf59a834d8ef62f822b57fac, type: 2}
---- !u!1 &2038572905
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2038572906}
-  m_Layer: 0
-  m_Name: Landing
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2038572906
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2038572905}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 869499585}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &2042089872 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 486268, guid: 4357217ce6e63554f97828955f1d9394, type: 3}
@@ -39005,7 +38918,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeamHoistSurface
   sourceColliders: []
-  approachWidth: 1.8
+  approachWidth: 6
   landingInset: 0.55
   clearance: 0.5
   landingOverride: {fileID: 0}
@@ -39014,76 +38927,76 @@ MonoBehaviour:
     m_Extent: {x: 3.2065206, y: 1.286671, z: 1.2944757}
   approaches:
   - region:
-      m_Center: {x: -1.1073581, y: -2.3568716, z: -0.64723784}
-      m_Extent: {x: 0.89999974, y: 0.62499994, z: 0.64723784}
+      m_Center: {x: -3.2073576, y: 0.5402709, z: -0.64723784}
+      m_Extent: {x: 2.9999993, y: 0.625, z: 0.64723784}
     landing: {x: 0.34264135, y: 2.559983, z: -0.37223822}
     side: 0
   - region:
-      m_Center: {x: -1.1073581, y: -2.3924189, z: 0.64723784}
-      m_Extent: {x: 0.89999974, y: 0.62499994, z: 0.64723784}
+      m_Center: {x: -3.2073576, y: -1.858594, z: 0.64723784}
+      m_Extent: {x: 2.9999993, y: 0.62499994, z: 0.64723784}
     landing: {x: 0.3426414, y: 2.559983, z: 0.37223813}
     side: 0
   - region:
-      m_Center: {x: 7.1056824, y: -2.165, z: -0.64723784}
-      m_Extent: {x: 0.89999974, y: 0.62499994, z: 0.64723784}
+      m_Center: {x: 9.205682, y: -2.165, z: -0.64723784}
+      m_Extent: {x: 2.9999993, y: 0.62499994, z: 0.64723784}
     landing: {x: 5.655684, y: 2.559983, z: -0.37223864}
     side: 1
   - region:
-      m_Center: {x: 7.1056824, y: -2.165, z: 0.64723784}
-      m_Extent: {x: 0.89999974, y: 0.62499994, z: 0.64723784}
+      m_Center: {x: 9.205682, y: -2.165, z: 0.64723784}
+      m_Extent: {x: 2.9999993, y: 0.62499994, z: 0.64723784}
     landing: {x: 5.655684, y: 2.559983, z: 0.37223768}
     side: 1
   - region:
-      m_Center: {x: 0.43394578, y: -2.3716307, z: -2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.62499994, z: 0.89999974}
+      m_Center: {x: 0.43394578, y: -2.3604753, z: -4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 0.8739458, y: 2.559983, z: -0.7444765}
     side: 2
   - region:
-      m_Center: {x: 1.716554, y: -2.343859, z: -2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.62499994, z: 0.89999974}
+      m_Center: {x: 1.716554, y: -2.3596084, z: -4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 1.9365544, y: 2.559983, z: -0.74447656}
     side: 2
   - region:
-      m_Center: {x: 2.9991622, y: -2.3462858, z: -2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.62499994, z: 0.89999974}
+      m_Center: {x: 2.9991622, y: -2.3600464, z: -4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 2.9991632, y: 2.559983, z: -0.74447656}
     side: 2
   - region:
-      m_Center: {x: 4.28177, y: -2.352113, z: -2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.62499994, z: 0.89999974}
+      m_Center: {x: 4.28177, y: -2.3618927, z: -4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 4.061771, y: 2.559983, z: -0.7444749}
     side: 2
   - region:
-      m_Center: {x: 5.5643783, y: -2.3530447, z: -2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.62499994, z: 0.89999974}
+      m_Center: {x: 5.5643783, y: -2.361382, z: -4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 5.1243796, y: 2.559983, z: -0.7444749}
     side: 2
   - region:
-      m_Center: {x: 0.43394578, y: 0.26498306, z: 2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.625, z: 0.89999974}
+      m_Center: {x: 0.43394578, y: 0.407277, z: 4.294475}
+      m_Extent: {x: 0.64130414, y: 0.625, z: 2.9999993}
     landing: {x: 0.87394565, y: 2.559983, z: 0.7444762}
     side: 3
   - region:
-      m_Center: {x: 1.716554, y: 0.26498306, z: 2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.625, z: 0.89999974}
+      m_Center: {x: 1.716554, y: 0.407277, z: 4.294475}
+      m_Extent: {x: 0.64130414, y: 0.625, z: 2.9999993}
     landing: {x: 1.9365544, y: 2.559983, z: 0.7444761}
     side: 3
   - region:
-      m_Center: {x: 2.9991622, y: 0.26498306, z: 2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.625, z: 0.89999974}
+      m_Center: {x: 2.9991622, y: 0.407277, z: 4.294475}
+      m_Extent: {x: 0.64130414, y: 0.625, z: 2.9999993}
     landing: {x: 2.9991632, y: 2.559983, z: 0.7444761}
     side: 3
   - region:
-      m_Center: {x: 4.28177, y: 0.26498306, z: 2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.625, z: 0.89999974}
+      m_Center: {x: 4.28177, y: -2.268624, z: 4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 4.061771, y: 2.559983, z: 0.74447584}
     side: 3
   - region:
-      m_Center: {x: 5.5643783, y: 0.27474058, z: 2.1944754}
-      m_Extent: {x: 0.64130414, y: 0.625, z: 0.89999974}
+      m_Center: {x: 5.5643783, y: -2.3542113, z: 4.294475}
+      m_Extent: {x: 0.64130414, y: 0.62499994, z: 2.9999993}
     landing: {x: 5.1243796, y: 2.559983, z: 0.74447584}
     side: 3
-  bakeSignature: 51473f0a1117a5d1887c8462a08cf6a6
+  bakeSignature: ef5cf2be954610c54f26de4bc493150b
   bakeStatus: Baked 14 lower-side approach cells; top excluded.
 --- !u!43 &2071455781
 Mesh:
@@ -338797,6 +338710,10 @@ PrefabInstance:
     - target: {fileID: 6092413596768749798, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
       propertyPath: m_Name
       value: LevelStart
+      objectReference: {fileID: 0}
+    - target: {fileID: 6891158998510987508, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.08
       objectReference: {fileID: 0}
     - target: {fileID: 6901084870830175209, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
       propertyPath: m_LocalScale.x
