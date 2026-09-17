@@ -30483,7 +30483,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputModeController
   mobileControlsCanvas: {fileID: 1669976059}
-  editorMode: 0
+  editorMode: 1
 --- !u!1 &1596289807
 GameObject:
   m_ObjectHideFlags: 0
@@ -34927,11 +34927,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeamHoistAbility
   requiredSkill: {fileID: 11400000, guid: 94743da28ec6b6f4490915236f431a5f, type: 2}
-  minimumVerticalGain: 0.6
+  minimumVerticalGain: 3
   maximumHoistHeight: 6
   maximumLateralDistance: 4
-  liftDuration: 1.5
-  transferDuration: 0.9
+  hoistDuration: 2.6
+  arcHeightAboveLanding: 1.5
 --- !u!114 &1809920755
 MonoBehaviour:
   m_ObjectHideFlags: 0
