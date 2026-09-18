@@ -2,6 +2,63 @@ Kids VS Aliens — Short TODO
 
 NOW — Next ~2 Weeks
 
+CURRENT STATUS UPDATE — 18 Sep 2026
+
+Camera Occlusion Fade V2 — DONE WITH EXTRA TODO
+
+Core V2 is working and production-sensitive. Keep real-level/device regression checks and
+small readability tuning, but do not treat it as an open architecture rewrite.
+
+Alien Beam / Hoist V1 — DONE WITH EXTRA TODO
+
+Manual upward Beam Hoist now uses normal Jump, one continuous cubic Bézier and generic
+BeamHoistSurface + BeamHoistSurfaceBaker authoring.
+
+BeamHoistAbility limits are the bake source of truth. New surfaces in configured gameplay
+scenes automatically bake the fixed valid lower approach/start area.
+
+The manual hoist-start hologram is working:
+
+Knowledge gated
+
+proximity fade in/out with Reveal/Hide hysteresis
+
+exact baked allowed area
+
+fixed position/shape at runtime
+
+current idle glow is approved
+
+current active flicker/power-up is approved
+
+hides when the real hoist starts
+
+disconnected valid pockets remain separate
+
+contiguous valid regions should visually merge without filling invalid gaps
+
+Extra TODO:
+
+keep the visually preferred/original Floating import behavior; setup must not silently
+force an importer configuration that changes the motion
+
+finish/verify connected-region visual merge if the current pass is still open
+
+Beam Hoist tutorial demonstration
+
+later BeamTransportVFX spark polish only
+
+fix automatic LevelStart/BeamInSpawn placement + lingering-beam issue independently
+
+investigate the pre-existing desktop Space/Jump lock independently
+
+Android/device regression
+
+Knowledge + Feedback + Pause + Tutorial Presentation V1 — DONE WITH EXTRA TODO
+
+Framework is working. Still add/audit learned-action demonstrations for Grenade and
+Beam Hoist and later fold final tutorial/control visuals into the HUD redesign.
+
 Camera Occlusion Fade V2 — ABSOLUTE MUST
 
 Move from renderer-centric fading to logical CameraFadeOccluder groups.
@@ -143,6 +200,27 @@ Mobile interruption/app background must never equal death.
 
 Safe active-run suspend/resume before release.
 
+ACTIVE-RUN SUSPEND / RESUME CLARIFICATION — ABSOLUTE MUST
+
+Incoming calls, backgrounding, phone lock, normal manual quit, app close/reopen and
+recoverable OS termination must preserve the current attempt.
+
+Continue on relaunch must restore the same functional run/place/state.
+
+Only:
+
+death
+
+explicit Hard Restart from the in-game menu (with confirmation)
+
+may intentionally discard the active-run state and restart the current large story level.
+
+Ordinary Quit must preserve the run.
+
+Keep permanent/meta progression separate from active-run persistence. The active run must
+be able to restore Amy position/state, objectives, mission items, changed interactables,
+meaningful enemy/encounter state and set-piece progress such as excavator repair state.
+
 Knowledge / learned skills persist permanently.
 
 Skill XP / proficiency currently persists across retries.
@@ -275,6 +353,12 @@ grenade automatic Blender → Unity LOD pipeline
 Low / Medium / High graphics presets
 
 Alien Beam / Hoist
+
+DONE WITH EXTRA TODO
+
+See the 18 Sep current-status block above. Core manual upward hoist, generic surface bake,
+fixed discovery VFX and Floating presentation are implemented; only the listed
+presentation/tutorial/LevelStart/jump/device follow-ups remain.
 
 Gauntlets
 

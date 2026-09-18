@@ -182,6 +182,61 @@ the same task
 Do not automatically make every environment object fade. Focus on genuine large camera
 blockers.
 
+Beam Hoist / Beam Transport
+
+The reusable Beam Hoist system is now working and is production-sensitive.
+
+Manual upward Beam Hoist rules:
+
+normal Jump activates the hoist when the existing gameplay conditions are satisfied
+
+Beam Hoist Knowledge remains required
+
+movement is one continuous cubic Bézier from the true start position directly to landing
+
+release/control1/control2 only shape the path
+
+do not reintroduce a separate vertical phase, second curve, reset-to-start or teleport
+
+presentation must observe movement, not drive it
+
+Automatic level-start Beam arrival is a separate use. Do not attach the manual
+hoist-start holographic pad to PlayerBeamInSequence / BeamInSpawn.
+
+BeamHoistSurface + BeamHoistSurfaceBaker authoring:
+
+BeamHoistAbility limits are the source of truth for bake reach constraints
+
+do not add an independent approach-width setting that can drift from gameplay
+
+the baked valid lower approach/start cells are shared by gameplay and presentation
+
+no runtime baker should reshape the authored area around Amy
+
+runtime player movement may only affect visibility/fade and idle-vs-active presentation,
+not the fixed world-space footprint
+
+disconnected valid pockets may remain separate
+
+contiguous valid regions may be merged for presentation only when the union remains
+exactly gameplay-valid; never fill a real invalid gap/hole merely to make a rectangle
+
+The approved hoist-start glow and active flicker are presentation-sensitive. Do not
+redesign them during unrelated gameplay work.
+
+Floating/long-fall animation presentation must remain semantic/swappable. Do not make
+Beam Hoist gameplay depend on Mixamo clip names or Animator state names.
+
+Known independent follow-ups must not be "fixed" by rewriting Beam Hoist:
+
+automatic LevelStart/BeamInSpawn placement + lingering-beam issue
+
+pre-existing desktop Space/Jump lock
+
+final tutorial demonstrations
+
+final device regression
+
 Weapons
 
 Use the existing generic weapon pipeline.
@@ -294,6 +349,30 @@ safely
 
 keep meta progression, active-run state and platform suspend/resume conceptually
 separate
+
+CURRENT PERSISTENCE CLARIFICATION — 18 Sep 2026
+
+Normal manual quit, incoming calls, app backgrounding, phone lock, app close/reopen and
+recoverable OS termination all belong to suspend/resume and must not count as death.
+
+Continue after relaunch must restore the same functional active run/place/state.
+
+Only player death or an explicit confirmed Hard Restart from the in-game menu may
+intentionally discard the active-run save and restart the current large story level.
+
+Ordinary Quit preserves the active run.
+
+Hard Restart should be a deliberate menu action near Options/Settings and must not be
+silently triggered by ordinary app exit.
+
+The active-run persistence architecture must be capable of restoring meaningful
+functional state such as player transform/state, objective progress, mission items,
+changed interactables/doors/gates, meaningful enemy/encounter state and set-piece
+progress. It does not need frame-perfect persistence of transient particles, projectiles
+or animation frames.
+
+The current player may remain effectively invulnerable during development, but save
+architecture must still reserve death as an explicit active-run discard/reset path.
 
 Run-reset candidates include enemies, ammo, consumables, temporary buffs and most local
 world state.
