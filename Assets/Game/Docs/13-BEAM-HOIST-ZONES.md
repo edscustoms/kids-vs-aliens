@@ -80,3 +80,47 @@ Manual/device checklist
 5. Add a new surface, or change player reach/height and save: bake follows those limits.
 6. Check level-start arrival, ordinary Jump, occlusion and fill cost on Android/iOS.
 Device testing remains outstanding.
+
+Connected-region presentation update (18 September 2026)
+- BeamHoistZoneTopology groups all edge-connected ground cells using a 0.001 m
+  world-space tolerance. Corner-only contact and real invalid gaps remain separate.
+- Partial shared edges are removed from the outline; exposed edges, including hole
+  boundaries, remain. No bounding-box ground geometry is created.
+- One deterministic core is selected inside each component, near its area center
+  with enough boundary clearance. Bounds organize UVs only; original cell vertices
+  and triangles remain the only ground coverage.
+- Rectangles use the original analytic shader calculations. Irregular groups use a
+  cached 256x256 RGBAHalf outline field per component, packed into one texture per
+  effect. There are no fragment loops over cells, extra meshes or extra materials.
+  The atlas is created only in SetFootprint and destroyed with the effect.
+- Existing Present/fade/pulse/active flicker and particle emission code is unchanged.
+  The presenter, baker, ability, transport, scene, prefab and material assets are unchanged.
+- No additional authoring/setup is required: every BeamHoistSurface uses the same
+  SetFootprint path when its fixed presentation is first created.
+
+Changed files for this update
+- Scripts/Gameplay/BeamHoistZoneTopology.cs (+ meta): connected groups, actual union
+  boundaries and valid core placement.
+- Scripts/Gameplay/BeamHoistZoneVFX.cs: component UV/core data and cached outline atlas.
+- Shaders/VFX/BeamHoistZone.shader: consume the union outline and one core per group;
+  approved colors, strengths, animation formulas and material settings retained.
+- Tests/Editor/Core/BeamHoistZoneTopologyTests.cs (+ meta): connected/partial joins,
+  holes, true gaps, corner contact, tolerance, determinism and unchanged mesh coverage.
+- Editor/Helpers/BeamHoistZoneConnectedReview.cs (+ meta): batch-only render fixtures
+  and an approved-shader comparison with time frozen only in temporary review shaders.
+- This document.
+
+Verification artifacts
+- Logs/HoistConnected/tests.xml: focused zone and topology tests.
+- Logs/HoistConnected/render-review.txt: one pad for connected fixtures, two for
+  disconnected fixtures. Rectangle comparison: 0 pixels differ by more than 1/255.
+- Logs/HoistConnected/three-joined.png, l-shape.png, hole.png, disconnected.png
+  and their active-state versions: inspected GPU renders.
+- Logs/HoistConnected/protected-before.json: gameplay, bake, presenter, scene, prefab
+  and material preservation hashes, all unchanged after verification.
+- For batch reproduction, export the approved shader revision to
+  Logs/HoistConnected/approved-shader.txt, then execute
+  BeamHoistZoneConnectedReview.Capture. It never saves or replaces an interactive scene.
+
+Device follow-up: check the building example in normal play, walking/fading/re-entering
+and hoisting. Verify atlas/fill performance on Android/iOS; device testing is not claimed.

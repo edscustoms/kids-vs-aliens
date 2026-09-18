@@ -9,6 +9,7 @@ Shader "KVA/Beam Hoist Zone"
         _Motion ("Pulse speed / Amount / Perimeter speed / Active", Vector) = (1.4,.12,.6,0)
         _Fill ("Ground fill", Range(0,1)) = .13
         [HideInInspector] _Mote ("Mote material", Float) = 0
+        [HideInInspector] _OutlineField ("Cached union outline", 2D) = "white" {}
     }
     SubShader
     {
@@ -24,8 +25,9 @@ Shader "KVA/Beam Hoist Zone"
             #pragma vertex Vert
             #pragma fragment Frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            struct Attributes { float4 positionOS:POSITION; float2 uv:TEXCOORD0; float2 size:TEXCOORD1; half4 color:COLOR; };
-            struct Varyings { float4 positionCS:SV_POSITION; float2 uv:TEXCOORD0; float2 size:TEXCOORD1; half4 color:COLOR; };
+            struct Attributes { float4 positionOS:POSITION; float2 uv:TEXCOORD0; float2 size:TEXCOORD1; float4 core:TEXCOORD2; float4 outline:TEXCOORD3; half4 color:COLOR; };
+            struct Varyings { float4 positionCS:SV_POSITION; float2 uv:TEXCOORD0; float2 size:TEXCOORD1; float4 core:TEXCOORD2; float4 outline:TEXCOORD3; half4 color:COLOR; };
+            TEXTURE2D(_OutlineField); SAMPLER(sampler_OutlineField);
             CBUFFER_START(UnityPerMaterial)
                 float4 _Violet, _Cyan, _Detail, _Motion;
                 float _Strength, _Fill, _Mote;
@@ -33,7 +35,7 @@ Shader "KVA/Beam Hoist Zone"
             Varyings Vert(Attributes v)
             {
                 Varyings o; o.positionCS=TransformObjectToHClip(v.positionOS.xyz);
-                o.uv=v.uv; o.size=v.size; o.color=v.color; return o;
+                o.uv=v.uv; o.size=v.size; o.core=v.core; o.outline=v.outline; o.color=v.color; return o;
             }
             float stroke(float distance, float width)
             {
@@ -50,18 +52,26 @@ Shader "KVA/Beam Hoist Zone"
                 float2 size=max(i.size,.1), p=(i.uv-.5)*size, edge=size*.5-abs(p);
                 float e=min(edge.x,edge.y);
                 float perimeter=edge.x<edge.y ? p.y+size.y*.5 : p.x+size.x*.5;
+                float cornerDistance=max(edge.x,edge.y);
+                if (i.core.w>.5)
+                {
+                    float3 outline=SAMPLE_TEXTURE2D(_OutlineField,sampler_OutlineField,i.uv*i.outline.xy+i.outline.zw).rgb;
+                    e=outline.x; perimeter=outline.y; cornerDistance=outline.z;
+                }
                 float segments=step(.18,frac(perimeter/.36));
                 float border=stroke(e-.032,.014)*segments;
                 float brackets=stroke(e-.11,.027);
                 float cornerLength=min(min(size.x,size.y)*.23,.65);
-                float corners=step(edge.x,cornerLength)*step(edge.y,cornerLength);
+                float corners=step(cornerDistance,cornerLength);
                 float cyan=brackets*corners;
                 float radius=min(size.x,size.y)*.23;
-                float r=length(p), angle=atan2(p.y,p.x);
+                float2 corePosition=p;
+                if (i.core.w>.5) { radius=i.core.z; corePosition-=i.core.xy; }
+                float r=length(corePosition), angle=atan2(corePosition.y,corePosition.x);
                 float arcs=step(.22,frac(angle*3.8197+_Time.y*.06));
                 float rings=(stroke(r-radius,.009)+stroke(r-radius*.74,.006))*.55
                     +stroke(r-radius*1.18,.013)*arcs*.65;
-                float diamond=stroke(abs(p.x)+abs(p.y)-radius*.22,.012);
+                float diamond=stroke(abs(corePosition.x)+abs(corePosition.y)-radius*.22,.012);
                 float core=exp2(-r*r/max(.002,radius*radius*.025))*1.2+diamond*.6;
                 float2 q=size.x>=size.y?p:p.yx;
                 float w=max(size.x,size.y), h=min(size.x,size.y);

@@ -35,7 +35,9 @@ public sealed class BeamHoistZoneVFX : MonoBehaviour
     private readonly List<Vector2> uvs = new(), sizes = new();
     private readonly List<int> triangles = new();
     private readonly List<Patch> patches = new();
-    private readonly List<Patch> regions = new();
+    private readonly List<Vector4> coreData = new(), outlineUVs = new();
+    private Texture2D outlineField;
+    private int componentCount;
     private readonly System.Random random = new(1979);
     private float Range(float min, float max) => Mathf.Lerp(min, max, (float)random.NextDouble());
     private Mesh mesh;
@@ -43,7 +45,7 @@ public sealed class BeamHoistZoneVFX : MonoBehaviour
     private float opacity, moteClock, area;
     public BeamHoistZoneState State { get; private set; }
     public float Opacity => opacity;
-    public int PatchCount => regions.Count;
+    public int PatchCount => componentCount;
     private static readonly int Strength = Shader.PropertyToID("_Strength"), Detail = Shader.PropertyToID("_Detail"),
         Motion = Shader.PropertyToID("_Motion"), Fill = Shader.PropertyToID("_Fill");
 
@@ -51,55 +53,71 @@ public sealed class BeamHoistZoneVFX : MonoBehaviour
     {
         patches.Clear();
         for (int i = 0; i < cells.Count; i++) patches.Add(cells[i]);
-        // Consolidate the fixed footprint for glyph UVs, while retaining each ground-aligned cell.
-        // Height variation must not split a contiguous pad into repeated borders/centers.
-        regions.Clear(); regions.AddRange(patches);
-        bool changed;
-        do
+        Vector2 scale = new Vector2(transform.TransformVector(Vector3.right).magnitude, transform.TransformVector(Vector3.forward).magnitude);
+        var groups = BeamHoistZoneTopology.Build(patches, scale);
+        componentCount = groups.Count;
+        var groupAt = new int[patches.Count];
+        var fieldUV = BuildOutlineField(groups);
+        for (int g = 0; g < groups.Count; g++) foreach (int cell in groups[g].cells) groupAt[cell] = g;
+        vertices.Clear(); uvs.Clear(); sizes.Clear(); triangles.Clear(); coreData.Clear(); outlineUVs.Clear(); area = 0;
+        for (int i = 0; i < patches.Count; i++)
         {
-            changed = false;
-            for (int i = 0; i < regions.Count && !changed; i++)
-                for (int j = i + 1; j < regions.Count; j++)
-                    if (TryMerge(regions[i], regions[j], out var merged))
-                    { regions[i] = merged; regions.RemoveAt(j); changed = true; break; }
-        } while (changed);
-        vertices.Clear(); uvs.Clear(); sizes.Clear(); triangles.Clear(); area = 0;
-        foreach (var patch in patches)
-        {
+            var patch = patches[i]; var group = groups[groupAt[i]]; Rect region = group.bounds;
             int n = vertices.Count;
             vertices.Add(patch.a); vertices.Add(patch.b); vertices.Add(patch.c); vertices.Add(patch.d);
-            Bounds region = patch.bounds;
-            foreach (var candidate in regions)
-                if (patch.bounds.min.x >= candidate.bounds.min.x - .001f && patch.bounds.max.x <= candidate.bounds.max.x + .001f
-                    && patch.bounds.min.z >= candidate.bounds.min.z - .001f && patch.bounds.max.z <= candidate.bounds.max.z + .001f)
-                { region = candidate.bounds; break; }
-            Vector2 UV(Vector3 point) => new Vector2((point.x - region.min.x) / region.size.x, (point.z - region.min.z) / region.size.z);
+            Vector2 UV(Vector3 point) => new Vector2((point.x * scale.x - region.xMin) / region.width,
+                (point.z * scale.y - region.yMin) / region.height);
             uvs.Add(UV(patch.a)); uvs.Add(UV(patch.b)); uvs.Add(UV(patch.c)); uvs.Add(UV(patch.d));
-            var size = new Vector2(transform.TransformVector(Vector3.right * region.size.x).magnitude,
-                transform.TransformVector(Vector3.forward * region.size.z).magnitude);
-            for (int v = 0; v < 4; v++) sizes.Add(size);
+            Vector2 core = group.core - region.center;
+            for (int v = 0; v < 4; v++)
+            {
+                sizes.Add(region.size);
+                coreData.Add(new Vector4(core.x, core.y, group.radius, group.rectangular ? 0 : 1));
+                outlineUVs.Add(fieldUV[groupAt[i]]);
+            }
             triangles.Add(n); triangles.Add(n + 2); triangles.Add(n + 1);
             triangles.Add(n); triangles.Add(n + 3); triangles.Add(n + 2);
             area += transform.TransformVector(patch.b - patch.a).magnitude * transform.TransformVector(patch.d - patch.a).magnitude;
         }
         if (mesh == null) { mesh = new Mesh { name = "Baked hoist cell presentation" }; ground.sharedMesh = mesh; }
-        mesh.Clear(); mesh.SetVertices(vertices); mesh.SetUVs(0, uvs); mesh.SetUVs(1, sizes); mesh.SetTriangles(triangles, 0); mesh.RecalculateBounds();
+        mesh.Clear(); mesh.SetVertices(vertices); mesh.SetUVs(0, uvs); mesh.SetUVs(1, sizes);
+        mesh.SetUVs(2, coreData); mesh.SetUVs(3, outlineUVs); mesh.SetTriangles(triangles, 0); mesh.RecalculateBounds();
     }
 
-    private static bool TryMerge(Patch x, Patch y, out Patch merged)
+    // Irregular unions use one cached distance-field atlas, not per-fragment loops over cells.
+    // Rectangles keep the original analytic shader path and need no texture allocation.
+    private Vector4[] BuildOutlineField(List<BeamHoistZoneTopology.Group> groups)
     {
-        merged = default;
-        bool alongX = Mathf.Abs(x.bounds.min.z - y.bounds.min.z) < .001f && Mathf.Abs(x.bounds.max.z - y.bounds.max.z) < .001f
-            && (Mathf.Abs(x.bounds.max.x - y.bounds.min.x) < .001f || Mathf.Abs(y.bounds.max.x - x.bounds.min.x) < .001f);
-        bool alongZ = Mathf.Abs(x.bounds.min.x - y.bounds.min.x) < .001f && Mathf.Abs(x.bounds.max.x - y.bounds.max.x) < .001f
-            && (Mathf.Abs(x.bounds.max.z - y.bounds.min.z) < .001f || Mathf.Abs(y.bounds.max.z - x.bounds.min.z) < .001f);
-        float max = Mathf.Max(Mathf.Max(x.a.y, x.b.y), Mathf.Max(x.c.y, x.d.y));
-        max = Mathf.Max(max, Mathf.Max(Mathf.Max(y.a.y, y.b.y), Mathf.Max(y.c.y, y.d.y)));
-        if (!alongX && !alongZ) return false;
-        Bounds b = x.bounds; b.Encapsulate(y.bounds);
-        merged = new Patch { bounds = b, a = new Vector3(b.min.x, max, b.min.z), b = new Vector3(b.max.x, max, b.min.z),
-            c = new Vector3(b.max.x, max, b.max.z), d = new Vector3(b.min.x, max, b.max.z) };
-        return true;
+        if (outlineField != null) Release(outlineField);
+        outlineField = null;
+        properties?.SetTexture("_OutlineField", Texture2D.whiteTexture);
+        var result = new Vector4[groups.Count];
+        int count = 0; foreach (var group in groups) if (!group.rectangular) count++;
+        if (count == 0) return result;
+        const int tile = 256;
+        int columns = Mathf.CeilToInt(Mathf.Sqrt(count)), rows = Mathf.CeilToInt((float)count / columns);
+        outlineField = new Texture2D(columns * tile, rows * tile, TextureFormat.RGBAHalf, false, true)
+            { name = "Fixed hoist union outlines", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var pixels = new Color[tile * tile]; int index = 0;
+        for (int g = 0; g < groups.Count; g++)
+        {
+            var group = groups[g]; if (group.rectangular) continue;
+            int left = index % columns * tile, bottom = index / columns * tile; index++;
+            for (int y = 0; y < tile; y++)
+                for (int x = 0; x < tile; x++)
+                {
+                    Vector2 point = group.bounds.min + Vector2.Scale(group.bounds.size,
+                        new Vector2((x - .5f) / (tile - 2), (y - .5f) / (tile - 2)));
+                    Color field = group.Field(point);
+                    pixels[y * tile + x] = field;
+                }
+            outlineField.SetPixels(left, bottom, tile, tile, pixels);
+            result[g] = new Vector4((float)(tile - 2) / outlineField.width, (float)(tile - 2) / outlineField.height,
+                (float)(left + 1) / outlineField.width, (float)(bottom + 1) / outlineField.height);
+        }
+        outlineField.Apply(false, true);
+        properties ??= new MaterialPropertyBlock(); properties.SetTexture("_OutlineField", outlineField);
+        return result;
     }
 
     public void Present(BeamHoistZoneState state, float deltaTime, float revealDuration, float hideDuration, bool immediate = false)
@@ -142,5 +160,6 @@ public sealed class BeamHoistZoneVFX : MonoBehaviour
         if (groundRenderer != null) groundRenderer.enabled = false;
         if (energyMotes != null) energyMotes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
-    private void OnDestroy() { if (mesh != null) { if (Application.isPlaying) Destroy(mesh); else DestroyImmediate(mesh); } }
+    private static void Release(Object owned) { if (Application.isPlaying) Destroy(owned); else DestroyImmediate(owned); }
+    private void OnDestroy() { if (mesh != null) Release(mesh); if (outlineField != null) Release(outlineField); }
 }
