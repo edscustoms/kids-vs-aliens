@@ -82,7 +82,7 @@ MonoBehaviour:
   transportVfx: {fileID: 1662943685859593552}
   startHeight: 8
   initialDelay: 0
-  descentDuration: 2
+  descentDuration: 2.6
   landingHold: 0.35
 --- !u!1001 &3507688865596919866
 PrefabInstance:

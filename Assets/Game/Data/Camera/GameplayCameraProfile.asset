@@ -26,8 +26,8 @@ MonoBehaviour:
     projection: 1
     fieldOfView: 45
     orthographicSize: 2.7
-    rotation: {x: 15, y: -35, z: 0}
-    followOffset: {x: 5.2, y: 2, z: -8}
+    rotation: {x: 22.5, y: -35, z: 0}
+    followOffset: {x: 6.86, y: 4.08, z: -10}
     damping: {x: 0.1, y: 0.1, z: 0.1}
     binding: 0
     targetOffset: {x: 0, y: 0, z: 0}
