@@ -242,11 +242,12 @@ public sealed class GrenadeInstance : MonoBehaviour
 
     private void ReturnToWorldPickup()
     {
-        Instantiate(
+        var pickup = Instantiate(
             data.worldPrefab,
             transform.position +
             Vector3.up * 0.1f,
             Quaternion.identity);
+        RunWorldObject.TrackSpawn(pickup, data.worldPrefab);
 
         Destroy(gameObject);
     }

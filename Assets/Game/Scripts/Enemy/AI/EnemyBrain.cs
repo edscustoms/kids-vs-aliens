@@ -96,9 +96,18 @@ public sealed class EnemyBrain : MonoBehaviour
         CacheReferences();
     }
 
+    private bool restoredAwareness;
+    public Vector3 RunInvestigationAnchor => actor != null && actor.CurrentTarget != null ? actor.CurrentTarget.position : investigationAnchor;
+    public void RestoreRunAwareness(EnemyBrainState state, Vector3 anchor)
+    {
+        restoredAwareness = true;
+        if (state == EnemyBrainState.Investigate || state == EnemyBrainState.Chase || state == EnemyBrainState.Attack) BeginInvestigation(anchor);
+        else EnterIdle();
+    }
+
     private void Start()
     {
-        EnterIdle();
+        if (!restoredAwareness) EnterIdle();
     }
 
     private void Update()

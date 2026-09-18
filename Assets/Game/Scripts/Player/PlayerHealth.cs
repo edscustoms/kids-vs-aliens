@@ -24,6 +24,15 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             : 0f;
 
     public event Action OnHealthChanged;
+    public event Action OnDied;
+    public float CurrentHealth => currentHealth;
+    public float CurrentArmor => currentArmor;
+    public bool IsDead => isDead;
+    public void RestoreRunHealth(float health, float armor)
+    {
+        currentHealth = Mathf.Clamp(health, 0, maxHealth); currentArmor = Mathf.Clamp(armor, 0, maxArmor);
+        isDead = currentHealth <= 0; OnHealthChanged?.Invoke();
+    }
 
     private void Awake()
     {
@@ -89,5 +98,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private void Die()
     {
         isDead = true;
+        OnDied?.Invoke();
     }
 }

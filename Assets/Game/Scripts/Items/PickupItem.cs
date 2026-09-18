@@ -35,6 +35,7 @@ public class PickupItem : MonoBehaviour
         }
 
         collected = true;
+        GetComponent<RunWorldObject>()?.MarkRemoved();
         Destroy(gameObject);
     }
 }

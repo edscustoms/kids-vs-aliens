@@ -607,9 +607,9 @@ public class MenuController : MonoBehaviour
     {
         SyncLoadoutState();
 
-        SceneManager.LoadScene(
-            gameSceneName
-        );
+        var flow = FindAnyObjectByType<ActiveRunMenu>();
+        if (flow != null) flow.Play(gameSceneName);
+        else if (!RunSaveService.StartFresh(gameSceneName, false)) Debug.LogError(RunSaveService.LastError);
     }
 
     public void ExitGame()

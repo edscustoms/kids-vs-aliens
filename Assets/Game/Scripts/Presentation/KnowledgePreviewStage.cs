@@ -27,6 +27,8 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
 
     [SerializeField, Range(128, 1024)]
     private int textureSize = 512;
+    [SerializeField] private Material floorMaterial;
+    private GameObject presentationFloor;
     private PreviewStageContent content;
     private RenderTexture texture;
 
@@ -108,6 +110,18 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
         if (output != null)
             output.texture = texture;
         content.FrameCurrent(Mathf.Max(0.1f, distanceMultiplier), targetOffset);
+        if (floorMaterial != null && presentationFloor == null)
+        {
+            presentationFloor = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            presentationFloor.name = "Tutorial Floor";
+            Destroy(presentationFloor.GetComponent<Collider>());
+            presentationFloor.transform.SetParent(previewRoot, false);
+            presentationFloor.transform.localPosition = new Vector3(0, -.025f, 0);
+            presentationFloor.transform.localRotation = Quaternion.Euler(90,0,0);
+            presentationFloor.transform.localScale = Vector3.one * 6;
+            presentationFloor.layer = previewLayer;
+            presentationFloor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
+        }
         SetVisible(true);
     }
 

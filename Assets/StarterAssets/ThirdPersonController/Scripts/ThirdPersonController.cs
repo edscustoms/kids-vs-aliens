@@ -84,6 +84,8 @@ namespace StarterAssets
         private float _speed;
         private float _animationBlend;
         private float _verticalVelocity;
+        public float RunVerticalVelocity => _verticalVelocity;
+        public void RestoreRunVerticalVelocity(float value) { _verticalVelocity = value; }
         private float _terminalVelocity = 53.0f;
 
         // Timeout delta time

@@ -50,7 +50,7 @@ public sealed class KnowledgeAcquiredPresenter : MonoBehaviour
             skills.SkillUnlocked -= Enqueue;
         if (acknowledgeButton != null)
             acknowledgeButton.onClick.RemoveListener(Close);
-        Close();
+        ClosePresentation(false);
         queue.Clear();
     }
 
@@ -96,17 +96,27 @@ public sealed class KnowledgeAcquiredPresenter : MonoBehaviour
         {
             Debug.LogException(exception, this);
             // Presentation failure has no progression side effects.
-            Close();
+            ClosePresentation(false);
         }
     }
 
-    public void Close()
+    public bool Review(SkillData skill)
+    {
+        if (skill != null && CurrentSkill == null && skills != null && skills.HasSkill(skill)) Open(skill);
+        return CurrentSkill == skill;
+    }
+
+    public void Close() => ClosePresentation(true);
+    private void ClosePresentation(bool acknowledged)
     {
         bool wasOpen = CurrentSkill != null || lease != null;
         try
         {
             if (wasOpen)
+            {
+                if (acknowledged && Application.isPlaying && CurrentSkill != null) PermanentProgress.Acknowledge(CurrentSkill);
                 PresentationClosed?.Invoke();
+            }
         }
         finally
         {

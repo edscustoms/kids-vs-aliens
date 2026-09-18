@@ -14,6 +14,24 @@ CURRENT FOCUS — NEXT ~2 WEEKS
 
 CURRENT STATUS UPDATE — 18 Sep 2026
 
+IMPLEMENTED — Interface / active-run persistence
+
+The existing menu now uses conditional Play -> Active Run Found, with Continue and
+confirmed New Game replacement. HUD, Pause, full inventory/quick-slot drag/drop,
+Knowledge review/unread feedback and the reusable tutorial floor use the shared theme.
+Main-menu selectors, Amy preview and text-only buttons remain in place.
+
+Permanent Knowledge/XP/acknowledgements and active-run snapshots are separate.
+Safe Quit, periodic/mutation/lifecycle saves, paused foreground return and explicit
+resume entry are implemented. Current player, inventory/equipment/ammo, pickups,
+chests, enemies and spawners restore functional state. Future mission/door/set-piece
+components use IRunStateParticipant; no objective counter architecture was added.
+Death, confirmed Hard Restart and confirmed New Game replacement discard active state
+only. Canonical scene repair includes the new dependencies and stable identities.
+
+Validation and remaining device acceptance are recorded in Docs/RunInterface.md.
+Do not reopen this as a save/UI rewrite; extend the existing implementation.
+
 DONE WITH EXTRA TODO — Camera Occlusion Fade V2
 
 The V2 production direction is now implemented and working around logical occluder
@@ -374,7 +392,8 @@ Working death rule: death restarts the current large story level from the beginn
 
 Mobile pause/background/app close must NEVER count as death.
 
-Add safe active-run suspend/resume before release.
+Active-run suspend/resume is implemented; finish the remaining release/device checks
+listed in Docs/RunInterface.md.
 
 ACTIVE-RUN SUSPEND / RESUME — ABSOLUTE MUST
 

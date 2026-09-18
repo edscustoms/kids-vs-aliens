@@ -7,6 +7,33 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE — 18 Sep 2026 — Interface / Active Run
+
+The requested interface and functional active-run foundation are implemented on the
+existing uGUI/TMP, inventory, Knowledge and suspension-lease architecture. Main Menu
+retains its selectors, preview and text-only controls; Play conditionally offers
+Continue, confirmed New Game, Options and Knowledge Log. Gameplay has the themed
+HUD, pause/settings/inventory flow, touch quick-slot assignment, Knowledge review and
+lightweight tutorial floor. The resource bar displays the existing armor resource.
+
+Permanent Knowledge, XP and acknowledgements persist separately from the active run.
+The active run includes current player state, original loadout, inventory/equipment/
+ammo, world pickups, chests, enemy health/resolution/awareness and spawn state.
+Checksummed alternating generations provide recovery from a torn snapshot. Periodic,
+important-mutation and lifecycle saves support safe Quit and relaunch/Continue.
+Foreground/restore returns paused; resume does not replay the fresh-start beam.
+Snapshots taken during a beam use a safe endpoint, not a transient in-flight pose.
+
+Confirmed New Game replacement is an additional explicitly authorized active-run
+discard operation, alongside death and confirmed Hard Restart. Permanent progression
+and settings survive all three. Ordinary exit/backgrounding never discards a run.
+Future mission/door/set-piece state plugs into IRunStateParticipant; no new objective
+architecture was introduced. Canonical setup repairs the required scene dependencies.
+
+See Docs/RunInterface.md for exact changed files, tuning, verified behavior and the
+remaining release/device checks. This supersedes older notes treating persistence and
+the current interface pass as unimplemented.
+
 CURRENT IMPLEMENTATION OVERRIDE — 18 Sep 2026 — Beam Hoist / Camera Fade / Persistence
 
 This override is newer than the 7 Sep and earlier implementation notes below. Where it

@@ -45,6 +45,8 @@ public class PlayerShooter : MonoBehaviour
 
     private float nextFireTime;
     private int currentAmmo;
+    public int CurrentAmmo => currentAmmo;
+    public void RestoreRunAmmo(int ammo) { currentAmmo = equippedWeapon != null ? Mathf.Clamp(ammo, 0, equippedWeapon.magazineSize) : 0; }
     private bool isReloading;
     private bool triggerHeld;
     private bool shootWasPressed;

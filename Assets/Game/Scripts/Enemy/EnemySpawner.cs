@@ -20,6 +20,11 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float minPlayerDistance = 4f;
 
     private Transform player;
+    private float nextSpawn;
+    private bool restoredDelay;
+    public Transform SpawnContainer => enemyContainer;
+    public float RemainingSpawnDelay => Mathf.Max(0, nextSpawn - Time.time);
+    public void RestoreSpawnDelay(float remaining) { restoredDelay = true; nextSpawn = Time.time + Mathf.Max(0, remaining); }
 
     private void Start()
     {
@@ -33,13 +38,14 @@ public class EnemySpawner : MonoBehaviour
 
     private IEnumerator SpawnLoop()
     {
-        yield return new WaitForSeconds(firstSpawnDelay);
+        if (!restoredDelay) nextSpawn = Time.time + firstSpawnDelay;
 
         while (true)
         {
+            while (Time.time < nextSpawn || Time.timeScale <= 0) yield return null;
             SpawnEnemy();
-
-            yield return new WaitForSeconds(spawnInterval);
+            nextSpawn = Time.time + spawnInterval;
+            yield return null;
         }
     }
 
@@ -73,11 +79,12 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        Instantiate(
+        var spawned = Instantiate(
             enemyPrefab,
             spawnPosition,
             Quaternion.identity,
             enemyContainer
         );
+        RunWorldObject.TrackSpawn(spawned, enemyPrefab, GetComponent<RunWorldObject>()?.Id);
     }
 }

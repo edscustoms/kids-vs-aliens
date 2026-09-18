@@ -88,10 +88,12 @@ public sealed class PlayerMeleeController : MonoBehaviour
         if (suspension != null) suspension.SuspensionChanged -= HandleSuspension;
     }
 
-    public bool SelectCombatItem(UnarmedCombatItemData item)
+    public bool SelectCombatItem(UnarmedCombatItemData item) => SelectCombatItemCore(item, false);
+    public bool RestoreRunSelection(UnarmedCombatItemData item) => SelectCombatItemCore(item, true);
+    private bool SelectCombatItemCore(UnarmedCombatItemData item, bool restoring)
     {
-        if (!isActiveAndEnabled || !HasKnowledge(item) || Time.timeScale <= 0
-            || (input != null && !input.CanProcessGameplayInput)) return false;
+        if (!HasKnowledge(item) || (!restoring && (!isActiveAndEnabled || Time.timeScale <= 0
+            || (input != null && !input.CanProcessGameplayInput)))) return false;
         CancelCombat();
         grenades?.CancelThrow();
         equipment?.UnequipWeapon();

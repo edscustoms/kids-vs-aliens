@@ -9,6 +9,7 @@ public enum SuspensionReason
     KnowledgePresentation,
     Modal,
     BeamTransport,
+    ApplicationLifecycle,
 }
 
 // One instance per gameplay scene/player. Presentation owns leases, never time.

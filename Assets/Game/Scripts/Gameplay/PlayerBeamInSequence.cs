@@ -15,6 +15,7 @@ public sealed class PlayerBeamInSequence : MonoBehaviour
 
     private void Awake()
     {
+        if (RunSaveService.IsRestoringScene(gameObject.scene.name)) { started = true; if (transportVfx != null) transportVfx.Hide(); return; }
         if (started) return;
         started = true;
         if (player == null)

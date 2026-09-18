@@ -8,7 +8,13 @@ public sealed class UIScreenRouter : MonoBehaviour
 
     public void Configure(GameObject main, GameObject settings) { mainMenu = main; options = settings; }
     private void Start() => ShowMainMenu();
-    public void ShowMainMenu() => Show(mainMenu);
+    public System.Action OptionsReturn { get; set; }
+    public void ShowMainMenu()
+    {
+        if (OptionsReturn != null) { var callback = OptionsReturn; OptionsReturn = null; Show(null); callback(); }
+        else Show(mainMenu);
+    }
+    public void HideScreens() => Show(null);
     public void ShowOptions() => Show(options);
     private void Show(GameObject screen)
     {

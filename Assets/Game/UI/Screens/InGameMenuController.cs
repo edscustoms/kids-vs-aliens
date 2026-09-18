@@ -21,6 +21,18 @@ public sealed class InGameMenuController : MonoBehaviour
     private static readonly GameplayCameraMode[] Modes = (GameplayCameraMode[])
         Enum.GetValues(typeof(GameplayCameraMode));
 
+    private GameObject inventoryScreen, restartScreen;
+    public GameObject MenuScreen => menuScreen;
+    public GameObject OptionsScreen => optionsScreen;
+    public void ConfigureAdditionalScreens(GameObject inventory, GameObject restart) { inventoryScreen = inventory; restartScreen = restart; }
+    public void ShowInventory() { if (IsOpen) SetScreen(inventoryScreen); }
+    public void ShowRestart() { if (IsOpen) SetScreen(restartScreen); }
+    public void QuitToMenu() => ActiveRunController.Instance?.QuitToMenu();
+    public void ConfirmRestart()
+    {
+        if (IsOpen && ActiveRunController.Instance != null && !ActiveRunController.Instance.RestartFromBeginning()) RunSaveService.Notify(RunSaveService.LastError);
+    }
+
     public bool IsOpen => lease != null && lease.IsActive;
 
     public void Configure(
@@ -128,5 +140,7 @@ public sealed class InGameMenuController : MonoBehaviour
             menuScreen.SetActive(screen == menuScreen);
         if (optionsScreen != null)
             optionsScreen.SetActive(screen == optionsScreen);
+        if (inventoryScreen != null) inventoryScreen.SetActive(screen == inventoryScreen);
+        if (restartScreen != null) restartScreen.SetActive(screen == restartScreen);
     }
 }

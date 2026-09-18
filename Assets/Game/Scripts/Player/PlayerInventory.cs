@@ -30,6 +30,44 @@ public class PlayerInventory : MonoBehaviour
     private StarterAssets.StarterAssetsInputs input;
 
     public IReadOnlyList<ItemData> Items => items;
+    private int[] quickSlots = { -1, -1, -1, -1, -1 };
+    public int Capacity => maxSlots;
+    public int QuickSlotCount => quickSlots.Length;
+    public ItemData SelectedItem => playerGrenadeController != null && playerGrenadeController.IsGrenadeSelected
+        ? playerGrenadeController.SelectedGrenade : playerMeleeController != null && playerMeleeController.SelectedItem != null
+        ? playerMeleeController.SelectedItem : playerEquipment != null ? playerEquipment.EquippedWeapon : null;
+    public int QuickSlotIndex(int slot) => slot >= 0 && slot < quickSlots.Length ? quickSlots[slot] : -1;
+    public ItemData QuickSlotItem(int slot) { int index = QuickSlotIndex(slot); return index >= 0 && index < items.Count ? items[index] : null; }
+    public void UseQuickSlot(int slot) => UseItem(QuickSlotIndex(slot));
+    public void DropQuickSlot(int slot) => DropItem(QuickSlotIndex(slot));
+    public int[] CaptureQuickSlots() => (int[])quickSlots.Clone();
+    public bool AssignQuickSlot(int slot, int itemIndex)
+    {
+        if (slot < 0 || slot >= quickSlots.Length || itemIndex < -1 || itemIndex >= items.Count) return false;
+        int previous = quickSlots[slot];
+        for (int i = 0; i < quickSlots.Length; i++) if (itemIndex >= 0 && quickSlots[i] == itemIndex) quickSlots[i] = previous;
+        quickSlots[slot] = itemIndex; OnInventoryChanged?.Invoke(); return true;
+    }
+    public bool SwapItems(int from, int to)
+    {
+        if (from < 0 || to < 0 || from >= items.Count || to >= items.Count) return false;
+        (items[from], items[to]) = (items[to], items[from]);
+        for (int i = 0; i < quickSlots.Length; i++)
+            if (quickSlots[i] == from) quickSlots[i] = to; else if (quickSlots[i] == to) quickSlots[i] = from;
+        OnInventoryChanged?.Invoke(); return true;
+    }
+    public void RestoreSavedItems(IReadOnlyList<ItemData> restored, int[] assignments)
+    {
+        if (restored.Count > maxSlots || assignments == null || assignments.Length != 5) throw new ArgumentException("Saved inventory does not fit this player.");
+        foreach (int index in assignments) if (index < -1 || index >= restored.Count) throw new ArgumentException("Invalid saved quick slot.");
+        items.Clear(); foreach (var item in restored) { if (item == null) throw new ArgumentException("Missing saved item."); items.Add(item); }
+        quickSlots = (int[])assignments.Clone(); OnInventoryChanged?.Invoke();
+    }
+    private void RemoveItem(int index)
+    {
+        items.RemoveAt(index);
+        for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] == index) quickSlots[i] = -1; else if (quickSlots[i] > index) quickSlots[i]--;
+    }
 
     public int GrenadeCount
     {
@@ -82,6 +120,7 @@ public class PlayerInventory : MonoBehaviour
         }
 
         items.Add(item);
+        for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] < 0) { quickSlots[i] = items.Count - 1; break; }
 
         OnInventoryChanged?.Invoke();
 
@@ -119,7 +158,7 @@ public class PlayerInventory : MonoBehaviour
         if (index < 0)
             return false;
 
-        items.RemoveAt(index);
+        RemoveItem(index);
 
         OnInventoryChanged?.Invoke();
 
@@ -220,7 +259,7 @@ public class PlayerInventory : MonoBehaviour
         if (book.grantedItem != null && !items.Contains(book.grantedItem))
             items[index] = book.grantedItem;
         else
-            items.RemoveAt(index);
+            RemoveItem(index);
 
         OnInventoryChanged?.Invoke();
     }
@@ -248,9 +287,10 @@ public class PlayerInventory : MonoBehaviour
 
         Vector3 dropPosition = transform.position + transform.forward * 2f + Vector3.up * 0.6f;
 
-        Instantiate(item.worldPrefab, dropPosition, Quaternion.identity);
+        var dropped = Instantiate(item.worldPrefab, dropPosition, Quaternion.identity);
+        RunWorldObject.TrackSpawn(dropped, item.worldPrefab);
 
-        items.RemoveAt(index);
+        RemoveItem(index);
 
         OnInventoryChanged?.Invoke();
     }
@@ -261,18 +301,18 @@ public class PlayerInventory : MonoBehaviour
             return;
 
         if (Keyboard.current.digit1Key.wasPressedThisFrame)
-            UseItem(0);
+            UseQuickSlot(0);
 
         if (Keyboard.current.digit2Key.wasPressedThisFrame)
-            UseItem(1);
+            UseQuickSlot(1);
 
         if (Keyboard.current.digit3Key.wasPressedThisFrame)
-            UseItem(2);
+            UseQuickSlot(2);
 
         if (Keyboard.current.digit4Key.wasPressedThisFrame)
-            UseItem(3);
+            UseQuickSlot(3);
 
         if (Keyboard.current.digit5Key.wasPressedThisFrame)
-            UseItem(4);
+            UseQuickSlot(4);
     }
 }
