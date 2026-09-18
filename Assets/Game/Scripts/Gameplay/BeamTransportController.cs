@@ -49,6 +49,14 @@ public sealed class BeamTransportController : MonoBehaviour
 
     public bool IsTransporting => lease != null;
 
+    // Read-only presentation data. Animation never controls the route or its clock.
+    public Vector3 PresentationStart => points[0];
+    public Vector3 PresentationDestination => points[segmentCount];
+    public bool PresentationIsCurved => curvedHoist;
+    public float PresentationProgress => segment >= segmentCount ? 1f
+        : Mathf.Clamp01(elapsed / Mathf.Max(.01f, durations[segment]));
+    public event Action TransportEnded;
+
     // Initialize after suspension (-200), before the arrival adapter (-150).
     private void Awake() => Resolve();
 
@@ -501,6 +509,7 @@ public sealed class BeamTransportController : MonoBehaviour
         completed = null;
 
         previous.Dispose();
+        TransportEnded?.Invoke();
     }
 
     // Skin contraction allows contact with the support surface

@@ -9,6 +9,10 @@ public sealed class CharacterAnimatorDriver
     private static readonly int WeaponStyle = Animator.StringToHash("WeaponStyle");
     private static readonly int CombatStance = Animator.StringToHash("CombatStance");
     private readonly bool supportsCombatStance;
+    private static readonly int Floating = Animator.StringToHash("Floating");
+    public const string FloatingLayerName = "FloatingPresentation";
+    private readonly bool supportsFloating;
+    private readonly int floatingLayer = -1;
     private readonly Animator animator;
     private readonly CharacterAnimationActions actions;
     private readonly HashSet<int> triggers = new();
@@ -25,6 +29,8 @@ public sealed class CharacterAnimatorDriver
             style = false;
         foreach (AnimatorControllerParameter parameter in animator.parameters)
         {
+            if (parameter.nameHash == Floating && parameter.type == AnimatorControllerParameterType.Bool)
+                supportsFloating = true;
             if (
                 parameter.nameHash == CombatStance
                 && parameter.type == AnimatorControllerParameterType.Bool
@@ -49,6 +55,7 @@ public sealed class CharacterAnimatorDriver
                 triggers.Add(parameter.nameHash);
         }
         IsCompatible = x && y && style;
+        floatingLayer = animator.GetLayerIndex(FloatingLayerName);
     }
 
     public void SetWeaponStyle(WeaponAnimationStyle style)
@@ -61,6 +68,15 @@ public sealed class CharacterAnimatorDriver
     {
         if (supportsCombatStance && animator != null)
             animator.SetBool(CombatStance, active);
+    }
+
+    public void SetFloating(bool active)
+    {
+        if (!supportsFloating || animator == null) return;
+        animator.SetBool(Floating, active);
+        // A zero-weight override is essential: even an empty masked layer can affect
+        // the existing controller's mixed write-defaults animation poses.
+        if (floatingLayer >= 0) animator.SetLayerWeight(floatingLayer, active ? 1f : 0f);
     }
 
     public void SetMovement(Vector2 movement, float deltaTime)
