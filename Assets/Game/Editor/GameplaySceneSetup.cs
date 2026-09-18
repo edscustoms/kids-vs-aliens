@@ -89,6 +89,7 @@ public static class GameplaySceneSetup
             GameplayCameraSetup.ConfigureScene(player);
             BeamTransportSetup.ConfigureScene(player);
             FloatingAnimationSetup.Ensure();
+            BeamHoistZoneSetup.ConfigureScene(player);
 
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);

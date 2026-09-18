@@ -38,6 +38,7 @@ public sealed class BeamHoistAbility : MonoBehaviour
     private BeamTransportController transport;
 
     public SkillData RequiredSkill => requiredSkill;
+    public float MaximumLateralDistance => maximumLateralDistance;
 
     public bool IsUnlocked =>
         skills != null && requiredSkill != null && skills.HasSkill(requiredSkill);
@@ -151,40 +152,7 @@ public sealed class BeamHoistAbility : MonoBehaviour
 
             for (int i = 0; i < surface.CandidateCount; i++)
             {
-                if (
-                    !surface.TryGetCandidate(
-                        transform.position,
-                        i,
-                        transport.FeetOffset,
-                        out var end,
-                        out float releaseY
-                    )
-                )
-                {
-                    continue;
-                }
-
-                /*
-                 * IMPORTANT:
-                 *
-                 * ONE movement:
-                 *
-                 * START -> cubic curve -> LANDING.
-                 *
-                 * releaseY only tells BeamHoistPath how high it must
-                 * remain for safe clearance.
-                 */
-                BeamHoistPath path = BeamHoistPath.Create(
-                    transform.position,
-                    end,
-                    releaseY,
-                    // Inspector-controlled visual arc.
-                    arcHeightAboveLanding,
-                    // Entire curve duration.
-                    hoistDuration,
-                    // No second movement phase anymore.
-                    0f
-                );
+                if (!TryBuildSurfaceHoist(surface, i, transform.position, out var path)) continue;
 
                 Select(path, ref best, ref distance, ref found);
             }
@@ -215,6 +183,34 @@ public sealed class BeamHoistAbility : MonoBehaviour
         }
 
         return found && transport.TryHoist(best);
+    }
+
+    // Presentation observes these queries; none acquires control, moves Amy or starts VFX.
+    public bool CanPreviewHoist => isActiveAndEnabled && IsUnlocked && input != null
+        && input.CanProcessGameplayInput && transport != null && transport.CanBeginTransport;
+
+    public bool TryBuildSurfaceHoist(BeamHoistSurface surface, int index, Vector3 start, out BeamHoistPath path)
+    {
+        path = default;
+        if (surface == null || surface.gameObject.scene != gameObject.scene || transport == null
+            || !surface.TryGetCandidate(start, index, transport.FeetOffset, out var end, out float releaseY)) return false;
+        path = CreateSurfaceHoist(start, end, releaseY);
+        return true;
+    }
+
+    // Shared by the editor baker and activation: the same authored trajectory and limits.
+    public BeamHoistPath CreateSurfaceHoist(Vector3 start, Vector3 landing, float releaseHeight) =>
+        BeamHoistPath.Create(start, landing, releaseHeight, arcHeightAboveLanding, hoistDuration, 0f);
+
+#if UNITY_EDITOR
+    public static event System.Action<BeamHoistAbility> BakeSettingsChanged;
+    private void OnValidate() => BakeSettingsChanged?.Invoke(this);
+#endif
+
+    public bool CanPreviewSurfaceHoist(BeamHoistSurface surface, int index, Vector3 start)
+    {
+        return CanPreviewHoist && TryBuildSurfaceHoist(surface, index, start, out var path)
+            && IsWithinLimits(path) && transport.IsLandingSafe(start) && transport.IsHoistRouteClear(path);
     }
 
     public bool IsWithinLimits(BeamHoistPath path)

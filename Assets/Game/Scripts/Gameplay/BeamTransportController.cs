@@ -48,6 +48,7 @@ public sealed class BeamTransportController : MonoBehaviour
     private BeamHoistPath hoistPath;
 
     public bool IsTransporting => lease != null;
+    public bool CanBeginTransport { get { Resolve(); return CanBegin(); } }
 
     // Read-only presentation data. Animation never controls the route or its clock.
     public Vector3 PresentationStart => points[0];
@@ -162,7 +163,14 @@ public sealed class BeamTransportController : MonoBehaviour
             // Path must begin exactly where Amy currently is.
             && (path.start - transform.position).sqrMagnitude < 0.001f
             // Hoisting must actually gain useful height.
-            && path.landing.y > path.start.y + 0.1f
+            && IsHoistRouteClear(path);
+    }
+
+    // Read-only query for a prospective start pose. Uses the same route checks as activation.
+    public bool IsHoistRouteClear(BeamHoistPath path)
+    {
+        Resolve();
+        return path.landing.y > path.start.y + 0.1f
             // Destination must support Amy.
             && IsLandingSafe(path.landing)
             // ONE complete path:

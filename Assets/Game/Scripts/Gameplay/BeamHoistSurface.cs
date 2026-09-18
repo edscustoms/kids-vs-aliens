@@ -16,7 +16,6 @@ public sealed class BeamHoistSurface : MonoBehaviour
     internal static readonly HashSet<BeamHoistSurface> Active = new();
     [Tooltip("Optional subset. Empty uses enabled, solid child colliders.")]
     [SerializeField] private Collider[] sourceColliders = Array.Empty<Collider>();
-    [SerializeField, Min(0.1f)] private float approachWidth = 1.8f;
     [SerializeField, Min(0.1f)] private float landingInset = 0.55f;
     [SerializeField, Min(0.1f)] private float clearance = 0.5f;
     [Tooltip("Optional unusual-geometry landing point. Standard props require no children.")]
@@ -32,7 +31,7 @@ public sealed class BeamHoistSurface : MonoBehaviour
     public string BakeStatus => bakeStatus;
     public string BakeSignature => bakeSignature;
     public Collider[] SourceColliders => sourceColliders;
-    public float ApproachWidth => approachWidth;
+    public float Clearance => clearance;
     public float LandingInset => landingInset;
     public Transform LandingOverride => landingOverride;
     private void OnEnable() => Active.Add(this);
