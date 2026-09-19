@@ -54,6 +54,20 @@ public sealed class BeamPresentationTests
                 int count=motes.GetParticles(buffer);Assert.That(count,Is.GreaterThan(20));
                 Assert.That(buffer.Take(count).Any(p=>Mathf.Abs(p.position.x)>.1f),Is.True,"Motes must fill the cone, not remain on its axis");
                 Assert.That(effect.GetComponentInChildren<LineRenderer>().positionCount,Is.EqualTo(161));
+                var strands=field.GetComponentsInChildren<LineRenderer>();
+                Assert.That(strands.Length,Is.EqualTo(3));
+                float previousAngle=0;
+                for(int strand=0;strand<strands.Length;strand++)
+                {
+                    Assert.That(strands[strand].sharedMaterial,Is.EqualTo(strands[0].sharedMaterial));
+                    Assert.That(strands[strand].widthMultiplier,Is.EqualTo(strands[0].widthMultiplier));
+                    var p=strands[strand].GetPosition(80);var first=strands[0].GetPosition(80);
+                    Assert.That(p.y,Is.EqualTo(first.y).Within(.00001f));
+                    float t=(p.y-low.y)/(high.y-low.y);var r=Vector2.Lerp(bottom,top,t);var c=Vector3.Lerp(low,high,t);
+                    float angle=Mathf.Atan2((p.z-c.z)/r.y,(p.x-c.x)/r.x)*Mathf.Rad2Deg;
+                    if(strand>0)Assert.That(Mathf.Repeat(angle-previousAngle,360),Is.EqualTo(120).Within(.001f));
+                    previousAngle=angle;
+                }
                 for(int i=0;i<count;i++) {
                     if(buffer[i].remainingLifetime<=0)continue;
                     var p=field.transform.InverseTransformPoint(motes.transform.TransformPoint(buffer[i].position));
@@ -66,7 +80,16 @@ public sealed class BeamPresentationTests
                 Assert.That(field.gameObject.activeInHierarchy,Is.False);
             }
             Assert.That(effect.GetComponentsInChildren<ParticleSystem>(true).Length,Is.EqualTo(1));
-            Assert.That(effect.GetComponentsInChildren<LineRenderer>(true).Length,Is.EqualTo(1));
+            Assert.That(effect.GetComponentsInChildren<LineRenderer>(true).Length,Is.EqualTo(3));
+            foreach(int total in new[]{1,6,3})
+            {
+                serialized.FindProperty("spiralCount").intValue=total;serialized.ApplyModifiedPropertiesWithoutUndo();
+                effect.Show(Vector3.zero,direction);
+                typeof(BeamEnergyField).GetMethod("OnEnable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(field,null);
+                Assert.That(effect.GetComponentsInChildren<LineRenderer>().Length,Is.EqualTo(total));
+                Assert.That(effect.GetComponentsInChildren<ParticleSystem>(true).Length,Is.EqualTo(1));
+                effect.Hide();
+            }
         }finally{Object.DestroyImmediate(effect.gameObject);}
     }
 }

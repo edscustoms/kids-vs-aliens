@@ -6,6 +6,7 @@ public sealed class BeamEnergyField : MonoBehaviour
 {
     [SerializeField] private ParticleSystem motes;
     [SerializeField] private LineRenderer spiral;
+    [SerializeField, Range(1, 6)] private int spiralCount = 3;
     // Sampled by explicit authoring from the existing cone mesh, in this component's space.
     [SerializeField, HideInInspector] private Vector3 bottomCenter, topCenter;
     [SerializeField, HideInInspector] private Vector2 bottomRadii, topRadii;
@@ -17,13 +18,15 @@ public sealed class BeamEnergyField : MonoBehaviour
     private readonly Vector3[] ribbon = new Vector3[161];
     private ParticleSystem.Particle[] particles;
     private float phase;
+    private readonly LineRenderer[] spirals = new LineRenderer[6];
+    private int activeSpiralCount;
 
     private void OnEnable()
     {
         phase = 0;
         if (motes != null && (particles == null || particles.Length != motes.main.maxParticles))
             particles = new ParticleSystem.Particle[motes.main.maxParticles];
-        if (spiral != null) spiral.positionCount = ribbon.Length;
+        ConfigureSpirals();
         DrawSpiral();
     }
 
@@ -37,14 +40,40 @@ public sealed class BeamEnergyField : MonoBehaviour
     private void DrawSpiral()
     {
         if (spiral == null) return;
-        spiral.widthMultiplier = spiralWidth;
-        for (int i = 0; i < ribbon.Length; i++)
+        if (activeSpiralCount != Mathf.Clamp(spiralCount, 1, spirals.Length)) ConfigureSpirals();
+        for (int strand = 0; strand < activeSpiralCount; strand++)
         {
-            float t = Mathf.Lerp(.015f, .96f, i / (float)(ribbon.Length - 1));
-            float angle = phase + t * spiralTurns * Mathf.PI * 2f;
-            ribbon[i] = Point(t, angle, spiralRadiusFraction);
+            var line = spirals[strand];
+            line.widthMultiplier = spiralWidth;
+            float offset = strand * Mathf.PI * 2f / activeSpiralCount;
+            for (int i = 0; i < ribbon.Length; i++)
+            {
+                float t = Mathf.Lerp(.015f, .96f, i / (float)(ribbon.Length - 1));
+                float angle = phase + offset + t * spiralTurns * Mathf.PI * 2f;
+                ribbon[i] = Point(t, angle, spiralRadiusFraction);
+            }
+            line.SetPositions(ribbon);
         }
-        spiral.SetPositions(ribbon);
+    }
+
+    private void ConfigureSpirals()
+    {
+        if (spiral == null) return;
+        activeSpiralCount = Mathf.Clamp(spiralCount, 1, spirals.Length);
+        spirals[0] = spiral;
+        for (int i = 0; i < spirals.Length; i++)
+        {
+            // Reuse the original line's complete visual settings. Allocate only when a new
+            // strand is first needed, then retain it across transport Hide/Show cycles.
+            if (i < activeSpiralCount && spirals[i] == null)
+            {
+                spirals[i] = Instantiate(spiral, spiral.transform.parent);
+                spirals[i].name = spiral.name + "_" + (i + 1);
+            }
+            if (spirals[i] == null) continue;
+            spirals[i].gameObject.SetActive(i < activeSpiralCount);
+            spirals[i].positionCount = ribbon.Length;
+        }
     }
 
     private Vector3 Point(float t, float angle, float radius)

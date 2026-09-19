@@ -29,11 +29,15 @@ public static class BeamPresentationReview
     private static T Find<T>()where T:Object=>Object.FindAnyObjectByType<T>();
     private static void Check(bool value,string text){if(!value)throw new Exception("BEAM REVIEW: "+text);}
     static BeamPresentationReview(){EditorApplication.playModeStateChanged+=Mode;}
-    public static void Run()
+    public static void Run()=>Begin(false);
+    public static void RunSpirals()=>Begin(true);
+    private static void Begin(bool spiralsOnly)
     {
         Directory.CreateDirectory("Logs/BeamRefinement");
+        if(spiralsOnly)Directory.CreateDirectory("Logs/BeamSpirals");
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY",Path.GetFullPath("Logs/BeamRefinement/Save-"+Guid.NewGuid().ToString("N")));
-        SessionState.SetBool(Key,true);SessionState.SetBool(Key+"Failed",false);SessionState.SetInt(Key+"Pass",0);Prepare();
+        SessionState.SetBool(Key+"SpiralsOnly",spiralsOnly);
+        SessionState.SetBool(Key,true);SessionState.SetBool(Key+"Failed",false);SessionState.SetInt(Key+"Pass",spiralsOnly?1:0);Prepare();
     }
     private static void Prepare()
     {
@@ -151,6 +155,7 @@ public static class BeamPresentationReview
                 Check(captured,"Hoist capture missed");
                 if(++repeats<3){PrepareHoist();step=1;return;}
                 Debug.Log("BEAM PASS: three contextual Hoists; same canonical VFX, exact Bezier/follow, clean stop/reuse.");
+                if(SessionState.GetBool(Key+"SpiralsOnly",false)){Finish();return;}
                 step=3;return;
             }
             if(step==3){
@@ -193,6 +198,22 @@ public static class BeamPresentationReview
     private static void Shot(string name)
     {
         var camera=Camera.main;
+        Capture(camera,name);
+        if(!SessionState.GetBool(Key+"SpiralsOnly",false))return;
+        var beam=step==0?arrival:hoist;
+        Check(beam.GetComponentsInChildren<LineRenderer>().Length==3,"Expected three visible spirals");
+        var side=new GameObject("Disposable beam side review",typeof(Camera));
+        try {
+            var view=side.GetComponent<Camera>();view.CopyFrom(camera);view.enabled=false;
+            var source=camera.GetUniversalAdditionalCameraData();var settings=view.GetUniversalAdditionalCameraData();
+            settings.renderPostProcessing=source.renderPostProcessing;settings.volumeLayerMask=source.volumeLayerMask;
+            Vector3 center=beam.transform.position+Vector3.up*7.3f;
+            view.transform.position=center+Vector3.right*19;view.transform.LookAt(center);view.fieldOfView=52;
+            Capture(view,name+"-side");
+        }finally{Object.DestroyImmediate(side);}
+    }
+    private static void Capture(Camera camera,string name)
+    {
         Debug.Log($"BEAM CAPTURE: HDR={camera.allowHDR}, post={camera.GetUniversalAdditionalCameraData().renderPostProcessing}");
         var target=new RenderTexture(1600,900,24,RenderTextureFormat.DefaultHDR);target.Create();
         var texture=new Texture2D(1600,900,TextureFormat.RGB24,false,true);
@@ -203,7 +224,8 @@ public static class BeamPresentationReview
             // HDR capture preserves the camera's bloom; PNG needs sRGB encoding.
             var pixels=texture.GetPixels();for(int i=0;i<pixels.Length;i++)pixels[i]=pixels[i].gamma;
             texture.SetPixels(pixels);texture.Apply();
-            File.WriteAllBytes("Logs/BeamRefinement/"+name+".png",texture.EncodeToPNG());
+            string folder=SessionState.GetBool(Key+"SpiralsOnly",false)?"Logs/BeamSpirals/":"Logs/BeamRefinement/";
+            File.WriteAllBytes(folder+name+".png",texture.EncodeToPNG());
         } finally {RenderTexture.active=active;target.Release();Object.DestroyImmediate(target);Object.DestroyImmediate(texture);}
     }
     private static void Log(string message,string trace,LogType type){if(type==LogType.Error||type==LogType.Exception){failed=true;SessionState.SetBool(Key+"Failed",true);}}

@@ -18084,10 +18084,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1071020349}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.055, y: 0.08}
-  m_AnchorMax: {x: 0.945, y: 0.92}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -184.8761, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!4 &687131107 stripped
 Transform:
@@ -35321,7 +35321,7 @@ MonoBehaviour:
       m_Extent: {x: 0.7011134, y: 0.6299479, z: 0.125}
     landing: {x: -1.1725407, y: 4.4861727, z: -0.16846848}
     side: 3
-  bakeSignature: d700ad14c06da3aab309fb4e7d90b1f1
+  bakeSignature: 21f2e436b147bf0f8cfe055c126e178c
   bakeStatus: Baked 157 valid lower-side cells from player ability limits and static
     clearance; top excluded.
 --- !u!4 &1724843916 stripped
@@ -37243,7 +37243,7 @@ MonoBehaviour:
   minimumVerticalGain: 3
   maximumHoistHeight: 6
   maximumLateralDistance: 4
-  hoistDuration: 2.6
+  hoistDuration: 3
   arcHeightAboveLanding: 1.5
 --- !u!114 &1809920755
 MonoBehaviour:
@@ -41568,7 +41568,7 @@ MonoBehaviour:
       m_Extent: {x: 0.64130414, y: 0.6268751, z: 0.12499997}
     landing: {x: 4.061771, y: 2.559983, z: -0.7444749}
     side: 2
-  bakeSignature: e4c70a283d08710950c43fef96dea396
+  bakeSignature: b01b3e52375b6f5c2ada7f8c5237eab4
   bakeStatus: Baked 43 valid lower-side cells from player ability limits and static
     clearance; top excluded.
 --- !u!43 &2071455781
@@ -341434,7 +341434,7 @@ PrefabInstance:
       objectReference: {fileID: 1595158905}
     - target: {fileID: 1405855058961550202, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
       propertyPath: m_VersionIndex
-      value: 4798
+      value: 4804
       objectReference: {fileID: 0}
     - target: {fileID: 6092413596768749798, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
       propertyPath: m_Name

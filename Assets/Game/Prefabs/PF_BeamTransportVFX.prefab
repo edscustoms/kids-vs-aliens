@@ -51,6 +51,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BeamEnergyField
   motes: {fileID: 1881717981213382152}
   spiral: {fileID: 5879713910687014205}
+  spiralCount: 4
   bottomCenter: {x: 0.00000011920929, y: 0.13000011, z: -0.009000063}
   topCenter: {x: 0, y: 14.63, z: -0.009}
   bottomRadii: {x: 1.9000001, y: 1.946963}
