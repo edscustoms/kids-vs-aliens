@@ -118,7 +118,7 @@ public sealed class InGameMenuTests
                     if (scene.name != "ConstructionSite") return;
                     var sequence = Object.FindAnyObjectByType<PlayerBeamInSequence>();
                     var data = new SerializedObject(sequence);
-                    var start = (Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+                    var start = sequence.ArrivalTransform;
                     var beam = Object.FindAnyObjectByType<BeamTransportController>();
                     arrivalOwnedBeforeStart = beam.IsTransporting
                         && !beam.GetComponent<CharacterController>().enabled

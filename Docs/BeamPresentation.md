@@ -6,17 +6,19 @@ Hoist paths, follow behavior, timing, validation and input are unchanged.
 
 ## Arrival
 
-Select `LevelStart/BeamInSpawn` in ConstructionSite (the existing marker name is retained).
-Its `BeamArrivalPoint` component draws the arrival position and facing arrow. Move its Transform
-to the desired **player root** endpoint and rotate its Y angle for facing. The existing supported,
-unobstructed landing/path requirements still apply. No runtime snap to another coordinate occurs.
+Select the root `LevelStart` in ConstructionSite. `BeamInSpawn` has been removed.
+Its `BeamArrivalPoint` component draws the arrival position and facing arrow. Move the root Transform
+to the desired **player root** endpoint and rotate its Y angle for facing. The capsule and descent
+path must be unobstructed; fresh arrival does not require Hoist's short ground-support probe.
+An above-ground root hands off at exactly that pose, then normal gravity settles Amy onto the floor.
 The beam now uses this same endpoint instead of its independently positioned VFX root.
 
 `PlayerBeamInSequence` still owns the existing start-height/delay/duration/hold configuration.
 Its existing restore bypass remains intact: Continue restores the saved pose and does not play arrival.
-`Tools > Setup > Setup or Repair Active Gameplay Scene` repairs marker/component references through
-`BeamTransportSetup`. It preserves the referenced marker even if renamed, and never resets its pose.
-New LevelStart instances inherit the marker from `PF_LevelStart`.
+`Tools > Setup > Setup or Repair Active Gameplay Scene` repairs components/references through
+`BeamTransportSetup`. It preserves the root even if renamed, and never resets its pose.
+New LevelStart instances use the root of `PF_LevelStart`. See `LevelStartAuthoring.md` for the
+root-coordinate migration and current authoring validation; older review results below are historical.
 
 ## Visual tuning
 

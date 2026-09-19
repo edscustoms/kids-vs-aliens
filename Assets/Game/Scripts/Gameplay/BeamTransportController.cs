@@ -87,7 +87,11 @@ public sealed class BeamTransportController : MonoBehaviour
         Vector3 end = destination.position;
         Vector3 start = end + Vector3.up * height;
 
-        if (!CanBegin() || !IsLandingSafe(end) || !IsSegmentClear(start, end))
+        // Fresh arrival is an authored spawn pose, which may be above the floor.
+        // Hoist's short support probe is not a spawn requirement: rejecting here
+        // would leave Amy at the unrelated scene-player position. The full capsule
+        // sweep still validates the endpoint and the entire descent against geometry.
+        if (!CanBegin() || !IsSegmentClear(start, end))
             return false;
 
         points[0] = start;
@@ -110,7 +114,7 @@ public sealed class BeamTransportController : MonoBehaviour
 
         // Synchronous startup handoff:
         // no yield, coroutine or later pose reset.
-        transform.SetPositionAndRotation(start, destination.rotation);
+        transform.SetPositionAndRotation(start, Quaternion.Euler(0f, destination.eulerAngles.y, 0f));
 
         return true;
     }

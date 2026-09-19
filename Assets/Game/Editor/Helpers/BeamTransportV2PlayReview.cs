@@ -47,7 +47,7 @@ public static class BeamTransportV2PlayReview
             input = transport.GetComponent<StarterAssetsInputs>();
             var sequence = Object.FindAnyObjectByType<PlayerBeamInSequence>();
             var data = new SerializedObject(sequence);
-            destination = ((Transform)data.FindProperty("beamInSpawn").objectReferenceValue).position;
+            destination = sequence.ArrivalTransform.position;
             arrival = (BeamTransportVFX)data.FindProperty("transportVfx").objectReferenceValue;
             Check(transport.IsTransporting && input.GameplayInputBlocked && !transport.GetComponent<CharacterController>().enabled,
                 "arrival owns capsule/input before first Update");

@@ -43,7 +43,7 @@ public static class BeamPresentationReview
     {
         EditorSceneManager.OpenScene(ScenePath);
         var sequence=Find<PlayerBeamInSequence>();var data=new SerializedObject(sequence);
-        var marker=(Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+        var marker=sequence.ArrivalTransform;
         var controller=Find<BeamTransportController>();Vector3 original=marker.position;
         int pass=SessionState.GetInt(Key+"Pass",0);
         bool valid=false;

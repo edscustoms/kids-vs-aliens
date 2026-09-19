@@ -18,7 +18,7 @@ public static class BeamTransportReview
         BeamTransportSetup.ConfigureScene(player);
         var sequence = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).Single();
         var data = new SerializedObject(sequence);
-        var point = (Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+        var point = sequence.ArrivalTransform;
         var transport = player.GetComponent<BeamTransportController>();
         Physics.SyncTransforms();
         if (!transport.IsLandingSafe(point.position))
@@ -44,7 +44,7 @@ public static class BeamTransportReview
             reviewedTransport = UnityEngine.Object.FindAnyObjectByType<BeamTransportController>();
             var sequence = UnityEngine.Object.FindAnyObjectByType<PlayerBeamInSequence>();
             var data = new SerializedObject(sequence);
-            destination = ((Transform)data.FindProperty("beamInSpawn").objectReferenceValue).position;
+            destination = sequence.ArrivalTransform.position;
             float height = data.FindProperty("startHeight").floatValue;
             if (reviewedTransport == null || !reviewedTransport.IsTransporting
                 || reviewedTransport.GetComponent<CharacterController>().enabled
@@ -122,7 +122,7 @@ public static class BeamTransportReview
                 var transport = UnityEngine.Object.FindAnyObjectByType<BeamTransportController>();
                 var sequence = UnityEngine.Object.FindAnyObjectByType<PlayerBeamInSequence>();
                 var data = new SerializedObject(sequence);
-                var point = (Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+                var point = sequence.ArrivalTransform;
                 var cc = transport.GetComponent<CharacterController>();
                 string report = $"root={transport.transform.position}, scale={transport.transform.lossyScale}, cc enabled={cc.enabled}, center={cc.center}, height={cc.height}, radius={cc.radius}, destination={point.position}, landingSafe={transport.IsLandingSafe(point.position)}, pathClear={transport.IsSegmentClear(point.position + Vector3.up * 3.5f, point.position)}\n";
                 object[] args = { point.position, Vector3.zero, Vector3.zero, 0f };

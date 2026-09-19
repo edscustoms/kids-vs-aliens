@@ -93,7 +93,7 @@ public static class BeamPresentationSetup
         var level=PrefabUtility.LoadPrefabContents(BeamTransportSetup.LevelStartPath);
         try {
             var data=new SerializedObject(level.GetComponent<PlayerBeamInSequence>());
-            var marker=(Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+            var marker=level.transform;
             if(marker.GetComponent<BeamArrivalPoint>()==null)marker.gameObject.AddComponent<BeamArrivalPoint>();
             PrefabUtility.SaveAsPrefabAsset(level,BeamTransportSetup.LevelStartPath);
         }finally{PrefabUtility.UnloadPrefabContents(level);}

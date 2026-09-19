@@ -9,7 +9,7 @@ public sealed class BeamPresentationTests
 {
     [TestCase("Assets/Game/Scenes/ConstructionSite.unity")]
     [TestCase("Assets/Game/Scenes/GamePoc.unity")]
-    public void RepairPreservesArrivalPoseAndRenamedReferencedMarker(string path)
+    public void RepairPreservesLevelStartRootPose(string path)
     {
         var scene=EditorSceneManager.OpenPreviewScene(path);
         try {
@@ -17,14 +17,14 @@ public sealed class BeamPresentationTests
             BeamTransportSetup.ConfigureScene(player);
             var sequence=scene.GetRootGameObjects().SelectMany(r=>r.GetComponentsInChildren<PlayerBeamInSequence>(true)).Single();
             var data=new SerializedObject(sequence);
-            var marker=(Transform)data.FindProperty("beamInSpawn").objectReferenceValue;
+            var marker=sequence.ArrivalTransform;
             marker.name="My Authored Arrival";
             marker.SetPositionAndRotation(new Vector3(13,2,-7),Quaternion.Euler(0,73,0));
             Vector3 authoredPosition=marker.position;
             int count=sequence.GetComponentsInChildren<Transform>(true).Length;
             BeamTransportSetup.ConfigureScene(player);BeamTransportSetup.ConfigureScene(player);
             data.Update();
-            Assert.That(data.FindProperty("beamInSpawn").objectReferenceValue,Is.EqualTo(marker));
+            Assert.That(sequence.ArrivalTransform,Is.EqualTo(marker));
             Assert.That(marker.position,Is.EqualTo(authoredPosition));
             Assert.That(Quaternion.Angle(marker.rotation,Quaternion.Euler(0,73,0)),Is.LessThan(.001));
             Assert.That(marker.GetComponents<BeamArrivalPoint>().Length,Is.EqualTo(1));
@@ -40,6 +40,7 @@ public sealed class BeamPresentationTests
         try {
             var field=effect.GetComponentInChildren<BeamEnergyField>(true);
             var serialized=new SerializedObject(field);
+            int authoredCount=serialized.FindProperty("spiralCount").intValue;
             var low=serialized.FindProperty("bottomCenter").vector3Value;
             var high=serialized.FindProperty("topCenter").vector3Value;
             var bottom=serialized.FindProperty("bottomRadii").vector2Value;
@@ -55,7 +56,7 @@ public sealed class BeamPresentationTests
                 Assert.That(buffer.Take(count).Any(p=>Mathf.Abs(p.position.x)>.1f),Is.True,"Motes must fill the cone, not remain on its axis");
                 Assert.That(effect.GetComponentInChildren<LineRenderer>().positionCount,Is.EqualTo(161));
                 var strands=field.GetComponentsInChildren<LineRenderer>();
-                Assert.That(strands.Length,Is.EqualTo(3));
+                Assert.That(strands.Length,Is.EqualTo(authoredCount));
                 float previousAngle=0;
                 for(int strand=0;strand<strands.Length;strand++)
                 {
@@ -65,7 +66,7 @@ public sealed class BeamPresentationTests
                     Assert.That(p.y,Is.EqualTo(first.y).Within(.00001f));
                     float t=(p.y-low.y)/(high.y-low.y);var r=Vector2.Lerp(bottom,top,t);var c=Vector3.Lerp(low,high,t);
                     float angle=Mathf.Atan2((p.z-c.z)/r.y,(p.x-c.x)/r.x)*Mathf.Rad2Deg;
-                    if(strand>0)Assert.That(Mathf.Repeat(angle-previousAngle,360),Is.EqualTo(120).Within(.001f));
+                    if(strand>0)Assert.That(Mathf.Repeat(angle-previousAngle,360),Is.EqualTo(360f/authoredCount).Within(.001f));
                     previousAngle=angle;
                 }
                 for(int i=0;i<count;i++) {
@@ -80,7 +81,7 @@ public sealed class BeamPresentationTests
                 Assert.That(field.gameObject.activeInHierarchy,Is.False);
             }
             Assert.That(effect.GetComponentsInChildren<ParticleSystem>(true).Length,Is.EqualTo(1));
-            Assert.That(effect.GetComponentsInChildren<LineRenderer>(true).Length,Is.EqualTo(3));
+            Assert.That(effect.GetComponentsInChildren<LineRenderer>(true).Length,Is.EqualTo(authoredCount));
             foreach(int total in new[]{1,6,3})
             {
                 serialized.FindProperty("spiralCount").intValue=total;serialized.ApplyModifiedPropertiesWithoutUndo();

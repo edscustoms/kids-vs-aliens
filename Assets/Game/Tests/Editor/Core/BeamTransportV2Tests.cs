@@ -224,7 +224,6 @@ public sealed class BeamTransportV2Tests
             sequence.transform.rotation = Quaternion.Euler(0, 23, 0);
             data.FindProperty("startHeight").floatValue = 7.125f;
             data.FindProperty("descentDuration").floatValue = 3.125f;
-            data.FindProperty("beamInSpawn").objectReferenceValue = null;
             data.FindProperty("transportVfx").objectReferenceValue = null;
             data.ApplyModifiedPropertiesWithoutUndo();
             var poses = sequence.GetComponentsInChildren<Transform>(true).Select(t => (t, t.localPosition, t.localRotation, t.localScale)).ToArray();
@@ -234,7 +233,7 @@ public sealed class BeamTransportV2Tests
             data.Update();
             Assert.That(data.FindProperty("startHeight").floatValue, Is.EqualTo(7.125f));
             Assert.That(data.FindProperty("descentDuration").floatValue, Is.EqualTo(3.125f));
-            Assert.That(data.FindProperty("beamInSpawn").objectReferenceValue, Is.Not.Null);
+            Assert.That(sequence.ArrivalTransform, Is.EqualTo(sequence.transform));
             Assert.That(data.FindProperty("transportVfx").objectReferenceValue, Is.Not.Null);
             Assert.That(EditorJsonUtility.ToJson(sparks), Is.EqualTo(particles));
             foreach (var (t, position, rotation, scale) in poses)

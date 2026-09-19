@@ -25,8 +25,11 @@ public static class BeamTransportSetup
         var roots = scene.GetRootGameObjects();
         var sequences = roots.SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).ToArray();
         if (sequences.Length > 1) throw new System.InvalidOperationException("Multiple level arrival owners; remove the unintended duplicate before repair.");
-        GameObject level = sequences.Length == 1 ? sequences[0].gameObject
-            : roots.SelectMany(r => r.GetComponentsInChildren<Transform>(true)).FirstOrDefault(t => t.name == "LevelStart" || t.name == "PF_LevelStart")?.gameObject;
+        var candidates = sequences.Select(s => s.gameObject).Concat(roots
+            .SelectMany(r => r.GetComponentsInChildren<Transform>(true))
+            .Where(t => t.name == "LevelStart" || t.name == "PF_LevelStart").Select(t => t.gameObject)).Distinct().ToArray();
+        if (candidates.Length > 1) throw new System.InvalidOperationException("Multiple LevelStart objects; remove the unintended duplicate before repair.");
+        GameObject level = candidates.SingleOrDefault();
         if (level == null)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LevelStartPath);
@@ -35,35 +38,20 @@ public static class BeamTransportSetup
             Undo.RegisterCreatedObjectUndo(level, "Add LevelStart");
             level.name = "LevelStart";
             level.transform.SetPositionAndRotation(player.transform.position, player.transform.rotation);
-            // Only a newly created template is aligned: its marker, not its root, is the landing pose.
-            var templateMarker = level.GetComponentsInChildren<Transform>(true).First(t => t.name == "BeamInSpawn");
-            level.transform.position += player.transform.position - templateMarker.position;
             PrefabUtility.RecordPrefabInstancePropertyModifications(level.transform);
         }
         var sequence = Component<PlayerBeamInSequence>(level);
-        // The serialized reference wins, including an intentionally renamed/moved marker.
-        var start = new SerializedObject(sequence).FindProperty("beamInSpawn").objectReferenceValue as Transform;
-        if (start == null) start = level.GetComponentInChildren<BeamArrivalPoint>(true)?.transform;
-        if (start == null) start = level.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "BeamInSpawn");
-        if (start == null)
-        {
-            var marker = new GameObject("BeamInSpawn");
-            Undo.RegisterCreatedObjectUndo(marker, "Repair arrival marker");
-            marker.transform.SetParent(level.transform, false);
-            start = marker.transform;
-        }
-        Component<BeamArrivalPoint>(start.gameObject);
+        // Existing LevelStart transforms are never repositioned, even during repair.
+        Component<BeamArrivalPoint>(level);
         var effect = level.GetComponentInChildren<BeamTransportVFX>(true);
         if (effect == null)
         {
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(canonical.gameObject, scene);
             Undo.RegisterCreatedObjectUndo(instance, "Repair canonical beam reference");
             instance.transform.SetParent(level.transform, false);
-            instance.transform.SetPositionAndRotation(start.position, level.transform.rotation);
             effect = instance.GetComponent<BeamTransportVFX>();
         }
         Set(sequence, "player", player.transform);
-        SetMissing(sequence, "beamInSpawn", start);
         SetMissing(sequence, "transportVfx", effect);
         // Retain the old generated button for backwards compatibility, but production uses Jump.
         foreach (var root in roots)
