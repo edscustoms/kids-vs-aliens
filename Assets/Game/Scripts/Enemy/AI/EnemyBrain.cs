@@ -112,8 +112,7 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void Update()
     {
-        // Decisions can apply immediate melee damage even when no game time
-        // advances. Keep this Update-driven simulation asleep during pause.
+        // Keep attack requests and other decisions asleep during pause.
         if (Time.timeScale <= 0f)
             return;
         if (actor == null || !actor.IsAlive)

@@ -30,7 +30,7 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
     private int slotsPerRing = 12;
 
     [SerializeField, Min(0.1f)]
-    private float baseRadius = 1.05f;
+    private float baseRadius = 0.65f;
 
     [SerializeField, Min(0f)]
     private float extraRingSpacing = 0.65f;
@@ -40,7 +40,7 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
     private float angleJitterDegrees = 10f;
 
     [SerializeField, Min(0f)]
-    private float radiusJitter = 0.10f;
+    private float radiusJitter = 0.03f;
 
     [Header("NavMesh")]
     [SerializeField, Min(0.05f)]

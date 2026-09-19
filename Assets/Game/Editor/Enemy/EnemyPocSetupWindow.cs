@@ -21,7 +21,7 @@ public sealed class EnemyPocSetupWindow : EditorWindow
     private float bodyCenterY = 0.9f;
 
     [SerializeField]
-    private float stoppingDistance = 0.12f;
+    private float stoppingDistance = 0.02f;
 
     [Header("POC behavior")]
     [SerializeField]
@@ -277,6 +277,8 @@ public sealed class EnemyPocSetupWindow : EditorWindow
         Animator animator =
             root.GetComponentInChildren<Animator>(
                 true);
+        if (animator != null)
+            GetOrAdd<CharacterAnimationEventRelay>(animator.gameObject, useUndo);
 
         EnemyLocomotionAnimator locomotion =
             root.GetComponent<
@@ -704,7 +706,7 @@ public sealed class EnemyPocSetupWindow : EditorWindow
         SetFloat(
             so,
             "baseRadius",
-            1.05f);
+            0.65f);
 
         SetFloat(
             so,
@@ -719,7 +721,7 @@ public sealed class EnemyPocSetupWindow : EditorWindow
         SetFloat(
             so,
             "radiusJitter",
-            0.10f);
+            0.03f);
 
         SetFloat(
             so,
@@ -801,7 +803,7 @@ public sealed class EnemyPocSetupWindow : EditorWindow
         SetFloat(
             so,
             "attackRange",
-            1.25f);
+            0.78f);
 
         SetFloat(
             so,

@@ -21,6 +21,9 @@ MonoBehaviour:
     cancellationStatePath: 
     chainStart: 0
     requiresLegMotion: 0
+    meleeContact:
+      bone: 0
+      radius: 0
   - action: 7
     triggerParameter: MeleeLight1
     layerName: UnarmedCombatActions
@@ -29,6 +32,9 @@ MonoBehaviour:
     cancellationStatePath: UnarmedCombatActions.Empty
     chainStart: 0.72602737
     requiresLegMotion: 0
+    meleeContact:
+      bone: 30
+      radius: 0.09
   - action: 8
     triggerParameter: MeleeLight2
     layerName: UnarmedCombatActions
@@ -37,6 +43,9 @@ MonoBehaviour:
     cancellationStatePath: UnarmedCombatActions.Empty
     chainStart: 0.7741935
     requiresLegMotion: 0
+    meleeContact:
+      bone: 45
+      radius: 0.09
   - action: 9
     triggerParameter: MeleeLight3
     layerName: UnarmedCombatActions
@@ -45,6 +54,9 @@ MonoBehaviour:
     cancellationStatePath: UnarmedCombatActions.Empty
     chainStart: 0.875
     requiresLegMotion: 0
+    meleeContact:
+      bone: 30
+      radius: 0.09
   - action: 10
     triggerParameter: MeleeHeavy
     layerName: UnarmedCombatActions
@@ -53,6 +65,9 @@ MonoBehaviour:
     cancellationStatePath: UnarmedCombatActions.Empty
     chainStart: 0.8000002
     requiresLegMotion: 0
+    meleeContact:
+      bone: 45
+      radius: 0.09
   - action: 5
     triggerParameter: Kick
     layerName: UnarmedCombatActions
@@ -61,6 +76,9 @@ MonoBehaviour:
     cancellationStatePath: UnarmedCombatActions.Empty
     chainStart: 0.8148148
     requiresLegMotion: 1
+    meleeContact:
+      bone: 20
+      radius: 0.1
   - action: 11
     triggerParameter: HeavyKick
     layerName: UnarmedCombatActions
@@ -69,3 +87,6 @@ MonoBehaviour:
     cancellationStatePath: UnarmedCombatActions.Empty
     chainStart: 0.81081074
     requiresLegMotion: 1
+    meleeContact:
+      bone: 20
+      radius: 0.1

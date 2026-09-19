@@ -37131,7 +37131,6 @@ MonoBehaviour:
   proximityInterval: 0.1
   damage: 10
   reach: 1.35
-  hitRadius: 0.3
   strikeHeight: 1
   collisionMask:
     serializedVersion: 2

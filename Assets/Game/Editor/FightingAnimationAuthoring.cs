@@ -24,7 +24,7 @@ public static class FightingAnimationAuthoring
         // presses remain authoritative; both halves retain the same wide stance.
         new("combo_hook_uppercut", "Light3", 1.15f, 1.95f, 1.15f, 1.60f, 1.85f),
         new("combo_hook_uppercut", "Heavy", 1.85f, 2.85f, 1.2f, 2.15f, 2.65f),
-        new("front_kick", "Kick", .55f, 1.90f, 1.2f, 1.20f, 1.65f),
+        new("front_kick", "Kick", .55f, 1.90f, 1.2f, 1.08f, 1.65f),
         new("roundhouse_kick_right", "HeavyKick", 1.05f, 2.90f, 1.25f, 1.75f, 2.55f)
     };
     public static AnimationClip Source(string name) => AssetDatabase.LoadAllAssetsAtPath(CombatV2Audition.Folder + "/" + name + ".fbx")
@@ -83,6 +83,7 @@ public static class FightingAnimationAuthoring
             binding.FindPropertyRelative("clip").objectReferenceValue=state.motion;
             binding.FindPropertyRelative("chainStart").floatValue=Attacks[i].ChainNormalized;
             binding.FindPropertyRelative("requiresLegMotion").boolValue=i>=4;
+            MeleePrecisionAuthoring.SetContact(binding, ids[i]);
         }
         actions.ApplyModifiedPropertiesWithoutUndo();
         var baseMachine=layers[0].stateMachine;

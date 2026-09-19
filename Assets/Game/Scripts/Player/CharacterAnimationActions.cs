@@ -19,6 +19,8 @@ public sealed class CharacterAnimationActions : ScriptableObject
         [Range(0, 1)] public float chainStart;
         [Tooltip("Keep authored leg motion even while moving (kicks). Otherwise locomotion supplies moving feet.")]
         public bool requiresLegMotion;
+        [Tooltip("Optional physical contact for a melee marker. Authored per semantic action, independent of gameplay clip names.")]
+        public MeleeContactShape meleeContact;
     }
 
     [SerializeField]

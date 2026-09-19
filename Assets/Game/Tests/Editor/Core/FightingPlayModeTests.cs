@@ -99,7 +99,7 @@ public sealed class FightingPlayModeTests
                         if(!queued && Time.time-began>.12f && step+1<item.attackChain.Length) {Press(input); queued=true;}
                         if(scenario%4!=0 && !melee.RequiresPlantedFeet)
                             input.MoveInput((int)((Time.time-began)/.35f)%2==0?direction:new Vector2(-direction.y,direction.x));
-                        if(melee.RequiresPlantedFeet && Time.time-began>.45f && direction!=Vector2.zero)
+                        if(melee.RequiresPlantedFeet && Time.time-began>.40f && direction!=Vector2.zero)
                         {
                             Assert.That(new Vector2(capsule.velocity.x,capsule.velocity.z).magnitude,Is.LessThan(.15f),"Supporting foot slides during kick contact.");
                             checkedPlant=true;

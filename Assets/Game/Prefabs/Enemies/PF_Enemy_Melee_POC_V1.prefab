@@ -235,7 +235,7 @@ NavMeshAgent:
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
-  m_StoppingDistance: 0.12
+  m_StoppingDistance: 0.02
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
@@ -272,10 +272,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyApproachPlanner
   slotActivationDistance: 2.4
   slotsPerRing: 12
-  baseRadius: 0.7
+  baseRadius: 0.65
   extraRingSpacing: 0.65
   angleJitterDegrees: 10
-  radiusJitter: 0.1
+  radiusJitter: 0.03
   sampleRadius: 0.8
 --- !u!114 &3047746292372297995
 MonoBehaviour:
@@ -335,12 +335,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f31382aad93cddf459c95cc12f527d01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMeleeAttack
-  attackRange: 0.82
+  attackRange: 0.78
   damage: 10
   cooldownRange: {x: 0.9, y: 1.2}
+  startFacingTolerance: 35
+  contactFacingTolerance: 60
+  collisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   animator: {fileID: 6382055156304853518}
   motor: {fileID: 0}
   meleeAttackTrigger: MeleeAttack
+  attackStatePath: Base Layer.MeleeAttack
+  contact:
+    bone: 45
+    radius: 0.08
 --- !u!114 &8701154889001052288
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -833,8 +842,28 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b2a4f7f9ee580b94e87b42d30ecb322a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6084972798871953177}
   m_SourcePrefab: {fileID: 100100000, guid: b2a4f7f9ee580b94e87b42d30ecb322a, type: 3}
+--- !u!1 &376720317483956942 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: b2a4f7f9ee580b94e87b42d30ecb322a, type: 3}
+  m_PrefabInstance: {fileID: 719178392838113183}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6084972798871953177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376720317483956942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b7d2d78fe97b1e4db772ceeb2df5209, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationEventRelay
 --- !u!4 &1040808209758937204 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b2a4f7f9ee580b94e87b42d30ecb322a, type: 3}
