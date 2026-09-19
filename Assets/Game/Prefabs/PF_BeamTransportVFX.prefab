@@ -110,6 +110,8 @@ MonoBehaviour:
   beamVisual: {fileID: 1366319840976340907}
   groundRing: {fileID: 3832959450844395752}
   beamSparks: {fileID: 1881717981213382152}
+  hoistFadeInDuration: 0.35
+  hoistFadeOutDuration: 0.55
 --- !u!1 &3832959450844395752
 GameObject:
   m_ObjectHideFlags: 0

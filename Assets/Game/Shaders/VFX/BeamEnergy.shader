@@ -4,6 +4,7 @@ Shader "KVA/Beam Energy"
     {
         [HDR] _Tint ("Emission", Color) = (2,1,3,1)
         _Round ("Round particle (otherwise ribbon)", Float) = 1
+        _BeamVisibility ("Beam visibility", Range(0,1)) = 1
     }
     SubShader
     {
@@ -22,6 +23,7 @@ Shader "KVA/Beam Energy"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Tint;
                 half _Round;
+                half _BeamVisibility;
             CBUFFER_END
             Varyings vert(Attributes v)
             {
@@ -35,7 +37,7 @@ Shader "KVA/Beam Energy"
                 float d=lerp(abs(uv.y),length(uv),_Round);
                 half glow=exp2(-5*d*d)*saturate((1-d)*5);
                 half core=exp2(-38*d*d);
-                return half4(i.color.rgb*_Tint.rgb*(.55+core),i.color.a*_Tint.a*glow);
+                return half4(i.color.rgb*_Tint.rgb*(.55+core),i.color.a*_Tint.a*glow*_BeamVisibility);
             }
             ENDHLSL
         }

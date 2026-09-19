@@ -409,6 +409,8 @@ namespace StarterAssets
 
         private void OnFootstep(AnimationEvent animationEvent)
         {
+            // Animation events can still arrive while locomotion is suspended by Beam Transport.
+            if (!isActiveAndEnabled) return;
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
                 if (AudioFootsteps != null)

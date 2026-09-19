@@ -221,6 +221,13 @@ public sealed class BeamTransportController : MonoBehaviour
 
         hoistPath = path;
         curvedHoist = true;
+        activeVfx.BeginHoistFadeIn();
+        var locomotion = GetComponent<ThirdPersonController>();
+        if (locomotion != null)
+        {
+            locomotion.AudioFootsteps?.Stop();
+            locomotion.AudioFoley?.Stop();
+        }
 
         return true;
     }
@@ -381,6 +388,13 @@ public sealed class BeamTransportController : MonoBehaviour
             return;
         }
 
+        if (curvedHoist && activeVfx != null && activeVfx.IsMaterializing)
+        {
+            activeVfx.AdvanceHoistFadeIn(deltaTime);
+            // Render the fully materialized beam before the first travel frame.
+            return;
+        }
+
         if (segment < segmentCount)
         {
             float duration = Mathf.Max(0.01f, durations[segment]);
@@ -466,9 +480,9 @@ public sealed class BeamTransportController : MonoBehaviour
                     /*
                      * The ONE hoist curve has reached LANDING.
                      *
-                     * Restore controls/capsule and hide the beam.
+                     * Restore controls/capsule immediately; presentation dissipates independently.
                      */
-                    CancelTransport();
+                    EndTransport(true);
                 }
             }
 
@@ -502,11 +516,21 @@ public sealed class BeamTransportController : MonoBehaviour
 
     public void CancelTransport()
     {
+        EndTransport(false);
+        // Cancellation/disable also cleans up a post-landing fade.
+        if (reusableVfx != null) reusableVfx.Hide();
+    }
+
+    private void EndTransport(bool landedHoist)
+    {
         if (!IsTransporting)
             return;
 
         if (activeVfx != null)
-            activeVfx.Hide();
+        {
+            if (landedHoist) activeVfx.FadeOutAfterLanding();
+            else activeVfx.Hide();
+        }
 
         activeVfx = null;
 

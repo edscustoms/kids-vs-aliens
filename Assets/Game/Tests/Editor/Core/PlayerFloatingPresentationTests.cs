@@ -81,6 +81,9 @@ public sealed class PlayerFloatingPresentationTests
         Assert.That(transport.TryHoist(path), Is.True);
         Sample(); Assert.That(presentation.IsFloating, Is.False);
         bool middle = false, ending = false;
+        transport.Advance(.35f); // Stationary presentation prelude does not advance the curve.
+        Sample(); Assert.That(presentation.IsFloating, Is.False);
+        Assert.That(player.transform.position, Is.EqualTo(origin));
         float elapsed = 0f, previousY = origin.y;
         for (int i = 0; i < 120; i++)
         {

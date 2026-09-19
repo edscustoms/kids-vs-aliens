@@ -4,6 +4,7 @@ Shader "KVA/Beam Volume"
     {
         [HDR] _Tint ("Violet volume", Color) = (.7,.12,1.5,.16)
         [HDR] _EdgeTint ("Cyan edge support", Color) = (.2,.6,1.3,.12)
+        _BeamVisibility ("Beam visibility", Range(0,1)) = 1
     }
     SubShader
     {
@@ -22,6 +23,7 @@ Shader "KVA/Beam Volume"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Tint;
                 half4 _EdgeTint;
+                half _BeamVisibility;
             CBUFFER_END
             Varyings vert(Attributes v)
             {
@@ -35,7 +37,7 @@ Shader "KVA/Beam Volume"
             {
                 half rim=pow(1-saturate(abs(dot(normalize(i.normalWS),GetWorldSpaceNormalizeViewDir(i.positionWS)))),2);
                 half4 energy=lerp(_Tint,_EdgeTint,rim*.45);
-                energy.a*=.35+.65*rim;
+                energy.a*=(.35+.65*rim)*_BeamVisibility;
                 return energy;
             }
             ENDHLSL

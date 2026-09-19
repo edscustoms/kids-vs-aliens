@@ -120,7 +120,9 @@ public class PlayerAnimation : MonoBehaviour
         if (driver == null || characterController == null)
             return;
 
-        Vector3 velocity = characterController.velocity;
+        // A disabled controller can retain its last walking velocity during beam materialization.
+        Vector3 velocity = transport != null && transport.IsTransporting
+            ? Vector3.zero : characterController.velocity;
         velocity.y = 0f;
 
         Vector3 localVelocity = transform.InverseTransformDirection(velocity);

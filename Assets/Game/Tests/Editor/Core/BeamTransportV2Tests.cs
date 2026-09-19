@@ -79,6 +79,42 @@ public sealed class BeamTransportV2Tests
         path = default; return false;
     }
 
+    [Test]
+    public void HoistFade_LocksBeforeTravel_ReleasesAtLanding_AndCancellationClearsTail()
+    {
+        Unlock();
+        Set(effect, "hoistFadeInDuration", .4f);
+        Assert.That(ability.TryActivate(), Is.True);
+        var actual = (BeamHoistPath)typeof(BeamTransportController).GetField("hoistPath", Private).GetValue(transport);
+        Assert.That(effect.Visibility, Is.Zero);
+        Assert.That(input.GameplayInputBlocked, Is.True);
+        Assert.That(player.GetComponent<CharacterController>().enabled, Is.False);
+        transport.Advance(.2f);
+        Assert.That(effect.Visibility, Is.EqualTo(.5f).Within(.001f));
+        Assert.That(player.transform.position, Is.EqualTo(actual.start));
+        transport.Advance(.2f);
+        Assert.That(effect.Visibility, Is.EqualTo(1f));
+        Assert.That(player.transform.position, Is.EqualTo(actual.start));
+        float duration = actual.liftDuration + actual.transferDuration;
+        transport.Advance(duration * .25f);
+        Assert.That(Vector3.Distance(player.transform.position, actual.Evaluate(.25f)), Is.LessThan(.002f));
+        transport.Advance(duration);
+        Assert.That(transport.IsTransporting, Is.False);
+        Assert.That(input.GameplayInputBlocked, Is.False);
+        Assert.That(player.GetComponent<CharacterController>().enabled, Is.True);
+        Assert.That(Vector3.Distance(player.transform.position, actual.landing), Is.LessThan(.002f));
+        Assert.That(effect.Visibility, Is.EqualTo(1f), "Release must precede independent fade-out");
+        transport.CancelTransport();
+        Assert.That(effect.Visibility, Is.Zero);
+        Assert.That(effect.GetComponentInChildren<ParticleSystem>(true).particleCount, Is.Zero);
+        player.transform.position = actual.start;
+        Assert.That(transport.TryHoist(actual), Is.True);
+        transport.Advance(.1f);
+        transport.CancelTransport();
+        Assert.That(effect.Visibility, Is.Zero);
+        Assert.That(input.GameplayInputBlocked, Is.False);
+    }
+
     [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
     public void Bake_UprightRotatedScaledContainer_AllLowerSidesAndNoChildren(int side)
     {
