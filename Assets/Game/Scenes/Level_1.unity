@@ -22009,7 +22009,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
   playerEquipment: {fileID: 1809920725}
-  maxSlots: 5
+  maxSlots: 25
   playerSkillState: {fileID: 0}
   playerGrenadeController: {fileID: 0}
   playerMeleeController: {fileID: 1809920745}

@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>Presentation and configuration around Unity's existing input/event handling.</summary>
-[DisallowMultipleComponent, RequireComponent(typeof(Button))]
+[ExecuteAlways, DisallowMultipleComponent, RequireComponent(typeof(Button))]
 public sealed class UIButton : MonoBehaviour
 {
     [SerializeField] private Button button;
@@ -43,6 +43,36 @@ public sealed class UIButton : MonoBehaviour
 
     public void ApplyStyle()
     {
+#if UNITY_EDITOR
+        // Validation/enable may run inside Unity's consistency checks, including
+        // during Play entry. Never create the shell from those callbacks.
+        UnityEditor.EditorApplication.delayCall -= RefreshEditorPresentation;
+        UnityEditor.EditorApplication.delayCall += RefreshEditorPresentation;
+#else
+        RefreshPresentation();
+#endif
+    }
+
+#if UNITY_EDITOR
+    private void OnDisable() => UnityEditor.EditorApplication.delayCall -= RefreshEditorPresentation;
+    private void RefreshEditorPresentation()
+    {
+        if (this == null || !gameObject.scene.IsValid() || UnityEditor.EditorUtility.IsPersistent(this)) return;
+        RefreshPresentation();
+    }
+#endif
+
+    private void RefreshPresentation()
+    {
+        if (theme != null) {
+            var image = GetComponent<Image>();
+            if (image != null) {
+                var surface = NeonVisuals.Replace(image, variant == UIButtonVariant.IconCircle ? NeonShape.Circle : NeonShape.Button, theme);
+                surface.SetState(selected ? NeonState.Selected : NeonState.Normal);
+                Button.targetGraphic = surface;
+                NeonVisuals.Feedback(gameObject, surface);
+            }
+        }
         if (!capturedColors) { unthemedColors = Button.colors; capturedColors = true; }
         var style = theme != null ? theme.GetButtonStyle(variant) : null;
         ColorBlock colors = style != null ? style.colors : unthemedColors;

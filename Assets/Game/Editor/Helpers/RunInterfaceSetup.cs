@@ -40,6 +40,7 @@ public static class RunInterfaceSetup
         foreach(var stage in presentation.GetComponentsInChildren<KnowledgePreviewStage>(true))
         {
             var serialized=new SerializedObject(stage);serialized.FindProperty("floorMaterial").objectReferenceValue=floor;serialized.ApplyModifiedPropertiesWithoutUndo();
+            stage.EnsureBackdrop();
         }
         EditorSceneManager.MarkSceneDirty(scene);
     }

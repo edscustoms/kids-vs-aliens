@@ -26,6 +26,7 @@ public static class MenuUISetup
 
     public static void ConfigureScene(Scene scene)
     {
+        ProceduralUISetup.EnsureAssets();
         var canvas = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Canvas>(true))
             .FirstOrDefault(c => c.name == "MenuCanvas");
         if (canvas == null) throw new InvalidOperationException("The active scene has no MenuCanvas.");

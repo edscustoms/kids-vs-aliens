@@ -25,6 +25,10 @@ public sealed class UITheme : ScriptableObject
     public TMPro.TMP_FontAsset font;
     [Min(0)] public float panelRadius = 22;
     [Min(0)] public float borderGlow = 5;
+    [Header("Procedural surfaces")]
+    public Color surfaceAccentEnd = new Color(.94f, .04f, 1);
+    [Min(.5f)] public float borderThickness = 1.6f;
+    [Min(0)] public float surfaceGlow = 12;
     public ButtonStyle pill = new ButtonStyle();
     public ButtonStyle iconCircle = new ButtonStyle();
 

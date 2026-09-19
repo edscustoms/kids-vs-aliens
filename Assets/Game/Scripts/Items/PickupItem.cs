@@ -17,7 +17,7 @@ public class PickupItem : MonoBehaviour
         if (inventory == null)
             return;
 
-        if (!inventory.TryAddItem(item, out InventoryAddFailure failure))
+        if (!inventory.CanAcceptItem(item, out InventoryAddFailure failure))
         {
             if (failure == InventoryAddFailure.Full)
                 inventory
@@ -29,11 +29,16 @@ public class PickupItem : MonoBehaviour
                             action: FeedbackAction.Pickup
                         )
                     );
+            else if (failure == InventoryAddFailure.AlreadyLearned)
+                inventory.GetComponent<PlayerFeedback>()?.Report(
+                    new GameplayFeedbackEvent(FeedbackCode.KnowledgeAlreadyKnown,
+                        ((KnowledgeBookItemData)item).skill, item, FeedbackAction.Pickup));
             else if (failure == InventoryAddFailure.InvalidItem)
                 Debug.LogWarning("Pickup has no ItemData assigned.", this);
             return;
         }
 
+        if (!inventory.TryAddItem(item, out _)) return;
         collected = true;
         GetComponent<RunWorldObject>()?.MarkRemoved();
         Destroy(gameObject);

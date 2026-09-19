@@ -14,6 +14,9 @@ public sealed class GameplayInterface : MonoBehaviour
     private float feedbackUntil, nextBadge;
     private KnowledgeLogView knowledge;
     private bool recoveryShown;
+    private KnowledgeAcquiredPresenter tutorialPresenter;
+    private Image tutorialIcon;
+    private SkillData displayedTutorialIcon;
     public void Configure(PlayerCharacter source,UITheme style){player=source;theme=style;}
     private void Start()
     {
@@ -37,17 +40,16 @@ public sealed class GameplayInterface : MonoBehaviour
         var learn=Button(safe,"LearnButton","LEARN",new(.795f,.32f),new(.866f,.445f),()=>{
             if(!suspension.IsSuspended)knowledge.Open();
         });
-        learn.GetComponent<NeonPanel>().radius=100;
-        // Book mark is code-native and remains legible independently of font glyph coverage.
-        var book=Rect(learn.transform,"Book",new(.31f,.57f),new(.69f,.86f));
-        var left=Panel(book,"Left",Vector2.zero,new(.48f,1));left.GetComponent<NeonPanel>().radius=3;
-        var right=Panel(book,"Right",new(.52f,0),Vector2.one);right.GetComponent<NeonPanel>().radius=3;
-        foreach(var graphic in book.GetComponentsInChildren<Graphic>())graphic.raycastTarget=false;
+        learn.GetComponent<NeonPanel>().SetShape(NeonShape.Circle);
+        NeonVisuals.Symbol(learn.transform,InterfaceSymbol.Book,new(.27f,.47f),new(.73f,.90f));
         var learnLabel=learn.GetComponentInChildren<TMP_Text>();learnLabel.rectTransform.anchorMax=new(.95f,.53f);learnLabel.fontSizeMax=22;
-        badge=Text(learn.transform,"Unread","",new(.70f,.76f),new(1.1f,1.08f),24,Green,TextAlignmentOptions.Center);
+        var badgeRoot=Panel(learn.transform,"UnreadBadge",new(.72f,.76f),new(1.02f,1.08f));
+        var badgeSurface=badgeRoot.GetComponent<NeonPanel>();badgeSurface.SetShape(NeonShape.Badge);badgeSurface.accent=Green;badgeSurface.raycastTarget=false;
+        badge=Text(badgeRoot,"Unread","",new(.12f,.1f),new(.88f,.9f),22,new Color(.01f,.05f,.03f),TextAlignmentOptions.Center);
         // Keep HUD below modal screens. All action hit areas and callbacks remain as authored.
         learn.transform.SetAsFirstSibling();
         var toast=Panel(safe,"RunFeedback",new(.32f,.86f),new(.68f,.925f));toast.GetComponent<NeonPanel>().raycastTarget=false;
+        toast.GetComponent<NeonPanel>().radius=100;toast.GetComponent<NeonPanel>().secondary=Green;
         feedback=Text(toast,"Message","",new(.025f,.08f),new(.975f,.92f),25,Green,TextAlignmentOptions.Center);
         toast.gameObject.SetActive(false);RunSaveService.Feedback+=ShowFeedback;
         RestyleTutorial();RestyleTouchControls();
@@ -75,6 +77,14 @@ public sealed class GameplayInterface : MonoBehaviour
     private void RestyleTutorial()
     {
         var overlay=transform.Find("KnowledgeOverlay");if(overlay==null)return;
+        var content=overlay.Find("SafeArea/Card/Content");
+        if(content!=null) {
+            tutorialPresenter=GetComponentInChildren<KnowledgeAcquiredPresenter>(true);
+            tutorialIcon=NeonVisuals.Icon(content,"KnowledgeIcon",new(.25f,.885f),new(.33f,.97f));
+            tutorialIcon.enabled=false;
+            var heading=content.Find("Heading") as RectTransform;
+            if(heading!=null){heading.anchorMin=new(.34f,.885f);heading.anchorMax=new(.88f,.97f);heading.GetComponent<TMP_Text>().alignment=TextAlignmentOptions.MidlineLeft;}
+        }
         foreach(var image in overlay.GetComponentsInChildren<Image>(true)) {
             if(image.name == "CardFill" || image.name == "InstructionPlate") image.enabled=false;
             if(image.name == "Card" || image.name == "PreviewFrame" || image.name == "Acknowledge") {
@@ -90,25 +100,36 @@ public sealed class GameplayInterface : MonoBehaviour
     }
     private void RestyleTouchControls()
     {
-        foreach(var behaviour in FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
-        {
-            string type=behaviour.GetType().Name;
-            if(type!="UIVirtualButton"&&type!="UIVirtualJoystick")continue;
-            foreach(var image in behaviour.GetComponentsInChildren<Image>(true)) {
-                if(image.name.Contains("Background")||image.name.Contains("Handle")||image.transform==behaviour.transform) {
-                    if(theme!=null&&theme.iconCircle.sprite!=null){image.sprite=theme.iconCircle.sprite;image.color=new Color(.72f,.82f,1,.85f);}
-                } else if(image.name == "Image_Icon") {
+        foreach(var joystick in FindObjectsByType<UIVirtualJoystick>(FindObjectsInactive.Include)) {
+            var background=joystick.containerRect!=null?joystick.containerRect.GetComponent<Image>():null;
+            var handle=joystick.handleRect!=null?joystick.handleRect.GetComponent<Image>():null;
+            if(background!=null)NeonVisuals.Replace(background,NeonShape.Joystick,theme);
+            if(handle!=null)NeonVisuals.Replace(handle,NeonShape.Circle,theme);
+            foreach(var image in joystick.GetComponentsInChildren<Image>(true))
+                if(image.name=="Image_Icon"){image.enabled=false;NeonVisuals.Symbol(image.transform,InterfaceSymbol.Move,Vector2.zero,Vector2.one);}
+        }
+        foreach(var control in FindObjectsByType<UIVirtualButton>(FindObjectsInactive.Include)) {
+            foreach(var image in control.GetComponentsInChildren<Image>(true)) {
+                if(image.name=="Image_Icon") {
                     image.enabled=false;
-                    var glyph=Rect(image.transform,"ActionSymbol",Vector2.zero,Vector2.one).gameObject.AddComponent<InterfaceGlyph>();
-                    glyph.symbol=type=="UIVirtualJoystick"?InterfaceSymbol.Move:behaviour.name.Contains("Shoot")?InterfaceSymbol.Fire:behaviour.name.Contains("Jump")?InterfaceSymbol.Jump:InterfaceSymbol.Sprint;
-                    glyph.raycastTarget=false;glyph.color=Color.white;
-                } else image.color=new Color(.8f,.93f,1,.92f);
+                    var symbol=control.name.Contains("Shoot")?InterfaceSymbol.Fire:control.name.Contains("Jump")?InterfaceSymbol.Jump:InterfaceSymbol.Sprint;
+                    NeonVisuals.Symbol(image.transform,symbol,Vector2.zero,Vector2.one);
+                } else if(image.name.Contains("Background")||image.transform==control.transform) {
+                    var surface=NeonVisuals.Replace(image,NeonShape.Circle,theme);
+                    NeonVisuals.Feedback(control.gameObject,surface);
+                }
             }
         }
     }
     private void ShowFeedback(string message){feedback.text=message;feedback.transform.parent.gameObject.SetActive(true);feedback.transform.parent.SetAsLastSibling();feedbackUntil=Time.unscaledTime+6;}
     private void Update()
     {
+        // Observe the presentation only; never enqueue, unlock or advance tutorials.
+        if(tutorialIcon!=null && tutorialPresenter!=null && displayedTutorialIcon!=tutorialPresenter.CurrentSkill) {
+            displayedTutorialIcon=tutorialPresenter.CurrentSkill;
+            tutorialIcon.sprite=InterfaceIconCatalog.ForSkill(displayedTutorialIcon);
+            tutorialIcon.enabled=tutorialIcon.sprite!=null;
+        }
         var run = ActiveRunController.Instance;
         if (!recoveryShown && run != null && !string.IsNullOrEmpty(run.RestoreError))
         {
@@ -120,7 +141,7 @@ public sealed class GameplayInterface : MonoBehaviour
             Button(panel, "Menu", "RETURN TO MENU", new(.15f,.07f), new(.85f,.24f), run.ReturnToMenuPreservingSnapshot);
         }
         if(feedback!=null&&Time.unscaledTime>=feedbackUntil)feedback.transform.parent.gameObject.SetActive(false);
-        if(badge!=null&&Time.unscaledTime>=nextBadge){nextBadge=Time.unscaledTime+.5f;int count=PermanentProgress.Data.skills.Count(s=>!s.acknowledged);badge.text=count>0?"● "+count:"";}
+        if(badge!=null&&Time.unscaledTime>=nextBadge){nextBadge=Time.unscaledTime+.5f;int count=PermanentProgress.Data.skills.Count(s=>!s.acknowledged);badge.text=count>0?count.ToString():"";badge.transform.parent.gameObject.SetActive(count>0);}
     }
     private void OnDestroy()=>RunSaveService.Feedback-=ShowFeedback;
 }
@@ -140,11 +161,14 @@ public sealed class CompactResourceDisplay : MonoBehaviour
     }
     private RectTransform Bar(Transform parent,string name,string glyph,float y,Color color,out TMP_Text number)
     {
-        var symbol=Rect(parent,name+"Icon",new(0,y),new(.085f,y+.37f)).gameObject.AddComponent<InterfaceGlyph>();
-        symbol.symbol=name=="Health"?InterfaceSymbol.Health:InterfaceSymbol.Armor;symbol.color=color;symbol.raycastTarget=false;
-        var track=Panel(parent,name,new(.12f,y+.12f),new(.83f,y+.29f));var panel=track.GetComponent<NeonPanel>();panel.radius=8;panel.glow=0;panel.raycastTarget=false;
-        var fill=Rect(track,"Fill",Vector2.zero,Vector2.one);var graphic=fill.gameObject.AddComponent<NeonPanel>();graphic.radius=8;graphic.glow=0;graphic.color=color;graphic.accent=color;graphic.secondary=Violet;graphic.raycastTarget=false;
-        number=Text(parent,name+"Value","",new(.85f,y),new(1,y+.4f),27,null,TextAlignmentOptions.Center);
+        var row=Panel(parent,name+"Frame",new(0,y),new(1,y+.43f));
+        var shell=row.GetComponent<NeonPanel>();shell.radius=100;shell.glow=8;shell.raycastTarget=false;shell.details=false;
+        var symbol=NeonVisuals.Symbol(row,name=="Health"?InterfaceSymbol.Health:InterfaceSymbol.Armor,new(.03f,.12f),new(.12f,.88f));
+        symbol.color=Cyan;
+        var divider=Panel(row,"Divider",new(.145f,.22f),new(.15f,.78f));divider.GetComponent<NeonPanel>().glow=0;divider.GetComponent<NeonPanel>().raycastTarget=false;
+        var track=Panel(row,name,new(.19f,.28f),new(.83f,.72f));var panel=track.GetComponent<NeonPanel>();panel.radius=100;panel.glow=0;panel.raycastTarget=false;panel.details=false;
+        var fill=Rect(track,"Fill",Vector2.zero,Vector2.one);var graphic=fill.gameObject.AddComponent<NeonPanel>();graphic.SetShape(NeonShape.Fill);graphic.radius=100;graphic.glow=4;graphic.color=Color.white;graphic.accent=Cyan;graphic.secondary=name=="Health"?Magenta:Violet;graphic.raycastTarget=false;
+        number=Text(row,name+"Value","",new(.845f,.1f),new(.97f,.9f),25,null,TextAlignmentOptions.Center);
         return fill;
     }
     private void Update()

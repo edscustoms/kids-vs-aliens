@@ -8,6 +8,7 @@ public enum InventoryAddFailure
     None,
     InvalidItem,
     Full,
+    AlreadyLearned,
 }
 
 public class PlayerInventory : MonoBehaviour
@@ -16,7 +17,7 @@ public class PlayerInventory : MonoBehaviour
     private PlayerEquipment playerEquipment;
 
     [SerializeField]
-    private int maxSlots = 5;
+    private int maxSlots = 25;
 
     [SerializeField]
     private PlayerSkillState playerSkillState;
@@ -44,8 +45,7 @@ public class PlayerInventory : MonoBehaviour
     public bool AssignQuickSlot(int slot, int itemIndex)
     {
         if (slot < 0 || slot >= quickSlots.Length || itemIndex < -1 || itemIndex >= items.Count) return false;
-        int previous = quickSlots[slot];
-        for (int i = 0; i < quickSlots.Length; i++) if (itemIndex >= 0 && quickSlots[i] == itemIndex) quickSlots[i] = previous;
+        for (int i = 0; i < quickSlots.Length; i++) if (itemIndex >= 0 && quickSlots[i] == itemIndex) quickSlots[i] = -1;
         quickSlots[slot] = itemIndex; OnInventoryChanged?.Invoke(); return true;
     }
     public bool SwapItems(int from, int to)
@@ -61,7 +61,9 @@ public class PlayerInventory : MonoBehaviour
         if (restored.Count > maxSlots || assignments == null || assignments.Length != 5) throw new ArgumentException("Saved inventory does not fit this player.");
         foreach (int index in assignments) if (index < -1 || index >= restored.Count) throw new ArgumentException("Invalid saved quick slot.");
         items.Clear(); foreach (var item in restored) { if (item == null) throw new ArgumentException("Missing saved item."); items.Add(item); }
-        quickSlots = (int[])assignments.Clone(); OnInventoryChanged?.Invoke();
+        quickSlots = (int[])assignments.Clone();
+        RemoveLearnedBooks();
+        OnInventoryChanged?.Invoke();
     }
     private void RemoveItem(int index)
     {
@@ -106,11 +108,31 @@ public class PlayerInventory : MonoBehaviour
 
     public bool TryAddItem(ItemData item, out InventoryAddFailure failure)
     {
+        if (!CanAcceptItem(item, out failure)) return false;
+        items.Add(item);
+        for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] < 0) { quickSlots[i] = items.Count - 1; break; }
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    // Shared eligibility for world pickup and every inventory insertion caller.
+    public bool CanAcceptItem(ItemData item, out InventoryAddFailure failure)
+    {
         failure = InventoryAddFailure.None;
         if (item == null)
         {
             failure = InventoryAddFailure.InvalidItem;
             return false;
+        }
+
+        if (item is KnowledgeBookItemData book && book.skill != null)
+        {
+            if (playerSkillState == null) playerSkillState = GetComponent<PlayerSkillState>();
+            if (playerSkillState != null && playerSkillState.HasSkill(book.skill))
+            {
+                failure = InventoryAddFailure.AlreadyLearned;
+                return false;
+            }
         }
 
         if (items.Count >= maxSlots)
@@ -119,12 +141,18 @@ public class PlayerInventory : MonoBehaviour
             return false;
         }
 
-        items.Add(item);
-        for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] < 0) { quickSlots[i] = items.Count - 1; break; }
-
-        OnInventoryChanged?.Invoke();
-
         return true;
+    }
+
+    // Old snapshots and copies collected before a skill was learned can contain
+    // dead books. Remove only those entries, repairing assignment indices silently.
+    private void RemoveLearnedBooks()
+    {
+        if (playerSkillState == null) playerSkillState = GetComponent<PlayerSkillState>();
+        if (playerSkillState == null) return;
+        for (int i = items.Count - 1; i >= 0; i--)
+            if (items[i] is KnowledgeBookItemData book && book.skill != null && playerSkillState.HasSkill(book.skill))
+                RemoveItem(i);
     }
 
     public void AddItem(ItemData item)
@@ -261,6 +289,7 @@ public class PlayerInventory : MonoBehaviour
         else
             RemoveItem(index);
 
+        RemoveLearnedBooks();
         OnInventoryChanged?.Invoke();
     }
 

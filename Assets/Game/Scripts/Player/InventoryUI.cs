@@ -19,20 +19,23 @@ public class InventoryUI : MonoBehaviour
         root.anchoredPosition = new Vector2(0, 24); root.sizeDelta = new Vector2(540, 106);
         var layout = GetComponent<HorizontalLayoutGroup>();
         if (layout != null) { layout.spacing = 9; layout.padding = new RectOffset(8,8,6,6); }
-        var background = GetComponent<Image>(); if (background != null) background.color = InterfaceFactory.Navy;
+        var background = GetComponent<Image>(); if (background != null) NeonVisuals.Replace(background, NeonShape.Panel, theme);
         icons = new Image[slotButtons.Length]; panels = new NeonPanel[slotButtons.Length]; quantities = new TMP_Text[slotButtons.Length];
         for (int i = 0; i < slotButtons.Length; i++)
         {
             var button = slotButtons[i]; if (button.image != null) button.image.enabled = false;
             var surface = InterfaceFactory.Panel(button.transform, "SlotSurface", Vector2.zero, Vector2.one); surface.SetAsFirstSibling();
             panels[i] = surface.GetComponent<NeonPanel>(); panels[i].radius = 12;
+            panels[i].SetShape(NeonShape.Slot);
+            NeonVisuals.Feedback(button.gameObject, panels[i]);
             button.targetGraphic = panels[i];
-            icons[i] = InterfaceFactory.Rect(button.transform, "ItemIcon", new Vector2(.18f,.3f), new Vector2(.82f,.89f)).gameObject.AddComponent<Image>();
-            icons[i].preserveAspect = true; icons[i].raycastTarget = false;
-            var label = slotTexts[i]; label.fontSizeMin = 13; label.fontSizeMax = 18; label.enableAutoSizing = true; label.raycastTarget = false;
-            label.color = Color.white; label.rectTransform.anchorMin = new Vector2(.035f,.03f); label.rectTransform.anchorMax = new Vector2(.965f,.35f); label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
-            quantities[i] = InterfaceFactory.Text(button.transform, "Quantity", "", new Vector2(.68f,.34f), new Vector2(.94f,.56f), 18, Color.white, TextAlignmentOptions.Right);
-            InterfaceFactory.Text(button.transform, "Number", (i+1).ToString(), new Vector2(.07f,.76f), new Vector2(.3f,.98f), 19, InterfaceFactory.Cyan);
+            icons[i] = NeonVisuals.Icon(button.transform, "ItemIcon", new(.11f,.22f), new(.89f,.79f));
+            // Keep the serialized label reference for existing wiring, but never
+            // render item names in the compact gameplay bar.
+            slotTexts[i].enabled = false;
+            slotTexts[i].raycastTarget = false;
+            quantities[i] = InterfaceFactory.Text(button.transform, "Quantity", "", new Vector2(.64f,.015f), new Vector2(.88f,.29f), 18, Color.white, TextAlignmentOptions.Right);
+            InterfaceFactory.Text(button.transform, "Number", (i+1).ToString(), new Vector2(.35f,.75f), new Vector2(.65f,1f), 19, InterfaceFactory.Cyan, TextAlignmentOptions.Center);
         }
         Refresh();
     }
@@ -42,8 +45,7 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < panels.Length; i++)
         {
             bool selected = inventory.QuickSlotItem(i) != null && inventory.QuickSlotItem(i) == inventory.SelectedItem;
-            var desired = selected ? InterfaceFactory.Cyan : InterfaceFactory.Violet;
-            if (panels[i].accent != desired) panels[i].SetAccent(desired);
+            panels[i].SetState(selected ? NeonState.Selected : inventory.QuickSlotItem(i) == null ? NeonState.Empty : NeonState.Normal);
         }
     }
 
@@ -79,7 +81,7 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < slotButtons.Length; i++)
         {
             if (icons != null) {
-                var item = inventory.QuickSlotItem(i); icons[i].sprite = item?.icon; icons[i].enabled = icons[i].sprite != null;
+                var item = inventory.QuickSlotItem(i); icons[i].sprite = InterfaceIconCatalog.ForItem(item); icons[i].enabled = icons[i].sprite != null;
                 int count = 0; foreach (var owned in inventory.Items) if (owned == item) count++;
                 quantities[i].text = item != null ? count.ToString() : "";
             }

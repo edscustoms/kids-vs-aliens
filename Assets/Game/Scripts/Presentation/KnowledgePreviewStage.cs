@@ -110,6 +110,7 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
         if (output != null)
             output.texture = texture;
         content.FrameCurrent(Mathf.Max(0.1f, distanceMultiplier), targetOffset);
+        EnsureBackdrop();
         if (floorMaterial != null && presentationFloor == null)
         {
             presentationFloor = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -118,11 +119,33 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
             presentationFloor.transform.SetParent(previewRoot, false);
             presentationFloor.transform.localPosition = new Vector3(0, -.025f, 0);
             presentationFloor.transform.localRotation = Quaternion.Euler(90,0,0);
-            presentationFloor.transform.localScale = Vector3.one * 6;
+            // Keep the pad/grid in stage units while extending the shared ground
+            // beyond every authored preview frustum.
+            presentationFloor.transform.localScale = Vector3.one * floorMaterial.GetFloat("_StageSize");
             presentationFloor.layer = previewLayer;
             presentationFloor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
         }
         SetVisible(true);
+    }
+
+    // The character keeps its authored square output/framing. A separate shared
+    // procedural backdrop fills the entire inner frame, including its side bands.
+    public void EnsureBackdrop()
+    {
+        if (output == null || output.transform.parent == null) return;
+        var parent = output.transform.parent;
+        var existing = parent.Find("StageBackdrop");
+        var rect = existing != null ? (RectTransform)existing
+            : InterfaceFactory.Rect(parent, "StageBackdrop", new Vector2(.015f,.015f), new Vector2(.985f,.985f));
+        var graphic = rect.GetComponent<Image>() ?? rect.gameObject.AddComponent<Image>();
+        graphic.raycastTarget = false;
+        graphic.material = Resources.Load<Material>("TutorialBackdrop");
+        graphic.color = Color.white;
+        if (rect.GetSiblingIndex() != output.transform.GetSiblingIndex()-1)
+        {
+            rect.SetAsLastSibling();
+            rect.SetSiblingIndex(output.transform.GetSiblingIndex());
+        }
     }
 
     private void SetVisible(bool visible)

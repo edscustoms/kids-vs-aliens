@@ -67,6 +67,19 @@ public static class GameplaySceneSetup
 
         try
         {
+            // Migrate the original five-item backpack; retain deliberately tuned
+            // capacities. Quick slots are a separate, unchanged five-entry row.
+            var inventory = player.GetComponent<PlayerInventory>();
+            if (inventory != null)
+            {
+                var serialized = new SerializedObject(inventory);
+                var capacity = serialized.FindProperty("maxSlots");
+                if (capacity.intValue == 5)
+                {
+                    capacity.intValue = 25;
+                    serialized.ApplyModifiedProperties();
+                }
+            }
             // This is the existing source of truth used by GamePoc. It adds/reuses:
             // - GameplayPresentationV1
             // - Knowledge tutorial/modal + character preview
@@ -90,6 +103,7 @@ public static class GameplaySceneSetup
             BeamTransportSetup.ConfigureScene(player);
             FloatingAnimationSetup.Ensure();
             BeamHoistZoneSetup.ConfigureScene(player);
+            ProceduralUISetup.EnsureAssets();
             RunInterfaceSetup.ConfigureGameplay(player, presentation);
 
             EditorSceneManager.MarkSceneDirty(scene);

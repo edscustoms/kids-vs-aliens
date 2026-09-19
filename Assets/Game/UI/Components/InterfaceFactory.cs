@@ -22,9 +22,8 @@ public static class InterfaceFactory
     public static RectTransform Panel(Transform parent, string name, Vector2 min, Vector2 max, bool danger = false)
     {
         var rect = Rect(parent, name, min, max);
-        var panel = rect.gameObject.AddComponent<NeonPanel>(); panel.color = Navy;
-        panel.accent = danger ? Magenta : Cyan; panel.secondary = Violet;
-        if (theme != null) { panel.radius = theme.panelRadius; panel.glow = theme.borderGlow; }
+        var panel = rect.gameObject.AddComponent<NeonPanel>();
+        panel.ApplyTheme(theme, danger);
         return rect;
     }
     public static TMP_Text Text(Transform parent, string name, string value, Vector2 min, Vector2 max,
@@ -41,7 +40,9 @@ public static class InterfaceFactory
     public static Button Button(Transform parent, string name, string label, Vector2 min, Vector2 max, UnityAction action, bool danger = false)
     {
         var rect = Panel(parent, name, min, max, danger);
+        rect.GetComponent<NeonPanel>().SetShape(NeonShape.Button);
         var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = rect.GetComponent<NeonPanel>();
+        NeonVisuals.Feedback(rect.gameObject, rect.GetComponent<NeonPanel>());
         var colors = ColorBlock.defaultColorBlock; colors.highlightedColor = new Color(.6f, .85f, 1); colors.pressedColor = new Color(.34f, .48f, .75f);
         colors.selectedColor = Color.white; colors.disabledColor = new Color(.4f, .42f, .55f, .5f); button.colors = colors;
         button.navigation = new Navigation { mode = Navigation.Mode.None };
