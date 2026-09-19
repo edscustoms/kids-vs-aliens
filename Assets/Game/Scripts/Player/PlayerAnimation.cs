@@ -138,6 +138,9 @@ public class PlayerAnimation : MonoBehaviour
     public bool TryPlayAction(CharacterActionId action) =>
         driver != null && driver.TryPlayAction(action);
 
+    public bool IsActionPlaying(CharacterActionId action) => driver != null && driver.IsActionPlaying(action);
+    public bool CanChainAction(CharacterActionId action) => driver != null && driver.CanChainAction(action);
+
     public void SetCombatStance(bool active)
     {
         combatStance = active;

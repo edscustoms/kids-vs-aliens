@@ -19,15 +19,53 @@ MonoBehaviour:
     statePath: GrenadeThrow.TossGrenade
     clip: {fileID: 7400000, guid: e706b952b42091945bdf23e6fe0ca5d2, type: 2}
     cancellationStatePath: 
+    chainStart: 0
+    requiresLegMotion: 0
   - action: 7
     triggerParameter: MeleeLight1
     layerName: UnarmedCombatActions
-    statePath: UnarmedCombatActions.Punch_Left
-    clip: {fileID: 8201581640480608467, guid: 933d9395c0a361843bfee209f01b4364, type: 3}
+    statePath: UnarmedCombatActions.Light1
+    clip: {fileID: 7400000, guid: 57054f2238eac604db48c3f741094277, type: 2}
     cancellationStatePath: UnarmedCombatActions.Empty
+    chainStart: 0.72602737
+    requiresLegMotion: 0
   - action: 8
     triggerParameter: MeleeLight2
     layerName: UnarmedCombatActions
-    statePath: UnarmedCombatActions.Punch_Right
-    clip: {fileID: -2880506663686599108, guid: 933d9395c0a361843bfee209f01b4364, type: 3}
+    statePath: UnarmedCombatActions.Light2
+    clip: {fileID: 7400000, guid: a2152a53a42104848a5922045cb09ceb, type: 2}
     cancellationStatePath: UnarmedCombatActions.Empty
+    chainStart: 0.7741935
+    requiresLegMotion: 0
+  - action: 9
+    triggerParameter: MeleeLight3
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Light3
+    clip: {fileID: 7400000, guid: 8ed45b8917b5cef4e8b9370f77aa1537, type: 2}
+    cancellationStatePath: UnarmedCombatActions.Empty
+    chainStart: 0.875
+    requiresLegMotion: 0
+  - action: 10
+    triggerParameter: MeleeHeavy
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Heavy
+    clip: {fileID: 7400000, guid: 3956e5dab0a8fc748b5cb82a3808ecf7, type: 2}
+    cancellationStatePath: UnarmedCombatActions.Empty
+    chainStart: 0.8000002
+    requiresLegMotion: 0
+  - action: 5
+    triggerParameter: Kick
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.Kick
+    clip: {fileID: 7400000, guid: bf897951b7d320a47b2a90326cb602e6, type: 2}
+    cancellationStatePath: UnarmedCombatActions.Empty
+    chainStart: 0.8148148
+    requiresLegMotion: 1
+  - action: 11
+    triggerParameter: HeavyKick
+    layerName: UnarmedCombatActions
+    statePath: UnarmedCombatActions.HeavyKick
+    clip: {fileID: 7400000, guid: cb2b624bf83455b429266ac962acb476, type: 2}
+    cancellationStatePath: UnarmedCombatActions.Empty
+    chainStart: 0.81081074
+    requiresLegMotion: 1

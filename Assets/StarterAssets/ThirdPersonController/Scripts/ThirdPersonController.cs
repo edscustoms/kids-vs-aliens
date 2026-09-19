@@ -106,6 +106,7 @@ namespace StarterAssets
         private Animator _animator;
         private CharacterController _controller;
         private StarterAssetsInputs _input;
+        private PlayerMeleeController _melee;
         private GameObject _mainCamera;
 
         private const float _threshold = 0.01f;
@@ -139,6 +140,7 @@ namespace StarterAssets
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
+            _melee = GetComponent<PlayerMeleeController>();
 
 #if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
@@ -216,7 +218,9 @@ namespace StarterAssets
         {
             float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
-            if (_input.move == Vector2.zero)
+            // A committed planted attack uses the same acceleration/deceleration path.
+            // Input, gravity, collisions and the CharacterController stay authoritative.
+            if (_input.move == Vector2.zero || (Grounded && _melee != null && _melee.RequiresPlantedFeet))
             {
                 targetSpeed = 0.0f;
             }

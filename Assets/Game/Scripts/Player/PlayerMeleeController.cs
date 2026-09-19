@@ -31,6 +31,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private readonly RaycastHit[] sightHits = new RaycastHit[32];
     private UnarmedCombatItemData selectedItem;
     private bool stance, nearby, waitingForImpact, buffered;
+    private bool recovering, committed;
     private int nextAttack;
     private CharacterActionId pendingAction;
     private float lastInputTime = float.NegativeInfinity, nextProximityCheck;
@@ -39,6 +40,8 @@ public sealed class PlayerMeleeController : MonoBehaviour
     public bool IsCombatStance => stance;
     public bool IsWaitingForImpact => waitingForImpact;
     public bool HasBufferedAttack => buffered;
+    public bool RequiresPlantedFeet => recovering && committed && CanAct
+        && (selectedItem != null ? selectedItem : defaultCombatItem).RequiresPlantedFeet(pendingAction);
     public bool IsUnlocked => HasKnowledge(selectedItem != null ? selectedItem : defaultCombatItem);
     public bool IsEligible => isActiveAndEnabled && IsUnlocked
         && (equipment == null || equipment.EquippedWeapon == null)
@@ -110,7 +113,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
         if (!CanAct) return false;
         lastInputTime = Time.time;
         SetStance(true);
-        if (waitingForImpact || buffered)
+        if (waitingForImpact || buffered || recovering)
         {
             buffered = true; // Exactly one next attack, regardless of extra taps.
             return true;
@@ -120,7 +123,9 @@ public sealed class PlayerMeleeController : MonoBehaviour
 
     private bool BeginAttack()
     {
-        pendingAction = nextAttack == 0 ? CharacterActionId.MeleeLight1 : CharacterActionId.MeleeLight2;
+        var chain = (selectedItem != null ? selectedItem : defaultCombatItem)?.attackChain;
+        if (chain == null || chain.Length == 0) return false;
+        pendingAction = chain[nextAttack % chain.Length];
         waitingForImpact = true;
         if (playerAnimation == null || !playerAnimation.TryPlayAction(pendingAction, CharacterAnimationEventId.MeleeImpact))
         {
@@ -128,7 +133,8 @@ public sealed class PlayerMeleeController : MonoBehaviour
             buffered = false;
             return false; // Missing presentation must never cause invisible damage.
         }
-        nextAttack ^= 1;
+        nextAttack = (nextAttack + 1) % chain.Length;
+        recovering = committed = true;
         AttackRequested?.Invoke(pendingAction);
         return true;
     }
@@ -136,15 +142,21 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private void Update()
     {
         if (!CanAct) { CancelCombat(); return; }
+        if (recovering && !waitingForImpact && playerAnimation.CanChainAction(pendingAction)) committed = false;
         if (Time.time >= nextProximityCheck)
         {
             nextProximityCheck = Time.time + proximityInterval;
             nearby = HasNearbyTarget(nearby ? Mathf.Max(enterDistance, exitDistance) : enterDistance);
         }
-        bool active = nearby || Time.time - lastInputTime <= inactivityTimeout || waitingForImpact || buffered;
+        if (recovering && !waitingForImpact && !playerAnimation.IsActionPlaying(pendingAction))
+        {
+            recovering = buffered = false;
+            nextAttack = 0;
+        }
+        bool active = nearby || Time.time - lastInputTime <= inactivityTimeout || waitingForImpact || buffered || recovering;
         if (!active) { CancelCombat(); return; }
         SetStance(true);
-        if (buffered && !waitingForImpact)
+        if (buffered && !waitingForImpact && playerAnimation.CanChainAction(pendingAction))
         {
             buffered = false;
             BeginAttack(); // Outside the native Animator event callback.
@@ -153,13 +165,12 @@ public sealed class PlayerMeleeController : MonoBehaviour
 
     public void CancelCombat()
     {
-        if (!stance && !waitingForImpact && !buffered) return;
-        waitingForImpact = buffered = nearby = false;
+        if (!stance && !waitingForImpact && !buffered && !recovering) return;
+        waitingForImpact = buffered = nearby = recovering = committed = false;
         nextAttack = 0;
         lastInputTime = float.NegativeInfinity;
         nextProximityCheck = 0;
-        playerAnimation?.CancelAction(CharacterActionId.MeleeLight1);
-        playerAnimation?.CancelAction(CharacterActionId.MeleeLight2);
+        playerAnimation?.CancelAction(pendingAction);
         SetStance(false);
     }
 

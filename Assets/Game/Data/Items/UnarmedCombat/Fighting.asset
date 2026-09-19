@@ -17,3 +17,5 @@ MonoBehaviour:
   icon: {fileID: 0}
   worldPrefab: {fileID: 0}
   requiredSkill: {fileID: 11400000, guid: 4b9774f1e764486594fcc435fa91847c, type: 2}
+  attackChain: 0700000008000000090000000a00000005000000
+  plantedAttacks: 050000000b000000

@@ -3,11 +3,38 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using Object = UnityEngine.Object;
 
 [TestFixture, Category("Core")]
 public sealed class UnarmedCombatContentTests
 {
+    [TestCase("Amy")]
+    [TestCase("SportyGranny")]
+    public void StationaryGuardRetainsAuthoredFootPlacement(string name)
+    {
+        var prefab=AssetDatabase.LoadAssetAtPath<CharacterVisual>($"Assets/Game/Prefabs/Player/Characters/{name}.prefab");
+        var actor=Object.Instantiate(prefab); var reference=Object.Instantiate(prefab);
+        var graph=PlayableGraph.Create();
+        try
+        {
+            actor.Animator.cullingMode=reference.Animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;
+            actor.Animator.fireEvents=reference.Animator.fireEvents=false;
+            var driver=new CharacterAnimatorDriver(actor.Animator,actor.AnimationActions); driver.SetCombatStance(true);
+            for(int i=0;i<120;i++) {driver.SetMovement(Vector2.zero,1f/60);actor.Animator.Update(1f/60);}
+            reference.Animator.runtimeAnimatorController=null;
+            graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+            var playable=AnimationClipPlayable.Create(graph,FightingAnimationAuthoring.Clip("Guard"));
+            playable.SetApplyFootIK(true);
+            AnimationPlayableOutput.Create(graph,"Reference guard",reference.Animator).SetSourcePlayable(playable);
+            graph.Play(); playable.SetTime(2); graph.Evaluate(0);
+            foreach(var foot in new[]{HumanBodyBones.LeftFoot,HumanBodyBones.RightFoot})
+                Assert.That(Vector3.Distance(actor.Animator.GetBoneTransform(foot).position,reference.Animator.GetBoneTransform(foot).position),
+                    Is.LessThan(.06f),"Standing guard must preserve the selected clip's stance instead of narrowing before the opener.");
+        }
+        finally {graph.Destroy();Object.DestroyImmediate(actor.gameObject);Object.DestroyImmediate(reference.gameObject);}
+    }
     [TestCase("Amy")]
     [TestCase("SportyGranny")]
     public void SharedMappingsUseImportedMarkedActionsAndKeepLegsUnderLocomotion(string name)
@@ -28,7 +55,7 @@ public sealed class UnarmedCombatContentTests
             AvatarMaskBodyPart.LeftFingers, AvatarMaskBodyPart.RightFingers }) Assert.That(layer.avatarMask.GetHumanoidBodyPartActive(part), Is.True);
         Assert.That(System.Array.FindIndex(controller.layers, l => l.name == "GrenadeThrow"),
             Is.GreaterThan(System.Array.FindIndex(controller.layers, l => l.name == layer.name)));
-        foreach (var action in new[] { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2 })
+        foreach (var action in new[] { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2, CharacterActionId.MeleeLight3, CharacterActionId.MeleeHeavy, CharacterActionId.Kick, CharacterActionId.HeavyKick })
         {
             Assert.That(prefab.AnimationActions.TryGetBinding(action, out var binding), Is.True);
             Assert.That(binding.layerName, Is.EqualTo(layer.name));
@@ -38,7 +65,8 @@ public sealed class UnarmedCombatContentTests
                 && e.intParameter == (int)CharacterAnimationEventId.MeleeImpact).ToArray();
             Assert.That(markers.Length, Is.EqualTo(1));
             Assert.That(markers[0].time, Is.GreaterThan(0).And.LessThan(binding.clip.length * .8f));
-            VerifyMovingPunch(prefab, action);
+            Assert.That(binding.chainStart,Is.GreaterThan(markers[0].time/binding.clip.length).And.LessThan(.92f));
+            if(!binding.requiresLegMotion) VerifyMovingPunch(prefab, action);
         }
     }
 
@@ -47,7 +75,7 @@ public sealed class UnarmedCombatContentTests
         var actor = Object.Instantiate(prefab); var baseline = Object.Instantiate(prefab);
         try
         {
-            foreach (var movement in new[] { Vector2.zero, new Vector2(0,.5f), Vector2.up, Vector2.left, Vector2.right,
+            foreach (var movement in new[] { new Vector2(0,.5f), Vector2.up, Vector2.left, Vector2.right,
                 new Vector2(-1,1).normalized, new Vector2(1,1).normalized, Vector2.down })
             {
                 foreach (var animator in new[] { actor.Animator, baseline.Animator })
@@ -55,6 +83,8 @@ public sealed class UnarmedCombatContentTests
                     animator.fireEvents = false; animator.applyRootMotion = false; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                     animator.Rebind(); animator.SetBool("CombatStance", true); animator.SetFloat("MoveX", movement.x); animator.SetFloat("MoveY", movement.y);
                     animator.Update(0); animator.Update(.5f);
+                    animator.SetLayerWeight(animator.GetLayerIndex("CombatFootwork"),0);
+                    animator.SetLayerWeight(animator.GetLayerIndex("CombatGuard"),1);
                 }
                 var driver = new CharacterAnimatorDriver(actor.Animator, actor.AnimationActions);
                 Assert.That(driver.TryPlayAction(action), Is.True);

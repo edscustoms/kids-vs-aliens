@@ -87,6 +87,8 @@ public sealed class PlayerMeleeTests
         Assert.That(melee.HasBufferedAttack, Is.False);
         Impact(); Assert.That(melee.IsWaitingForImpact, Is.False);
         input.ShootInput(false); input.ShootInput(true);
+        Assert.That(requests.Count, Is.EqualTo(1), "A second tap must preserve contact and recovery.");
+        AdvanceToNextAttack();
         Assert.That(requests.Last(), Is.EqualTo(CharacterActionId.MeleeLight2));
     }
 
@@ -221,13 +223,14 @@ public sealed class PlayerMeleeTests
     {
         Learn(); var target = Target(1); melee.TryAttack(); melee.TryAttack(); melee.TryAttack();
         Assert.That(melee.HasBufferedAttack, Is.True); Impact();
-        Call(melee, "Update"); Assert.That(requests, Is.EqualTo(new[] { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2 }));
+        Call(melee, "Update"); Assert.That(requests.Count,Is.EqualTo(1),"Impact must not open the recovery window prematurely.");
+        AdvanceToNextAttack(); Assert.That(requests, Is.EqualTo(new[] { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2 }));
         Call(animation, "HandleMarker", CharacterAnimationEventId.MeleeImpact, State(CharacterActionId.MeleeLight1));
         Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount, Is.EqualTo(1));
         Impact(); Call(melee, "Update"); Assert.That(requests.Count, Is.EqualTo(2));
         Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount, Is.EqualTo(2));
         Set(melee, "lastInputTime", Time.time - 4); target.SetTargetable(false); Scan();
-        actor.Animator.Update(1); melee.TryAttack(); Assert.That(requests.Last(), Is.EqualTo(CharacterActionId.MeleeLight1));
+        actor.Animator.Update(1); Call(melee,"Update"); melee.TryAttack(); Assert.That(requests.Last(), Is.EqualTo(CharacterActionId.MeleeLight1));
     }
 
     [Test]
@@ -253,6 +256,30 @@ public sealed class PlayerMeleeTests
     }
 
     private void Learn() => skills.UnlockSkill(item.requiredSkill);
+    private void AdvanceToNextAttack()
+    {
+        int count=requests.Count;
+        for(int i=0;i<240 && requests.Count==count;i++)
+        { actor.Animator.Update(1f/120); Call(animation,"LateUpdate"); Call(melee,"Update"); }
+        Assert.That(requests.Count,Is.EqualTo(count+1));
+    }
+
+    [Test]
+    public void CompleteChainUsesOneInputAndOneImpactPerStep_ThenResetsAfterRecovery()
+    {
+        Learn(); var target=Target(1); Assert.That(melee.TryAttack(),Is.True);
+        for(int step=0;step<item.attackChain.Length;step++)
+        {
+            Assert.That(requests.Last(),Is.EqualTo(item.attackChain[step]));
+            if(step+1<item.attackChain.Length) Assert.That(melee.TryAttack(),Is.True);
+            Impact();
+            Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount,Is.EqualTo(step+1));
+            if(step+1<item.attackChain.Length) AdvanceToNextAttack();
+        }
+        for(int i=0;i<240;i++) { actor.Animator.Update(1f/120); Call(melee,"Update"); }
+        Assert.That(requests.Count,Is.EqualTo(item.attackChain.Length));
+        Assert.That(melee.TryAttack(),Is.True); Assert.That(requests.Last(),Is.EqualTo(CharacterActionId.MeleeLight1));
+    }
     private void Scan() { Set(melee, "nextProximityCheck", 0f); Call(melee, "Update"); }
     private void Impact()
     {
