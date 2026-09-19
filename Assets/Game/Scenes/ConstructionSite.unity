@@ -4250,6 +4250,7 @@ Transform:
   m_Children:
   - {fileID: 249319375}
   - {fileID: 941090418}
+  - {fileID: 1674108594}
   - {fileID: 1590690738}
   - {fileID: 2031079252}
   - {fileID: 690993059}
@@ -20540,11 +20541,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.009999999
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.009999999
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
       propertyPath: m_LocalPosition.x
@@ -21104,6 +21105,74 @@ Transform:
   - {fileID: 470134427}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &832795959
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 243849721}
+    m_Modifications:
+    - target: {fileID: 3195579424107535968, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_Name
+      value: Plasma_Rifle_Dropped (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -14.17
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.68
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 18.34
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3195579424107535968, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674108595}
+  m_SourcePrefab: {fileID: 100100000, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
 --- !u!43 &834823473
 Mesh:
   m_ObjectHideFlags: 0
@@ -33624,6 +33693,29 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 486268, guid: 4357217ce6e63554f97828955f1d9394, type: 3}
   m_PrefabInstance: {fileID: 9200000000105}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674108593 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3195579424107535968, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+  m_PrefabInstance: {fileID: 832795959}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1674108594 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8377394024272580951, guid: 85c148769ac9b7346bab7bc72d24b823, type: 3}
+  m_PrefabInstance: {fileID: 832795959}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1674108595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674108593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c2c45fbfecce194e98215354031d780, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunWorldObject
+  stableId: GlobalObjectId_V1-2-7b00e10e5592ae649b8eae83c2b809c4-3195579424107535968-820160969
 --- !u!4 &1682819332 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 486268, guid: 4357217ce6e63554f97828955f1d9394, type: 3}
@@ -37723,6 +37815,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 828890722}
     m_Modifications:
+    - target: {fileID: 2466120223940487441, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
+      propertyPath: startingWeapon
+      value: 
+      objectReference: {fileID: 11400000, guid: 3765c3b1e078cf14487dc137ccde2ce1, type: 2}
+    - target: {fileID: 2466120223940487441, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
+      propertyPath: dropWeaponOnDeath
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3628672886102332991, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_Name
       value: PF_Enemy_Melee_POC_V1 (7)
@@ -42151,6 +42251,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5150983897785989327, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
+      propertyPath: allowWeaponPickup
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8575176480317741674, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -42371,6 +42475,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 828890722}
     m_Modifications:
+    - target: {fileID: 2466120223940487441, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
+      propertyPath: startingWeapon
+      value: 
+      objectReference: {fileID: 11400000, guid: f70783c94c394824cae0a35867011521, type: 2}
+    - target: {fileID: 2466120223940487441, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
+      propertyPath: dropWeaponOnDeath
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3628672886102332991, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_Name
       value: PF_Enemy_Melee_POC_V1 (8)

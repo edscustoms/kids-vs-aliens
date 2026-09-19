@@ -55,6 +55,7 @@ public sealed class EnemyLocomotionAnimator : MonoBehaviour
             animator =
                 GetComponentInChildren<Animator>();
 
+        animator = EnemyCombatPresentation.Resolve(this, animator);
         if (animator == null)
             return;
 

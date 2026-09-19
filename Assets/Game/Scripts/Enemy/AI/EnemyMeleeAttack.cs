@@ -42,6 +42,7 @@ public sealed class EnemyMeleeAttack : MonoBehaviour
     private void CacheReferences()
     {
         if(animator==null)animator=GetComponentInChildren<Animator>(true);
+        animator=EnemyCombatPresentation.Resolve(this,animator);
         if(motor==null)motor=GetComponent<EnemyMotor>();
         health=GetComponent<EnemyHealth>();
         relay=animator!=null?animator.GetComponent<CharacterAnimationEventRelay>():null;

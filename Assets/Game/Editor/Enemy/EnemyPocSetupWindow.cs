@@ -336,6 +336,8 @@ public sealed class EnemyPocSetupWindow : EditorWindow
                 animator);
         }
 
+        EnemyCombatantSetup.EnsureAssets();
+        EnemyCombatantSetup.Configure(root);
         EditorUtility.SetDirty(body);
         EditorUtility.SetDirty(agent);
         EditorUtility.SetDirty(health);

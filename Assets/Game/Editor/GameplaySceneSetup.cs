@@ -105,6 +105,7 @@ public static class GameplaySceneSetup
             BeamHoistZoneSetup.ConfigureScene(player);
             ProceduralUISetup.EnsureAssets();
             RunInterfaceSetup.ConfigureGameplay(player, presentation);
+            EnemyCombatantSetup.ConfigureScene(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);

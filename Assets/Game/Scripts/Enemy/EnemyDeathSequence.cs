@@ -86,6 +86,7 @@ public sealed class EnemyDeathSequence : MonoBehaviour
     private void Awake()
     {
         CacheReferences();
+        animator = EnemyCombatPresentation.Resolve(this, animator);
     }
 
     private void OnEnable()
