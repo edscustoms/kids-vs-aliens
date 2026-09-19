@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Beam Hoist
   description: Use alien beam energy to lift Amy onto elevated areas. Stand beside
     a hoistable surface and press Jump to lift onto it.
-  tutorialData: {fileID: 0}
+  tutorialData: {fileID: 11400000, guid: fa509693e9f0ded48accddfaf8ca8837, type: 2}
   startingLevel: 1
   xpPerLevel: 100
   unlocks: []

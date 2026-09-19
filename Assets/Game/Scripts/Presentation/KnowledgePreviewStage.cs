@@ -35,6 +35,22 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
     public GameObject Actor => content?.CurrentInstance;
     public Transform StagingRoot => previewRoot;
     public int PreviewLayer => previewLayer;
+    public Camera PreviewCamera => previewCamera;
+
+    // Fixed framing for a preview-only motion envelope. Account for Canvas/rig
+    // scale instead of treating authored stage metres as world-space offsets.
+    public void FrameTravel(Vector3 localTravel)
+    {
+        if (!PreviewStageContent.TryGetModelBounds(Actor, out Bounds bounds)) return;
+        Vector3 worldTravel = previewRoot.TransformVector(localTravel);
+        Bounds end = new Bounds(bounds.center + worldTravel, bounds.size);
+        bounds.Encapsulate(end);
+        float halfFov = previewCamera.fieldOfView * Mathf.Deg2Rad * .5f;
+        float distance = Mathf.Max(bounds.extents.y, bounds.extents.x) / Mathf.Tan(halfFov);
+        distance = (distance + bounds.extents.z) * 1.22f;
+        previewCamera.transform.position = bounds.center + Vector3.back * distance;
+        previewCamera.transform.rotation = Quaternion.identity;
+    }
     public bool IsRendering => previewCamera != null && previewCamera.enabled;
 
     // Resolve per pipeline, since desktop/mobile can use different indices.

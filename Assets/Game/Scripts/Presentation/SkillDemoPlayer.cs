@@ -21,6 +21,7 @@ public sealed class SkillDemoPlayer : MonoBehaviour
     private SkillTutorialData tutorial;
     private WeaponInstance previewWeapon;
     private PlayerShooter playerShooter;
+    private KnowledgeAbilityDemo abilityDemo;
 
     private bool actionSupported;
     private float elapsed;
@@ -176,6 +177,9 @@ public sealed class SkillDemoPlayer : MonoBehaviour
                 tutorial != null ? tutorial.distanceMultiplier : 1.15f,
                 tutorial != null ? tutorial.targetOffset : Vector3.zero
             );
+            if (tutorial != null && (tutorial.demoType == SkillDemoType.BeamHoist
+                || tutorial.demoType == SkillDemoType.GrenadeThrow))
+                abilityDemo = new KnowledgeAbilityDemo(stage, actor, driver, tutorial);
         }
         catch (Exception exception)
         {
@@ -202,6 +206,16 @@ public sealed class SkillDemoPlayer : MonoBehaviour
 
     private void Update()
     {
+        if (abilityDemo != null)
+        {
+            try { abilityDemo.Tick(Time.unscaledDeltaTime); }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                Clear();
+            }
+            return;
+        }
         UpdateWeaponRecoil();
 
         if (weaponFireDemoActive)
@@ -385,6 +399,8 @@ public sealed class SkillDemoPlayer : MonoBehaviour
 
     private void Clear()
     {
+        abilityDemo?.Dispose();
+        abilityDemo = null;
         if (previewWeapon != null)
             previewWeapon.transform.localPosition = weaponBaseLocalPosition;
 

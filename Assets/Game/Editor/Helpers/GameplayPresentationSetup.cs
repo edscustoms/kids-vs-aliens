@@ -154,12 +154,22 @@ public static class GameplayPresentationSetup
             "Assets/Game/Data/Items/Grenades/ElectricGrenade.asset",
             "You can now activate alien grenades.",
             "Select a grenade. Hold FIRE to charge; release to throw.",
-            SkillDemoType.Stance,
-            CharacterActionId.EquippedStance,
+            SkillDemoType.GrenadeThrow,
+            CharacterActionId.GrenadeThrow,
             0,
             0.7f,
             2.0f
         );
+        Tutorial("BeamHoist", null, "Use alien beams to reach elevated areas.",
+            "Stand in a valid hoist zone and press Jump.", SkillDemoType.BeamHoist,
+            CharacterActionId.EquippedStance, 0, .7f, 2f);
+        var beamTutorial = AssetDatabase.LoadAssetAtPath<SkillTutorialData>(DataFolder + "/BeamHoistTutorial.asset");
+        if (beamTutorial != null && beamTutorial.beamPrefab == null)
+        {
+            beamTutorial.beamPrefab = AssetDatabase.LoadAssetAtPath<BeamTransportVFX>("Assets/Game/Prefabs/PF_BeamTransportVFX.prefab");
+            EditorUtility.SetDirty(beamTutorial);
+            AssetDatabase.SaveAssetIfDirty(beamTutorial);
+        }
     }
 
     public static GameObject ConfigureScene(PlayerCharacter player)
@@ -610,7 +620,7 @@ public static class GameplayPresentationSetup
         {
             tutorial.shortDescription = description;
             tutorial.instructions = instructions;
-            tutorial.equipment = AssetDatabase.LoadAssetAtPath<ItemData>(equipmentPath);
+            tutorial.equipment = string.IsNullOrEmpty(equipmentPath) ? null : AssetDatabase.LoadAssetAtPath<ItemData>(equipmentPath);
             tutorial.localizationKey = "knowledge." + skill.Id;
         }
 
