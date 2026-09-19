@@ -41,7 +41,10 @@ public static class BeamTransportSetup
             PrefabUtility.RecordPrefabInstancePropertyModifications(level.transform);
         }
         var sequence = Component<PlayerBeamInSequence>(level);
-        var start = level.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "BeamInSpawn");
+        // The serialized reference wins, including an intentionally renamed/moved marker.
+        var start = new SerializedObject(sequence).FindProperty("beamInSpawn").objectReferenceValue as Transform;
+        if (start == null) start = level.GetComponentInChildren<BeamArrivalPoint>(true)?.transform;
+        if (start == null) start = level.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "BeamInSpawn");
         if (start == null)
         {
             var marker = new GameObject("BeamInSpawn");
@@ -49,6 +52,7 @@ public static class BeamTransportSetup
             marker.transform.SetParent(level.transform, false);
             start = marker.transform;
         }
+        Component<BeamArrivalPoint>(start.gameObject);
         var effect = level.GetComponentInChildren<BeamTransportVFX>(true);
         if (effect == null)
         {

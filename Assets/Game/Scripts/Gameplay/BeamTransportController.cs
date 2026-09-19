@@ -97,7 +97,7 @@ public sealed class BeamTransportController : MonoBehaviour
         if (
             !Begin(
                 effect,
-                effect != null ? effect.transform.position : end,
+                end,
                 BeamTransportDirection.Down,
                 1,
                 initialDelay,

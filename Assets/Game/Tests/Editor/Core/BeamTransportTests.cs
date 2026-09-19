@@ -88,8 +88,10 @@ public sealed class BeamTransportTests
     public void Arrival_OwnsPlayerSynchronously_RejectsDoubleStart()
     {
         landingObject.transform.position = player.transform.position;
+        landingObject.transform.rotation = Quaternion.Euler(0, 37, 0);
         var vfx = vfxObject.GetComponent<BeamTransportVFX>();
         Assert.That(transport.TryArrival(landingObject.transform, vfx, 3.5f, 2f), Is.True);
+        Assert.That(vfx.transform.position, Is.EqualTo(landingObject.transform.position));
         Assert.That(player.transform.position, Is.EqualTo(landingObject.transform.position + Vector3.up * 3.5f));
         Assert.That(player.GetComponent<StarterAssetsInputs>().GameplayInputBlocked, Is.True);
         Assert.That(transport.TryArrival(landingObject.transform, vfx, 3.5f, 2f), Is.False);
@@ -98,6 +100,14 @@ public sealed class BeamTransportTests
         transport.Advance(1f);
         transport.Advance(0.01f);
         Assert.That(player.transform.position, Is.EqualTo(landingObject.transform.position));
+        Assert.That(Quaternion.Angle(player.transform.rotation, landingObject.transform.rotation), Is.LessThan(.001f));
+        landingObject.transform.position += Vector3.left * 2;
+        landingObject.transform.rotation = Quaternion.Euler(0, 143, 0);
+        Assert.That(transport.TryArrival(landingObject.transform, vfx, 3.5f, 2f), Is.True);
+        Assert.That(vfx.transform.position, Is.EqualTo(landingObject.transform.position));
+        transport.Advance(2f); transport.Advance(.01f);
+        Assert.That(player.transform.position, Is.EqualTo(landingObject.transform.position));
+        Assert.That(Quaternion.Angle(player.transform.rotation, landingObject.transform.rotation), Is.LessThan(.001f));
     }
 
     [TestCase(true)]

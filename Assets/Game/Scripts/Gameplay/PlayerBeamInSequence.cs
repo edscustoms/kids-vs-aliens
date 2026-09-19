@@ -5,6 +5,7 @@ using UnityEngine;
 public sealed class PlayerBeamInSequence : MonoBehaviour
 {
     [SerializeField] private Transform player;
+    [Tooltip("Fresh-entry player root position and facing. Move/rotate this scene marker; Continue ignores it.")]
     [SerializeField] private Transform beamInSpawn;
     [SerializeField] private BeamTransportVFX transportVfx;
     [SerializeField, Min(0.1f)] private float startHeight = 3.5f;
