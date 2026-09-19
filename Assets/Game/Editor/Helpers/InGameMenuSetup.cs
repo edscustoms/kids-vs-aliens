@@ -49,7 +49,12 @@ public static class InGameMenuSetup
             throw new InvalidOperationException(
                 "Gameplay presentation requires its existing SafeArea."
             );
-        var root = Root(safe, "InGameMenuRoot");
+        // Modal shade must span the real Canvas, never the cutout-safe HUD rect.
+        var legacy = safe.Find("InGameMenuRoot");
+        if (legacy != null) Undo.SetTransformParent(legacy, presentation.transform, "Fullscreen menu root");
+        var root = Root(presentation.transform, "InGameMenuRoot");
+        root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one;
+        root.offsetMin = root.offsetMax = Vector2.zero;
         var main = Root(root, "Screen_InGameMenu");
         var options = Root(root, "Screen_InGameOptions");
         var controller =

@@ -156,7 +156,8 @@ public static class RunInterfaceValidation
                 case 11:
                     if(run==null||!run.IsReady||Find<BeamTransportController>().IsTransporting)return;
                     Check(PermanentProgress.Data.skills.Count==SessionState.GetInt("RunValidation.Learned",-1),"restart lost Knowledge");
-                    Check(player.Items.Count==0,"restart kept run inventory");
+                    Check(player.Items.Count==(string.IsNullOrEmpty(expected.startingWeapon)?0:1),"restart did not restore only the starting loadout");
+                    if(player.Items.Count==1)Check(RunContentCatalog.Instance.Id(player.Items[0])==expected.startingWeapon,"restart inventory differs from starting loadout");
                     Check(RunContentCatalog.Instance.Id(Find<PlayerEquipment>().EquippedWeapon)==expected.startingWeapon,"restart retained acquired equipment");
                     Check(Object.FindObjectsByType<RunWorldObject>(FindObjectsInactive.Include).Single(e=>e.Id==removedPickup).gameObject.activeSelf,"restart did not reset pickups");
                     Debug.Log("RUN INTERFACE PLAY SMOKE PASSED: fresh, pause, inventory, knowledge, safe quit, Continue, world restore, lifecycle pause, confirmed restart.");

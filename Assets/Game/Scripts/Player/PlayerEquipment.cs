@@ -35,6 +35,7 @@ public class PlayerEquipment : MonoBehaviour
 
     private void Start()
     {
+        if (RunSaveService.IsRestoringScene(gameObject.scene.name)) return;
         // If a menu loadout exists, SelectedWeapon may intentionally be null
         // because the player selected NONE.
         WeaponItemData weaponToEquip = PlayerLoadoutState.IsInitialized
@@ -43,7 +44,9 @@ public class PlayerEquipment : MonoBehaviour
 
         if (weaponToEquip != null)
         {
-            EquipWeapon(weaponToEquip);
+            var inventory = GetComponent<PlayerInventory>();
+            if (inventory != null && inventory.EnsureOwnedWeapon(weaponToEquip)) EquipWeapon(weaponToEquip);
+            else Debug.LogError("Starting weapon could not be added to the player's inventory.", this);
         }
         else
         {

@@ -148,6 +148,8 @@ public sealed class ActiveRunController : MonoBehaviour
         health?.RestoreRunHealth(player.health, player.armor);
         var equipment = GetComponent<PlayerEquipment>();
         var weapon = catalog.Resolve<WeaponItemData>(player.equipped);
+        // Compatibility for pre-ownership snapshots containing an equipped ghost weapon.
+        if (!inventory.EnsureOwnedWeapon(weapon)) throw new InvalidOperationException("Saved equipped weapon does not fit the backpack.");
         if (weapon != null) equipment.EquipWeapon(weapon); else equipment.UnequipWeapon();
         var selected = catalog.Resolve<ItemData>(player.selected);
         if (selected is GrenadeItemData grenade) GetComponent<PlayerGrenadeController>().RestoreRunSelection(grenade);

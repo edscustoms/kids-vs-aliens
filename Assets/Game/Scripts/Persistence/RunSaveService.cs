@@ -72,6 +72,19 @@ public static class RunSaveService
         ActiveStore.Write(new ActiveRunSave { discarded = true });
         ActiveStore.Write(new ActiveRunSave { discarded = true });
     }
+    public static bool ResetGameProgress()
+    {
+        try
+        {
+            // Stop the scene from writing another active snapshot while returning to Menu.
+            ActiveRunController.Instance?.PrepareToLeave();
+            DiscardActive();
+            PermanentProgress.ResetProgress();
+            PendingRestore = null; EntryMode = RunEntryMode.Fresh; LastError = null;
+            return true;
+        }
+        catch (Exception error) { ReportError(error); return false; }
+    }
     public static void RestoreFinished() { PendingRestore = null; EntryMode = RunEntryMode.Fresh; }
     public static bool IsRestoringScene(string scene) => EntryMode == RunEntryMode.Resume && PendingRestore?.sceneName == scene;
     public static void Notify(string message) => Feedback?.Invoke(message);

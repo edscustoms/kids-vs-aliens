@@ -98,6 +98,7 @@ public static class MenuUISetup
             var back = NewButton(pillPrefab, options, "BackButton", "BACK", new Vector2(0.5f, 0.16f), new Vector2(330, 110));
             UnityEventTools.AddPersistentListener(back.OnClick, router.ShowMainMenu);
         }
+        ProgressResetMenuSetup.Configure(options, theme);
         RunInterfaceSetup.ConfigureMenu(scene);
         EditorSceneManager.MarkSceneDirty(scene);
     }

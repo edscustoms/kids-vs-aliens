@@ -19,6 +19,8 @@ public class PlayerInventoryGrenadeTests
 
         inventory =
             playerObject.AddComponent<PlayerInventory>();
+        // Exercise a small authored capacity independently of the 25-slot default.
+        SetPrivateField(inventory, "maxSlots", 5);
 
         grenade =
             ScriptableObject.CreateInstance<GrenadeItemData>();

@@ -43,7 +43,7 @@ public sealed class InventoryManagementView : MonoBehaviour
         Text(side,"Heading","ITEM DETAILS",new(.05f,.9f),new(.95f,.99f),27,Cyan);
         detailIcon=NeonVisuals.Icon(side,"ItemIcon",new(.14f,.58f),new(.86f,.87f));
         details=Text(side,"Description","Select an item",new(.06f,.27f),new(.94f,.55f),29,null,TextAlignmentOptions.TopLeft);
-        Button(side,"Assign","ASSIGN TO QUICK SLOT",new(.045f,.13f),new(.955f,.235f),()=>{if(selected>=0){assigning=true;hint.text="Tap the quick slot to assign this item.";}});
+        Button(side,"Assign","ASSIGN TO QUICK SLOT",new(.045f,.13f),new(.955f,.235f),()=>{if(inventory.EntryItem(selected)!=null){assigning=true;hint.text="Tap the quick slot to assign this item.";}});
         Button(side,"Unassign","CLEAR QUICK SLOT",new(.045f,.015f),new(.955f,.115f),()=>{if(selectedQuick>=0)inventory.AssignQuickSlot(selectedQuick,-1);});
         Button(transform,"Back","‹  BACK TO PAUSE",new(.055f,.045f),new(.31f,.12f),()=>back());
         Button(transform,"Resume","RESUME GAME",new(.71f,.045f),new(.945f,.12f),()=>resume());
@@ -61,10 +61,10 @@ public sealed class InventoryManagementView : MonoBehaviour
         var slot=r.gameObject.AddComponent<InventoryDragSlot>();slot.Configure(this,index,isQuick);return slot;
     }
     public int OwnedIndexFor(int index,bool isQuick) => isQuick ? inventory.QuickSlotIndex(index) : index>=0&&index<backpackIndices.Count?backpackIndices[index]:-1;
-    public ItemData ItemFor(int index,bool isQuick) { int owned=OwnedIndexFor(index,isQuick);return owned>=0&&owned<inventory.Items.Count?inventory.Items[owned]:null; }
+    public ItemData ItemFor(int index,bool isQuick) => inventory.EntryItem(OwnedIndexFor(index,isQuick));
     public void Select(int index,bool isQuick)
     {
-        if(assigning&&isQuick&&selected>=0){inventory.AssignQuickSlot(index,selected);assigning=false;hint.text="Quick slot updated";return;}
+        if(assigning&&isQuick&&inventory.EntryItem(selected)!=null){inventory.AssignQuickSlot(index,selected);assigning=false;hint.text="Quick slot updated";return;}
         selected=OwnedIndexFor(index,isQuick);
         selectedQuick=isQuick?index:-1;Refresh();
     }
@@ -72,7 +72,7 @@ public sealed class InventoryManagementView : MonoBehaviour
     {
         if(source.Owner!=this||target.Owner!=this)return;
         int itemIndex=OwnedIndexFor(source.Index,source.IsQuick);
-        if(itemIndex<0||itemIndex>=inventory.Items.Count)return;
+        if(inventory.EntryItem(itemIndex)==null)return;
         if(target.IsQuick)inventory.AssignQuickSlot(target.Index,itemIndex);
         else if(source.IsQuick)inventory.AssignQuickSlot(source.Index,-1);
         else { int destination=OwnedIndexFor(target.Index,false);if(inventory.SwapItems(itemIndex,destination))selected=destination; }
@@ -82,23 +82,26 @@ public sealed class InventoryManagementView : MonoBehaviour
     {
         if(quick==null)return;
         backpackIndices.Clear();
-        for(int owned=0;owned<inventory.Items.Count;owned++) {
-            bool assigned=false;
-            for(int slot=0;slot<inventory.QuickSlotCount;slot++)if(inventory.QuickSlotIndex(slot)==owned){assigned=true;break;}
-            if(!assigned)backpackIndices.Add(owned);
+        if(category==ItemType.UnarmedCombat) {
+            if(inventory.LearnedCombat!=null)backpackIndices.Add(PlayerInventory.CombatEntry);
+        } else {
+            for(int owned=0;owned<inventory.Items.Count;owned++)backpackIndices.Add(owned);
         }
         for(int i=0;i<quick.Length;i++)quick[i].Refresh(ItemFor(i,true),true,selectedQuick==i);
         for(int i=0;i<backpack.Length;i++){
             var item=ItemFor(i,false);bool visible=category==null||item==null||item.itemType==category;
-            backpack[i].Refresh(item,visible,selected>=0&&selected==OwnedIndexFor(i,false));
+            backpack[i].gameObject.SetActive(category!=ItemType.UnarmedCombat||item!=null);
+            int entry=OwnedIndexFor(i,false), assigned=-1;
+            for(int slot=0;slot<inventory.QuickSlotCount;slot++)if(entry!=-1&&inventory.QuickSlotIndex(slot)==entry){assigned=slot;break;}
+            backpack[i].Refresh(item,visible,selected!=-1&&selected==entry,assigned);
         }
-        usage.text=$"BACKPACK  {inventory.Items.Count} / {inventory.Capacity}";
-        var selectedItem=selected>=0&&selected<inventory.Items.Count?inventory.Items[selected]:null;
+        usage.text=category==ItemType.UnarmedCombat?"LEARNED COMBAT":$"BACKPACK  {inventory.Items.Count} / {inventory.Capacity}";
+        var selectedItem=inventory.EntryItem(selected);
         detailIcon.sprite=InterfaceIconCatalog.ForItem(selectedItem);detailIcon.enabled=detailIcon.sprite!=null;
         string stats = selectedItem is WeaponItemData weapon ? $"\nDamage: {weapon.damage:g}   Range: {weapon.range:g} m\nMagazine: {weapon.magazineSize}   {weapon.fireMode}"
             : selectedItem is GrenadeItemData grenade ? $"\n{grenade.activationMode} activation\nFuse: {grenade.fuseTime:g} s"
             : selectedItem is KnowledgeBookItemData book && book.skill != null ? "\n" + book.skill.Description : "";
-        details.text=selectedItem!=null?$"{selectedItem.itemName}\n<size=70%><color=#9FAAD9>{selectedItem.itemType}</color>\nQuantity: 1{stats}</size>":"Select an item";
+        details.text=selectedItem!=null?$"{selectedItem.itemName}\n<size=70%><color=#9FAAD9>{(selectedItem is UnarmedCombatItemData ? "Combat capability" : selectedItem.itemType.ToString())}</color>\n{(selectedItem is UnarmedCombatItemData ? "Permanently learned" : "Quantity: 1")}{stats}</size>":"Select an item";
     }
     private void OnDestroy(){if(inventory!=null)inventory.OnInventoryChanged-=Refresh;}
 }
@@ -108,7 +111,7 @@ public sealed class InventoryDragSlot : MonoBehaviour, IPointerClickHandler, IPo
     public InventoryManagementView Owner {get;private set;}
     public int Index {get;private set;}
     public bool IsQuick {get;private set;}
-    private TMP_Text label;
+    private TMP_Text label, number;
     private Image icon;
     private RectTransform ghost;
     private Canvas canvas;
@@ -128,12 +131,14 @@ public sealed class InventoryDragSlot : MonoBehaviour, IPointerClickHandler, IPo
         scroll=quick?null:GetComponentInParent<ScrollRect>();
         icon=NeonVisuals.Icon(transform,"Icon",new(.12f,.33f),new(.88f,.82f));
         label=Text(transform,"Name","",new(.06f,.035f),new(.94f,.32f),20,null,TextAlignmentOptions.Center);
-        Text(transform,"Number",(index+1).ToString(),new(.37f,.82f),new(.63f,.99f),21,Cyan,TextAlignmentOptions.Center);
+        number=Text(transform,"Number",(index+1).ToString(),new(.1f,.82f),new(.9f,.99f),quick?21:14,Cyan,TextAlignmentOptions.Center);
     }
-    public void Refresh(ItemData item,bool visible,bool selected)
+    public void Refresh(ItemData item,bool visible,bool selected,int assigned=-1)
     {
         filtered=!visible;available=visible&&item!=null;icon.sprite=available?InterfaceIconCatalog.ForItem(item):null;icon.enabled=icon.sprite!=null;
         label.text=!visible?"—":item==null?"EMPTY":item.itemName;
+        number.text=available&&assigned>=0?$"SLOT {assigned+1}":(Index+1).ToString();
+        icon.color=assigned>=0?new Color(1,1,1,.55f):Color.white;
         label.color=available?Color.white:Muted;
         GetComponent<NeonPanel>().SetState(!visible ? NeonState.Disabled : selected ? NeonState.Selected : item == null ? NeonState.Empty : NeonState.Normal);
     }

@@ -31,6 +31,15 @@ public class PlayerInventory : MonoBehaviour
     private StarterAssets.StarterAssetsInputs input;
 
     public IReadOnlyList<ItemData> Items => items;
+    // Persisted assignment tokens: nonnegative = owned item, -1 = empty,
+    // -2 = the player's authored unarmed capability (ownership remains Knowledge).
+    public const int CombatEntry = -2;
+    public UnarmedCombatItemData LearnedCombat => playerMeleeController != null
+        && playerSkillState != null && playerMeleeController.DefaultCombatItem != null
+        && playerSkillState.HasSkill(playerMeleeController.DefaultCombatItem.requiredSkill)
+        ? playerMeleeController.DefaultCombatItem : null;
+    public ItemData EntryItem(int index) => index == CombatEntry ? LearnedCombat
+        : index >= 0 && index < items.Count ? items[index] : null;
     private int[] quickSlots = { -1, -1, -1, -1, -1 };
     public int Capacity => maxSlots;
     public int QuickSlotCount => quickSlots.Length;
@@ -38,14 +47,14 @@ public class PlayerInventory : MonoBehaviour
         ? playerGrenadeController.SelectedGrenade : playerMeleeController != null && playerMeleeController.SelectedItem != null
         ? playerMeleeController.SelectedItem : playerEquipment != null ? playerEquipment.EquippedWeapon : null;
     public int QuickSlotIndex(int slot) => slot >= 0 && slot < quickSlots.Length ? quickSlots[slot] : -1;
-    public ItemData QuickSlotItem(int slot) { int index = QuickSlotIndex(slot); return index >= 0 && index < items.Count ? items[index] : null; }
+    public ItemData QuickSlotItem(int slot) => EntryItem(QuickSlotIndex(slot));
     public void UseQuickSlot(int slot) => UseItem(QuickSlotIndex(slot));
     public void DropQuickSlot(int slot) => DropItem(QuickSlotIndex(slot));
     public int[] CaptureQuickSlots() => (int[])quickSlots.Clone();
     public bool AssignQuickSlot(int slot, int itemIndex)
     {
-        if (slot < 0 || slot >= quickSlots.Length || itemIndex < -1 || itemIndex >= items.Count) return false;
-        for (int i = 0; i < quickSlots.Length; i++) if (itemIndex >= 0 && quickSlots[i] == itemIndex) quickSlots[i] = -1;
+        if (slot < 0 || slot >= quickSlots.Length || (itemIndex != -1 && EntryItem(itemIndex) == null)) return false;
+        for (int i = 0; i < quickSlots.Length; i++) if (itemIndex != -1 && quickSlots[i] == itemIndex) quickSlots[i] = -1;
         quickSlots[slot] = itemIndex; OnInventoryChanged?.Invoke(); return true;
     }
     public bool SwapItems(int from, int to)
@@ -59,9 +68,20 @@ public class PlayerInventory : MonoBehaviour
     public void RestoreSavedItems(IReadOnlyList<ItemData> restored, int[] assignments)
     {
         if (restored.Count > maxSlots || assignments == null || assignments.Length != 5) throw new ArgumentException("Saved inventory does not fit this player.");
-        foreach (int index in assignments) if (index < -1 || index >= restored.Count) throw new ArgumentException("Invalid saved quick slot.");
+        foreach (int index in assignments) if (index < CombatEntry || index >= restored.Count) throw new ArgumentException("Invalid saved quick slot.");
         items.Clear(); foreach (var item in restored) { if (item == null) throw new ArgumentException("Missing saved item."); items.Add(item); }
         quickSlots = (int[])assignments.Clone();
+        // Migrate earlier saves that stored the learned capability as a physical item.
+        for (int i = items.Count - 1; i >= 0; i--)
+            if (items[i] is UnarmedCombatItemData)
+            {
+                bool learned = items[i] == LearnedCombat;
+                for (int slot = 0; slot < quickSlots.Length; slot++)
+                    if (quickSlots[slot] == i) quickSlots[slot] = learned ? CombatEntry : -1;
+                RemoveItem(i);
+            }
+        for (int slot = 0; slot < quickSlots.Length; slot++)
+            if (quickSlots[slot] == CombatEntry && LearnedCombat == null) quickSlots[slot] = -1;
         RemoveLearnedBooks();
         OnInventoryChanged?.Invoke();
     }
@@ -104,13 +124,23 @@ public class PlayerInventory : MonoBehaviour
             playerMeleeController = GetComponent<PlayerMeleeController>();
     }
 
+    private void OnEnable() { if (playerSkillState != null) playerSkillState.SkillUnlocked += RefreshCapabilities; }
+    private void OnDisable() { if (playerSkillState != null) playerSkillState.SkillUnlocked -= RefreshCapabilities; }
+    private void RefreshCapabilities(SkillData _) => OnInventoryChanged?.Invoke();
+
+    public bool EnsureOwnedWeapon(WeaponItemData weapon)
+    {
+        if (weapon == null) return true;
+        return items.Contains(weapon) || TryAddItem(weapon);
+    }
+
     public bool TryAddItem(ItemData item) => TryAddItem(item, out _);
 
     public bool TryAddItem(ItemData item, out InventoryAddFailure failure)
     {
         if (!CanAcceptItem(item, out failure)) return false;
         items.Add(item);
-        for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] < 0) { quickSlots[i] = items.Count - 1; break; }
+        for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] == -1) { quickSlots[i] = items.Count - 1; break; }
         OnInventoryChanged?.Invoke();
         return true;
     }
@@ -119,7 +149,7 @@ public class PlayerInventory : MonoBehaviour
     public bool CanAcceptItem(ItemData item, out InventoryAddFailure failure)
     {
         failure = InventoryAddFailure.None;
-        if (item == null)
+        if (item == null || item is UnarmedCombatItemData)
         {
             failure = InventoryAddFailure.InvalidItem;
             return false;
@@ -197,10 +227,8 @@ public class PlayerInventory : MonoBehaviour
     {
         if (input != null && !input.CanProcessGameplayInput)
             return;
-        if (index < 0 || index >= items.Count)
-            return;
-
-        ItemData item = items[index];
+        ItemData item = EntryItem(index);
+        if (item == null) return;
 
         switch (item.itemType)
         {
@@ -284,7 +312,13 @@ public class PlayerInventory : MonoBehaviour
 
         // Replace in place: learning can grant a capability even with a full bag.
         // Repeated books must not duplicate an existing granted option.
-        if (book.grantedItem != null && !items.Contains(book.grantedItem))
+        if (book.grantedItem is UnarmedCombatItemData)
+        {
+            for (int slot = 0; slot < quickSlots.Length; slot++)
+                if (quickSlots[slot] == index) quickSlots[slot] = book.grantedItem == LearnedCombat ? CombatEntry : -1;
+            RemoveItem(index);
+        }
+        else if (book.grantedItem != null && !items.Contains(book.grantedItem))
             items[index] = book.grantedItem;
         else
             RemoveItem(index);

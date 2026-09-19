@@ -83,7 +83,7 @@ public class InventoryUI : MonoBehaviour
             if (icons != null) {
                 var item = inventory.QuickSlotItem(i); icons[i].sprite = InterfaceIconCatalog.ForItem(item); icons[i].enabled = icons[i].sprite != null;
                 int count = 0; foreach (var owned in inventory.Items) if (owned == item) count++;
-                quantities[i].text = item != null ? count.ToString() : "";
+            quantities[i].text = item != null && !(item is UnarmedCombatItemData) ? count.ToString() : "";
             }
             if (inventory.QuickSlotItem(i) != null)
             {

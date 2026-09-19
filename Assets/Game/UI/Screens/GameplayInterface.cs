@@ -23,6 +23,11 @@ public sealed class GameplayInterface : MonoBehaviour
         UseTheme(theme);
         var safe=transform.Find("SafeArea");
         var menu=GetComponentInChildren<InGameMenuController>(true);
+        // Also repair older authored scenes at runtime; preserve the controller and callbacks.
+        var menuRoot=(RectTransform)menu.transform;
+        menuRoot.SetParent(GetComponentInParent<Canvas>().rootCanvas.transform,false);
+        menuRoot.anchorMin=Vector2.zero;menuRoot.anchorMax=Vector2.one;
+        menuRoot.offsetMin=menuRoot.offsetMax=Vector2.zero;
         var suspension=player.GetComponent<GameplaySuspensionController>();
         BuildPause(menu);
         var inventory=Overlay(menu.transform,"Screen_Inventory");
@@ -35,7 +40,7 @@ public sealed class GameplayInterface : MonoBehaviour
         Button(warning,"Restart","RESTART",new(.53f,.07f),new(.94f,.22f),menu.ConfirmRestart,true);
         menu.ConfigureAdditionalScreens(inventory.gameObject,restart.gameObject);
         inventory.gameObject.SetActive(false);restart.gameObject.SetActive(false);
-        var log=Overlay(safe,"KnowledgeLog");knowledge=log.gameObject.AddComponent<KnowledgeLogView>();
+        var log=Overlay(transform,"KnowledgeLog");knowledge=log.gameObject.AddComponent<KnowledgeLogView>();
         knowledge.Build(suspension,GetComponentInChildren<KnowledgeAcquiredPresenter>(true),null);log.gameObject.SetActive(false);
         var learn=Button(safe,"LearnButton","LEARN",new(.795f,.32f),new(.866f,.445f),()=>{
             if(!suspension.IsSuspended)knowledge.Open();
@@ -72,7 +77,10 @@ public sealed class GameplayInterface : MonoBehaviour
         Text(panel,"SafeCopy","Saves your run and returns to menu.",new(.045f,.045f),new(.48f,.18f),24,Muted,TextAlignmentOptions.Center);
         Text(panel,"DangerCopy","Discards this run and restarts the level.",new(.525f,.045f),new(.955f,.18f),24,Magenta,TextAlignmentOptions.Center);
         var options=menu.OptionsScreen;
+        var shade=Overlay(options.transform,"SettingsBackdrop");shade.SetAsFirstSibling();
         var background=Panel(options.transform,"SettingsSurface",new(.24f,.12f),new(.76f,.88f));background.SetAsFirstSibling();
+        shade.SetAsFirstSibling();
+        ProgressResetView.Build(options.transform,new(.34f,.34f),new(.66f,.43f));
     }
     private void RestyleTutorial()
     {

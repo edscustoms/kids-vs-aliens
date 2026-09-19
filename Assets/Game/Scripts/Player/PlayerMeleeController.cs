@@ -37,6 +37,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private float lastInputTime = float.NegativeInfinity, nextProximityCheck;
 
     public UnarmedCombatItemData SelectedItem => selectedItem;
+    public UnarmedCombatItemData DefaultCombatItem => defaultCombatItem;
     public bool IsCombatStance => stance;
     public bool IsWaitingForImpact => waitingForImpact;
     public bool HasBufferedAttack => buffered;

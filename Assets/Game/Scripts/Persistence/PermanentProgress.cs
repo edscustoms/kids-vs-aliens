@@ -42,6 +42,15 @@ public static class PermanentProgress
         try { RunSaveService.PermanentStore.Write(Data); dirty = false; return true; }
         catch (Exception error) { RunSaveService.ReportError(error); return false; }
     }
+    public static void ResetProgress()
+    {
+        var empty = new PermanentSave();
+        // Replace both recoverable generations, just as DiscardActive does.
+        RunSaveService.PermanentStore.Write(empty);
+        RunSaveService.PermanentStore.Write(empty);
+        data = empty; dirty = failed = false;
+        PlayerSkillState.ResetRuntimeSkills();
+    }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Reset() { data = null; dirty = false; failed = false; }
 }

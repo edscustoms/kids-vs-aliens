@@ -37,7 +37,7 @@ public sealed class InventoryCleanupTests
         } finally { Object.DestroyImmediate(owner);Object.DestroyImmediate(book);Object.DestroyImmediate(skill); }
     }
 
-    [Test] public void CompactBackpackMovesAssignmentsWithoutDuplicatingOwnership()
+    [Test] public void BackpackKeepsAssignedItemsWithoutDuplicatingOwnership()
     {
         var owner=new GameObject("Inventory");var canvas=new GameObject("UI",typeof(Canvas));
         var items=Enumerable.Range(0,7).Select(_=>ScriptableObject.CreateInstance<GrenadeItemData>()).ToArray();
@@ -46,8 +46,8 @@ public sealed class InventoryCleanupTests
             inventory.RestoreSavedItems(items,new[]{-1,-1,-1,-1,-1});
             var view=canvas.AddComponent<InventoryManagementView>();view.Build(inventory,()=>{},()=>{});
             inventory.AssignQuickSlot(0,2);
-            Assert.That(view.ItemFor(2,false),Is.SameAs(items[3]));
-            Assert.That(Enumerable.Range(0,6).Select(i=>view.ItemFor(i,false)),Is.EqualTo(items.Where((_,i)=>i!=2)));
+            Assert.That(view.ItemFor(2,false),Is.SameAs(items[2]));
+            Assert.That(Enumerable.Range(0,7).Select(i=>view.ItemFor(i,false)),Is.EqualTo(items));
             inventory.AssignQuickSlot(0,4);
             Assert.That(view.ItemFor(2,false),Is.SameAs(items[2]));
             inventory.AssignQuickSlot(1,3);inventory.AssignQuickSlot(1,4);
@@ -58,7 +58,7 @@ public sealed class InventoryCleanupTests
             var json=JsonUtility.ToJson(new ActiveRunSave{player=new SavedPlayer{items=Enumerable.Range(0,7).Select(i=>i.ToString()).ToList(),quickSlots=assignments}});
             var restored=JsonUtility.FromJson<ActiveRunSave>(json);
             inventory.RestoreSavedItems(restored.player.items.Select(i=>(ItemData)items[int.Parse(i)]).ToArray(),restored.player.quickSlots);
-            Assert.That(inventory.Items.Count,Is.EqualTo(7));Assert.That(view.ItemFor(4,false),Is.SameAs(items[5]));
+            Assert.That(inventory.Items.Count,Is.EqualTo(7));Assert.That(view.ItemFor(4,false),Is.SameAs(items[4]));
             inventory.AssignQuickSlot(1,-1);
             Assert.That(Enumerable.Range(0,7).Select(i=>view.ItemFor(i,false)),Is.EqualTo(items));
         } finally { Object.DestroyImmediate(canvas);Object.DestroyImmediate(owner);foreach(var item in items)Object.DestroyImmediate(item); }
