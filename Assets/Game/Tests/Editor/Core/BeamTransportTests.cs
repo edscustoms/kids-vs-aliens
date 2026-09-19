@@ -101,6 +101,9 @@ public sealed class BeamTransportTests
         transport.Advance(0.01f);
         Assert.That(player.transform.position, Is.EqualTo(landingObject.transform.position));
         Assert.That(Quaternion.Angle(player.transform.rotation, landingObject.transform.rotation), Is.LessThan(.001f));
+        Assert.That(vfx.Visibility, Is.EqualTo(1f), "Arrival hands off with Beam still visible for its shared landing fade.");
+        Assert.That((bool)typeof(BeamTransportVFX).GetField("fadingOut", Private).GetValue(vfx), Is.True);
+        Assert.That(player.GetComponent<StarterAssetsInputs>().GameplayInputBlocked, Is.False);
         landingObject.transform.position += Vector3.left * 2;
         landingObject.transform.rotation = Quaternion.Euler(0, 143, 0);
         Assert.That(transport.TryArrival(landingObject.transform, vfx, 3.5f, 2f), Is.True);

@@ -510,7 +510,7 @@ public sealed class BeamTransportController : MonoBehaviour
         }
         else
         {
-            CancelTransport();
+            EndTransport(true); // Arrival shares Hoist's landing fade, after its existing hold.
         }
     }
 
@@ -521,14 +521,14 @@ public sealed class BeamTransportController : MonoBehaviour
         if (reusableVfx != null) reusableVfx.Hide();
     }
 
-    private void EndTransport(bool landedHoist)
+    private void EndTransport(bool fadeAfterLanding)
     {
         if (!IsTransporting)
             return;
 
         if (activeVfx != null)
         {
-            if (landedHoist) activeVfx.FadeOutAfterLanding();
+            if (fadeAfterLanding) activeVfx.FadeOutAfterLanding();
             else activeVfx.Hide();
         }
 

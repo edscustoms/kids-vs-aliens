@@ -21,7 +21,8 @@ One renderer property drives the cone, four authored spirals, motes and lit core
 `BeamLitFade.shader` reuses URP Lit's forward lighting and attenuates its complete premultiplied
 output, including emission and specular. At full visibility its captured output is byte-identical
 to the original Lit shader. No material color, geometry, particle or lighting settings were retuned.
-Arrival/departure retain their immediate Show/Hide behavior.
+Arrival retains its immediate Show, descent and landing hold, then uses the same landing fade-out
+as Hoist when controls are released. Departure retains its immediate Show/Hide behavior.
 
 Unity 6000.5.6f1 validation: `BeamPresentationReview.RunTiming` exercised two real contextual-Jump
 Hoists in ConstructionSite, stationary/silent fade-in, exact Bezier positions, movement during

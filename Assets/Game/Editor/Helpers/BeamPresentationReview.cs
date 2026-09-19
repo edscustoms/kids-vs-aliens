@@ -33,6 +33,7 @@ public static class BeamPresentationReview
     static BeamPresentationReview(){EditorApplication.playModeStateChanged+=Mode;}
     public static void Run()=>Begin(false);
     public static void RunTiming(){SessionState.SetBool(Key+"Timing",true);Begin(false);}
+    public static void RunArrivalFade(){SessionState.SetBool(Key+"ArrivalFadeOnly",true);RunTiming();}
     public static void RunSpirals()=>Begin(true);
     private static void Begin(bool spiralsOnly)
     {
@@ -90,7 +91,7 @@ public static class BeamPresentationReview
             EditorApplication.delayCall+=()=>{
                 failed=SessionState.GetBool(Key+"Failed",false);
                 if(!failed&&SessionState.GetInt(Key+"Pass",0)==0){SessionState.SetInt(Key+"Pass",1);Prepare();}
-                else {SessionState.SetBool(Key,false);SessionState.SetBool(Key+"Timing",false);EditorSceneManager.OpenScene(ScenePath);EditorApplication.Exit(failed?1:0);}
+                else {SessionState.SetBool(Key,false);SessionState.SetBool(Key+"Timing",false);SessionState.SetBool(Key+"ArrivalFadeOnly",false);EditorSceneManager.OpenScene(ScenePath);EditorApplication.Exit(failed?1:0);}
             };
         }
     }
@@ -99,7 +100,8 @@ public static class BeamPresentationReview
         try {
             Check(Vector3.Distance(transport.transform.position,endpoint)<.001f,"Arrival endpoint mismatch");
             Check(Quaternion.Angle(transport.transform.rotation,facing)<.01f,"Arrival facing mismatch");
-            Check(arrival.GetComponentInChildren<ParticleSystem>(true).particleCount==0,"Arrival particles lingered");
+            Check(arrival.Visibility==1f,"Arrival must release control before its shared landing fade");
+            Check(!transport.GetComponent<StarterAssetsInputs>().GameplayInputBlocked,"Arrival did not release control");
             ended=true;Debug.Log("BEAM PASS: fresh authored position/facing "+endpoint+" / "+facing.eulerAngles);
         }catch(Exception error){Fail(error);}
     }
@@ -118,6 +120,16 @@ public static class BeamPresentationReview
                 }
                 if(!captured&&transport.PresentationProgress>.25f&&transport.PresentationProgress<.9f){Shot("arrival-"+SessionState.GetInt(Key+"Pass",0));captured=true;}
                 if(!ended||transport.IsTransporting)return;
+                if(arrival.Visibility>0){
+                    if(Timing&&fadeFrame++%4==0){Capture(Camera.main,"arrival-fade-"+fadeFrame.ToString("D2"));Debug.Log("ARRIVAL FADE "+arrival.Visibility);}
+                    return;
+                }
+                Check(arrival.GetComponentInChildren<ParticleSystem>(true).particleCount==0&&!arrival.transform.Find("BeamInVFX").gameObject.activeSelf,"Arrival fade did not clean up");
+                if(SessionState.GetBool(Key+"ArrivalFadeOnly",false)){
+                    Capture(Camera.main,"arrival-fade-cleared");
+                    Debug.Log("ARRIVAL FADE PASS: original descent/hold and authored pose, control released with shared smooth fade, clean particle/visual reset.");
+                    Finish();return;
+                }
                 transport.TransportEnded-=ArrivalEnded;Check(captured,"Arrival capture missed");
                 if(SessionState.GetInt(Key+"Pass",0)==0){Finish();return;}
                 PrepareHoist();step=1;return;
