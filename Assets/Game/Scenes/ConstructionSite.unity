@@ -1042,7 +1042,7 @@ MonoBehaviour:
   previewLight: {fileID: 98047560}
   previewRoot: {fileID: 1005773926}
   output: {fileID: 686382457}
-  lightweightRenderer: {fileID: 11400000, guid: 65bc7dbf4170f435aa868c779acfb082, type: 2}
+  lightweightRenderer: {fileID: 11400000, guid: 1d458e5f3e9f65e45a367ea9a1132604, type: 2}
   previewLayer: 9
   textureSize: 512
   floorMaterial: {fileID: 2100000, guid: 9c997893e71b696419a76eb7e599a7a2, type: 2}

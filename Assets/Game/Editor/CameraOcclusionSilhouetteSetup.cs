@@ -12,7 +12,7 @@ public static class CameraOcclusionSilhouetteSetup
             string path = AssetDatabase.GUIDToAssetPath(guid);
             var data = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path);
             // Knowledge's dedicated lightweight renderer does not render gameplay occlusion.
-            if (data.name.Contains("Preview")) continue;
+            if (path == GameplayPresentationSetup.LightweightRendererPath || data.name.Contains("Preview")) continue;
             if (!data.rendererFeatures.Any(f => f is CameraOcclusionSilhouetteFeature))
             {
                 var feature = UnityEngine.ScriptableObject.CreateInstance<CameraOcclusionSilhouetteFeature>();

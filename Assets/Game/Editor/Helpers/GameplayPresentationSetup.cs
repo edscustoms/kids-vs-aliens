@@ -21,7 +21,7 @@ public static class GameplayPresentationSetup
     public const string RootName = "GameplayPresentationV1";
     private const string LayerName = "KnowledgePreview";
     public const string LightweightRendererPath =
-        "Assets/Game/Settings/Rendering/Mobile_Renderer.asset";
+        "Assets/Game/Settings/Rendering/KnowledgePreview_Renderer.asset";
 
     // Reuse the exact visual language already used by the main menu.
     // GUIDs are stable inside this project even if the assets move folders.
@@ -514,15 +514,30 @@ public static class GameplayPresentationSetup
         );
     }
 
-    private static ScriptableRendererData EnsurePreviewRenderer()
+    public static ScriptableRendererData EnsurePreviewRenderer()
     {
-        var renderer = AssetDatabase.LoadAssetAtPath<ScriptableRendererData>(
+        var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(
             LightweightRendererPath
         );
-        if (renderer == null || renderer.rendererFeatures.Count != 0)
-            throw new InvalidOperationException(
-                "Knowledge preview requires the existing feature-free Mobile_Renderer."
-            );
+        // Gameplay renderers may acquire features over time. The preview owns a
+        // separate renderer, so repairing it never strips features from gameplay.
+        if (renderer == null)
+        {
+            EnsureFolder("Assets/Game/Settings/Rendering");
+            renderer = ScriptableObject.CreateInstance<UniversalRendererData>();
+            renderer.name = "KnowledgePreview_Renderer";
+            AssetDatabase.CreateAsset(renderer, LightweightRendererPath);
+        }
+        if (renderer.rendererFeatures.Count != 0)
+        {
+            renderer.rendererFeatures.Clear();
+            renderer.SetDirty();
+            EditorUtility.SetDirty(renderer);
+        }
+        var rendererData = new SerializedObject(renderer);
+        rendererData.FindProperty("m_RendererFeatureMap").arraySize = 0;
+        rendererData.ApplyModifiedPropertiesWithoutUndo();
+        AssetDatabase.SaveAssetIfDirty(renderer);
         var pipelines = new HashSet<UniversalRenderPipelineAsset>();
         if (GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset defaultPipeline)
             pipelines.Add(defaultPipeline);
@@ -546,7 +561,7 @@ public static class GameplayPresentationSetup
             serialized.ApplyModifiedProperties();
             AssetDatabase.SaveAssetIfDirty(pipeline);
             Debug.Log(
-                $"Registered existing lightweight preview renderer at index {index} in {pipeline.name}; gameplay default preserved."
+                $"Registered dedicated Knowledge preview renderer at index {index} in {pipeline.name}; gameplay default preserved."
             );
         }
         return renderer;
