@@ -47,6 +47,8 @@ Shader "Environment/Cement Bag Projected Print"
             #pragma multi_compile_fog
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ DIRLIGHTMAP_COMBINED
+            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+            #pragma multi_compile _ SHADOWS_SHADOWMASK
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -176,7 +178,7 @@ Shader "Environment/Cement Bag Projected Print"
                 inputData.vertexLighting = VertexLighting(input.positionWS, inputData.normalWS);
                 inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.vertexSH, inputData.normalWS);
                 inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
-                inputData.shadowMask = half4(1,1,1,1);
+                inputData.shadowMask = SAMPLE_SHADOWMASK(input.staticLightmapUV);
 
                 SurfaceData surfaceData = (SurfaceData)0;
                 surfaceData.albedo = albedo;
@@ -200,6 +202,8 @@ Shader "Environment/Cement Bag Projected Print"
         UsePass "Universal Render Pipeline/Lit/ShadowCaster"
         UsePass "Universal Render Pipeline/Lit/DepthOnly"
         UsePass "Universal Render Pipeline/Lit/DepthNormals"
+        // The bag's base color supplies diffuse bounce energy to the lightmapper.
+        UsePass "Universal Render Pipeline/Lit/Meta"
     }
 
     FallBack Off
