@@ -35637,7 +35637,7 @@ MonoBehaviour:
   lineStartFade: 0.7
   dashLengthPixels: 2.5
   dashFill: 0.35
-  structuralEdgeAngle: 12
+  silhouetteWidthPixels: 1.5
 --- !u!1001 &1762682258
 PrefabInstance:
   m_ObjectHideFlags: 0

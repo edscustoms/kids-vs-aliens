@@ -134,14 +134,13 @@ public sealed class ExcavatorDecalTests
             var states = (IDictionary)typeof(CameraOcclusionController).GetField("rendererStates", Private).GetValue(controller);
             var targets = (IDictionary)typeof(CameraOcclusionController).GetField("targetByRoot", Private).GetValue(controller);
             Assert.That(targets.Count, Is.EqualTo(1));
-            Assert.That(states.Count, Is.EqualTo(27));
+            Assert.That(states.Count, Is.EqualTo(machine.GetComponentsInChildren<Renderer>().Length));
             foreach (var renderer in machine.GetComponentsInChildren<Renderer>())
             {
                 object state = states[renderer];
                 Assert.That(state, Is.Not.Null, renderer.name);
                 bool decal = renderer.transform.IsChildOf(machine.transform.Find("Decals"));
-                if (decal) Assert.That(state.GetType().GetField("structuralLineMesh").GetValue(state), Is.Null, renderer.name);
-                else Assert.That(state.GetType().GetField("structuralLineMesh").GetValue(state), Is.Not.Null, renderer.name);
+                Assert.That(renderer.sharedMaterials.All(m => m.GetTag("CameraOcclusionLines", false, "") == "Off"), Is.EqualTo(decal), renderer.name);
                 var original = renderer.sharedMaterials;
                 Invoke(controller, "EnsureFadeMaterials", renderer, state);
                 foreach (float fade in new[] { .5f, 0f, 1f })
@@ -162,7 +161,6 @@ public sealed class ExcavatorDecalTests
         finally
         {
             Invoke(controller, "DestroyRuntimeMaterials");
-            Invoke(controller, "DestroyOcclusionLineResources");
             Object.DestroyImmediate(host);
             EditorSceneManager.ClosePreviewScene(scene);
         }
@@ -231,7 +229,6 @@ public sealed class ExcavatorDecalTests
             {
                 foreach (DictionaryEntry pair in states) Invoke(controller, "RestoreOriginalMaterials", pair.Key, pair.Value);
                 Invoke(controller, "DestroyRuntimeMaterials");
-                Invoke(controller, "DestroyOcclusionLineResources");
             }
             preview.Cleanup();
         }
