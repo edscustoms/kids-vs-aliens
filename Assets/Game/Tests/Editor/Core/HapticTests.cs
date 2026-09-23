@@ -22,6 +22,10 @@ public sealed class HapticTests
 
     private readonly List<Object> owned = new();
     private Recorder recorder;
+    private readonly List<CameraFeedbackProfile> cameraRequests = new();
+    private bool hadCameraPreference;
+    private int savedCameraPreference;
+    private void RecordCamera(CameraFeedbackProfile profile, float strength, Vector3 direction) => cameraRequests.Add(profile);
     private bool hadPreference;
     private int savedPreference;
     private GameInputMode inputMode;
@@ -31,6 +35,10 @@ public sealed class HapticTests
 
     [SetUp] public void SetUp()
     {
+        hadCameraPreference = PlayerPrefs.HasKey(CameraFeedbackSettings.PreferenceKey);
+        savedCameraPreference = PlayerPrefs.GetInt(CameraFeedbackSettings.PreferenceKey);
+        CameraFeedbackSettings.Enabled = true; cameraRequests.Clear();
+        CameraFeedbackService.Requested += RecordCamera;
         hadPreference = PlayerPrefs.HasKey(HapticSettings.PreferenceKey);
         savedPreference = PlayerPrefs.GetInt(HapticSettings.PreferenceKey);
         HapticSettings.Enabled = true;
@@ -41,6 +49,9 @@ public sealed class HapticTests
 
     [TearDown] public void TearDown()
     {
+        CameraFeedbackService.Requested -= RecordCamera;
+        if (hadCameraPreference) PlayerPrefs.SetInt(CameraFeedbackSettings.PreferenceKey, savedCameraPreference);
+        else PlayerPrefs.DeleteKey(CameraFeedbackSettings.PreferenceKey);
         Backend.SetValue(null, null);
         for (int i = owned.Count - 1; i >= 0; i--) if (owned[i] != null) Object.DestroyImmediate(owned[i]);
         owned.Clear();
@@ -77,6 +88,7 @@ public sealed class HapticTests
         int before = shooter.CurrentAmmo;
         input.shoot = true; Invoke(shooter, "Update");
         CollectionAssert.AreEqual(new[] { Profile("PistolFire") }, recorder.pulses);
+        CollectionAssert.AreEqual(new[] { Weapon("Pistol").fireCameraFeedback }, cameraRequests);
         Assert.That(shooter.CurrentAmmo, Is.EqualTo(before - 1));
         var damage = target.GetComponent<DamageableProbe>();
         Assert.That(damage.ReceiveCount, Is.EqualTo(1));
@@ -112,6 +124,7 @@ public sealed class HapticTests
         Invoke(shooter, "Update");
         Assert.That(recorder.pulses, Is.Empty);
         Assert.That(shooter.CurrentAmmo, Is.EqualTo(before));
+        Assert.That(cameraRequests, Is.Empty);
     }
 
     [Test] public void MuzzleObstruction_NoPulse_PreservesExistingAmmoAndImpact()
@@ -125,6 +138,7 @@ public sealed class HapticTests
         Assert.That(recorder.pulses, Is.Empty);
         Assert.That(shooter.CurrentAmmo, Is.EqualTo(before - 1));
         Assert.That(wall.GetComponent<DamageableProbe>().ReceiveCount, Is.EqualTo(1));
+        Assert.That(cameraRequests, Is.Empty);
     }
 
     [Test] public void RifleHeldBurst_OneLightPulsePerEmittedBullet()
@@ -138,10 +152,14 @@ public sealed class HapticTests
             Invoke(shooter, "Update");
             Assert.That(recorder.pulses.Count, Is.EqualTo(i + 1));
             Assert.That(recorder.pulses[i], Is.SameAs(Profile("RifleFire")));
+            Assert.That(cameraRequests.Count, Is.EqualTo(i + 1));
+            Assert.That(cameraRequests[i], Is.SameAs(Weapon("Rifle").fireCameraFeedback));
             Invoke(shooter, "Update"); // Same-time cooldown must not pulse.
             Assert.That(recorder.pulses.Count, Is.EqualTo(i + 1));
         }
         Assert.That(shooter.CurrentAmmo, Is.EqualTo(before - 5));
+        Assert.That(cameraRequests.Count, Is.EqualTo(5));
+        Assert.That(Weapon("Rifle").fireCameraFeedback.rotation.magnitude, Is.LessThan(Weapon("Pistol").fireCameraFeedback.rotation.magnitude));
         Assert.That(Profile("RifleFire").durationMilliseconds, Is.LessThan(Profile("PistolFire").durationMilliseconds));
         Assert.That(Profile("RifleFire").amplitude, Is.LessThan(Profile("PistolFire").amplitude));
         Assert.That(Profile("RifleFire").intensity, Is.LessThan(Profile("PistolFire").intensity));
@@ -154,6 +172,7 @@ public sealed class HapticTests
         int changes = 0, deaths = 0; health.OnHealthChanged += () => changes++; health.OnDied += () => deaths++;
         health.TakeDamage(0); health.TakeDamage(-10);
         Assert.That(recorder.pulses, Is.Empty); Assert.That(changes, Is.Zero);
+        Assert.That(cameraRequests, Is.Empty);
         health.ReceiveDamage(new HitInfo(10, Vector3.zero, Vector3.up, Vector3.forward, root));
         Assert.That(health.CurrentHealth, Is.EqualTo(100)); Assert.That(health.CurrentArmor, Is.EqualTo(40));
         health.TakeDamage(45);
@@ -163,6 +182,7 @@ public sealed class HapticTests
         Assert.That(health.CurrentHealth, Is.Zero); Assert.That(deaths, Is.EqualTo(1)); Assert.That(changes, Is.EqualTo(3));
         health.RestoreRunHealth(100, 50);
         Assert.That(recorder.pulses.Count, Is.EqualTo(3), "Loading a run must not vibrate.");
+        CollectionAssert.AreEqual(new[] { CameraFeedbackService.Config.playerDamage, CameraFeedbackService.Config.playerDamage, CameraFeedbackService.Config.playerDamage }, cameraRequests);
         Assert.That(Profile("PlayerDamage").amplitude, Is.GreaterThan(Profile("PistolFire").amplitude));
     }
 
@@ -178,6 +198,23 @@ public sealed class HapticTests
         var root = new GameObject("Player", typeof(PlayerHealth)); owned.Add(root);
         var health = root.GetComponent<PlayerHealth>(); Invoke(health, "Awake"); health.TakeDamage(10);
         Assert.That(health.CurrentArmor, Is.EqualTo(40)); Assert.That(recorder.pulses, Is.Empty);
+    }
+
+    [Test] public void CameraShakeOff_SuppressesAllFeedback_WhileShotsDamageAndHapticsContinue()
+    {
+        CameraFeedbackSettings.Enabled = false;
+        foreach (string name in new[] { "Pistol", "Rifle" })
+        {
+            var shooter = Shooter(name, out var input, out _);
+            int before = shooter.CurrentAmmo; input.shoot = true; Invoke(shooter, "Update");
+            Assert.That(shooter.CurrentAmmo, Is.EqualTo(before - 1));
+        }
+        var root = new GameObject("Camera damage test", typeof(PlayerHealth)); owned.Add(root);
+        var health = root.GetComponent<PlayerHealth>(); Invoke(health, "Awake"); health.TakeDamage(10);
+        CameraFeedbackService.Landed(20);
+        Assert.That(health.CurrentArmor, Is.EqualTo(40));
+        Assert.That(cameraRequests, Is.Empty);
+        Assert.That(recorder.pulses.Count, Is.EqualTo(3), "Camera preference is independent of haptics.");
     }
 
     [Test] public void Preference_DefaultsOn_PersistsOff_AndUiIsIdempotentAndSilent()
@@ -222,6 +259,8 @@ public sealed class HapticTests
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         yield return new EnterPlayMode();
         recorder = new Recorder(); Backend.SetValue(null, recorder); HapticSettings.Enabled = true;
+        CameraFeedbackSettings.Enabled = true; cameraRequests.Clear();
+        CameraFeedbackService.Requested -= RecordCamera; CameraFeedbackService.Requested += RecordCamera;
         var target = new GameObject("Non-damaging target", typeof(BoxCollider)); owned.Add(target);
         target.transform.position = new Vector3(0, 1, 6);
         foreach (string name in new[] { "Pistol", "Rifle" })
@@ -249,6 +288,7 @@ public sealed class HapticTests
             Assert.That(shots, Is.EqualTo(1), "Exercise a real accepted enemy bullet, not an early rejection.");
             Assert.That(equipment.Ammo, Is.EqualTo(ammo - 1));
             Assert.That(recorder.pulses, Is.Empty);
+            Assert.That(cameraRequests, Is.Empty, "Enemy bullets must not recoil the local camera.");
             Object.DestroyImmediate(actor);
         }
         yield return new ExitPlayMode();

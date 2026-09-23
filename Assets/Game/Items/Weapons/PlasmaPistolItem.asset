@@ -27,3 +27,4 @@ MonoBehaviour:
   requiredSkill: {fileID: 11400000, guid: 43103a442e5f3e149b2a468065a892c7, type: 2}
   fireSound: {fileID: 11400000, guid: fd201790f296a67418e6a7e3927d3324, type: 2}
   fireHaptic: {fileID: 11400000, guid: c8b399e476ad480bb7495bdf040a836b, type: 2}
+  fireCameraFeedback: {fileID: 11400000, guid: 3853713a00de416db74daf2ee0ef0f9d, type: 2}

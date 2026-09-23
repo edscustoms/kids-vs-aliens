@@ -101,6 +101,7 @@ public static class GameplaySceneSetup
             RepairMeleeSuspension(melee, player.gameObject);
 
             GameplayCameraSetup.ConfigureScene(player);
+            CameraFeedbackSetup.ConfigureScene(player);
             CameraOcclusionSilhouetteSetup.Ensure();
             BeamTransportSetup.ConfigureScene(player);
             FloatingAnimationSetup.Ensure();

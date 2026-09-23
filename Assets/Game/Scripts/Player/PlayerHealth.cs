@@ -47,9 +47,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         HitInfo hit
     )
     {
-        TakeDamage(
-            hit.Damage
-        );
+        ApplyDamage(hit.Damage, hit.Direction);
     }
 
     // Kept for existing direct callers such as current enemy/practice
@@ -58,9 +56,16 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         float damage
     )
     {
+        ApplyDamage(damage, Vector3.zero);
+    }
+
+    private void ApplyDamage(float damage, Vector3 direction)
+    {
         if (
             isDead
             || damage <= 0f
+            || float.IsNaN(damage)
+            || float.IsInfinity(damage)
         )
         {
             return;
@@ -91,7 +96,10 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             );
 
         if (currentHealth < previousHealth || currentArmor < previousArmor)
+        {
             HapticService.PlayerDamaged();
+            CameraFeedbackService.PlayerDamaged(direction);
+        }
 
         OnHealthChanged?.Invoke();
 

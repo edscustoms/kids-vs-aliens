@@ -100,6 +100,7 @@ public static class MenuUISetup
         }
         ProgressResetMenuSetup.Configure(options, theme);
         HapticsOptionView.Ensure(options, false);
+        CameraShakeOptionView.Ensure(options, false);
         RunInterfaceSetup.ConfigureMenu(scene);
         EditorSceneManager.MarkSceneDirty(scene);
     }

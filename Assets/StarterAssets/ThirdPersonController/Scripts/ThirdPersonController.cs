@@ -58,6 +58,9 @@ namespace StarterAssets
         )]
         public bool Grounded = true;
 
+        // Presentation observes the pre-collision downward speed of a real walkable landing.
+        public event System.Action<float> Landed;
+
         // Latched across small gaps/contact loss; only walkable support releases the jump lock.
         public bool OnSteepSlope { get; private set; }
         private bool _walkableContact;
@@ -310,6 +313,8 @@ namespace StarterAssets
                     gravityVelocity = Vector3.ProjectOnPlane(gravityVelocity, _steepNormal);
             }
 
+            bool wasGrounded = Grounded;
+            float downwardLandingSpeed = Mathf.Max(0f, -gravityVelocity.y);
             _walkableContact = _steepContact = false;
             _walkableNormalY = Mathf.Cos(_controller.slopeLimit * Mathf.Deg2Rad);
             float authoredStepOffset = _controller.stepOffset;
@@ -336,6 +341,8 @@ namespace StarterAssets
             // Below alone also reports unwalkable slopes. Require the actual supporting
             // collision normal, and let real ground at the foot of a slope take precedence.
             Grounded = (collisionFlags & CollisionFlags.Below) != 0 && _walkableContact;
+            if (!wasGrounded && Grounded && downwardLandingSpeed > 0f)
+                Landed?.Invoke(downwardLandingSpeed);
             _touchingSteepSurface = !Grounded && _steepContact;
             if (Grounded) OnSteepSlope = false;
             else if (_steepContact)

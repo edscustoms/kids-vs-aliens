@@ -19,6 +19,9 @@ public class WeaponItemData : ItemData
     [Tooltip("Per emitted bullet, played only by the local player shooting path.")]
     public HapticProfile fireHaptic;
 
+    [Header("Local Player Camera Feedback")]
+    public CameraFeedbackProfile fireCameraFeedback;
+
     [Header("Weapon Stats")]
     public float damage = 10f;
     public float range = 15f;
