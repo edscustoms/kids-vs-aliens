@@ -219,7 +219,8 @@ public class PlayerShooter : MonoBehaviour
         // MUZZLE WALL SAFETY
         // =================================================
 
-        if (TryGetMuzzleObstruction(out RaycastHit muzzleObstruction))
+        bool muzzleBlocked = TryGetMuzzleObstruction(out RaycastHit muzzleObstruction);
+        if (muzzleBlocked)
         {
             didHit = true;
 
@@ -265,6 +266,9 @@ public class PlayerShooter : MonoBehaviour
 
         SpawnMuzzleVFX(muzzle.position, direction, auraColor);
         AudioService.Play(equippedWeapon.fireSound, muzzle.position);
+        // PlayerShooter owns local input; enemy fire and previews use separate presentation paths.
+        // Preserve the existing obstructed-shot impact/ammo behavior without a success pulse.
+        if (!muzzleBlocked) HapticService.Play(equippedWeapon.fireHaptic);
 
         System.Action onArrive = null;
 

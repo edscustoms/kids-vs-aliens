@@ -15,6 +15,10 @@ public class WeaponItemData : ItemData
     [Header("Audio")]
     public SoundEvent fireSound;
 
+    [Header("Haptics")]
+    [Tooltip("Per emitted bullet, played only by the local player shooting path.")]
+    public HapticProfile fireHaptic;
+
     [Header("Weapon Stats")]
     public float damage = 10f;
     public float range = 15f;

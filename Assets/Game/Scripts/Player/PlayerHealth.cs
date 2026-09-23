@@ -66,6 +66,9 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             return;
         }
 
+        float previousHealth = currentHealth;
+        float previousArmor = currentArmor;
+
         float armorDamage =
             Mathf.Min(
                 currentArmor,
@@ -86,6 +89,9 @@ public class PlayerHealth : MonoBehaviour, IDamageable
                 currentHealth,
                 0f
             );
+
+        if (currentHealth < previousHealth || currentArmor < previousArmor)
+            HapticService.PlayerDamaged();
 
         OnHealthChanged?.Invoke();
 

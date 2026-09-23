@@ -99,6 +99,7 @@ public static class MenuUISetup
             UnityEventTools.AddPersistentListener(back.OnClick, router.ShowMainMenu);
         }
         ProgressResetMenuSetup.Configure(options, theme);
+        HapticsOptionView.Ensure(options, false);
         RunInterfaceSetup.ConfigureMenu(scene);
         EditorSceneManager.MarkSceneDirty(scene);
     }

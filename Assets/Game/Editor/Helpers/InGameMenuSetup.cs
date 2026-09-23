@@ -57,6 +57,7 @@ public static class InGameMenuSetup
         root.offsetMin = root.offsetMax = Vector2.zero;
         var main = Root(root, "Screen_InGameMenu");
         var options = Root(root, "Screen_InGameOptions");
+        HapticsOptionView.Ensure(options, true);
         var controller =
             root.GetComponent<InGameMenuController>()
             ?? Undo.AddComponent<InGameMenuController>(root.gameObject);

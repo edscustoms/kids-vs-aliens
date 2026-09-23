@@ -85,6 +85,7 @@ public static class GameplaySceneSetup
             // - Knowledge tutorial/modal + character preview
             // - feedback presenter
             // - lease-backed in-game Menu / Options / Resume via InGameMenuSetup
+            // - shared Haptics Enabled option via InGameMenuSetup (service needs no scene component)
             // - PlayerFeedback / GameplaySuspensionController / pointer filtering
             // - missing EventSystem
             GameObject presentation = GameplayPresentationSetup.ConfigureScene(player);

@@ -42,6 +42,11 @@ public sealed class InGameMenuController : MonoBehaviour
 
     public bool IsOpen => lease != null && lease.IsActive;
 
+    private void Start()
+    {
+        if (optionsScreen != null) HapticsOptionView.Ensure(optionsScreen.transform, true);
+    }
+
     public void Configure(
         GameplaySuspensionController owner,
         GameObject menu,
