@@ -45,6 +45,8 @@ public class PlayerShooter : MonoBehaviour
 
     private float nextFireTime;
     private int currentAmmo;
+    public int CurrentAmmo => currentAmmo;
+    public void RestoreRunAmmo(int ammo) { currentAmmo = equippedWeapon != null ? Mathf.Clamp(ammo, 0, equippedWeapon.magazineSize) : 0; }
     private bool isReloading;
     private bool triggerHeld;
     private bool shootWasPressed;
@@ -217,7 +219,8 @@ public class PlayerShooter : MonoBehaviour
         // MUZZLE WALL SAFETY
         // =================================================
 
-        if (TryGetMuzzleObstruction(out RaycastHit muzzleObstruction))
+        bool muzzleBlocked = TryGetMuzzleObstruction(out RaycastHit muzzleObstruction);
+        if (muzzleBlocked)
         {
             didHit = true;
 
@@ -262,6 +265,14 @@ public class PlayerShooter : MonoBehaviour
         // =================================================
 
         SpawnMuzzleVFX(muzzle.position, direction, auraColor);
+        AudioService.Play(equippedWeapon.fireSound, muzzle.position);
+        // PlayerShooter owns local input; enemy fire and previews use separate presentation paths.
+        // Preserve the existing obstructed-shot impact/ammo behavior without a success pulse.
+        if (!muzzleBlocked)
+        {
+            HapticService.Play(equippedWeapon.fireHaptic);
+            CameraFeedbackService.Play(equippedWeapon.fireCameraFeedback);
+        }
 
         System.Action onArrive = null;
 

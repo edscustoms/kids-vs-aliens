@@ -2,7 +2,7 @@ using UnityEngine;
 
 [CreateAssetMenu(
     fileName = "NewKnowledgeBook",
-    menuName = "Kids VS Aliens/Items/Knowledge Book"
+    menuName = "Items/Knowledge Book"
 )]
 public sealed class KnowledgeBookItemData : ItemData
 {

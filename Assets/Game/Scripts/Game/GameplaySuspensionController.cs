@@ -8,6 +8,8 @@ public enum SuspensionReason
     ManualPause,
     KnowledgePresentation,
     Modal,
+    BeamTransport,
+    ApplicationLifecycle,
 }
 
 // One instance per gameplay scene/player. Presentation owns leases, never time.
@@ -49,9 +51,11 @@ public sealed class GameplaySuspensionController : MonoBehaviour
     private CursorLockMode previousCursorLock;
     private bool previousCursorVisible;
     private bool previousInputBlocked;
+    private bool worldPaused;
 
     public bool IsSuspended => owners.Count != 0;
     public int OwnerCount => owners.Count;
+    public bool IsWorldPaused => worldPaused;
     public bool HasBlockingModal =>
         owners.ContainsValue(SuspensionReason.KnowledgePresentation)
         || owners.ContainsValue(SuspensionReason.Modal);
@@ -74,9 +78,6 @@ public sealed class GameplaySuspensionController : MonoBehaviour
         owners.Add(id, reason);
         if (first)
         {
-            previousTimeScale = Time.timeScale;
-            previousCursorLock = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
             previousInputBlocked = input != null && input.GameplayInputBlocked;
             // Cancellation must reach the router before consumers are disabled.
             if (input != null)
@@ -90,19 +91,18 @@ public sealed class GameplaySuspensionController : MonoBehaviour
                 previousEnabled[i] = consumer.enabled;
                 consumer.enabled = false;
             }
-            Time.timeScale = 0f;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            SuspensionChanged?.Invoke(true);
         }
+        RefreshWorldPause();
+        if (first) SuspensionChanged?.Invoke(true);
         return new Lease(this, id);
     }
 
     private void Release(int id)
     {
-        if (!owners.Remove(id) || IsSuspended)
+        if (!owners.Remove(id))
             return;
-        Restore();
+        RefreshWorldPause();
+        if (!IsSuspended) Restore();
     }
 
     public void ReleaseAll()
@@ -110,12 +110,36 @@ public sealed class GameplaySuspensionController : MonoBehaviour
         if (!IsSuspended)
             return;
         owners.Clear();
+        RefreshWorldPause();
         Restore();
+    }
+
+    private void RefreshWorldPause()
+    {
+        bool shouldPause = false;
+        foreach (var reason in owners.Values)
+            if (reason != SuspensionReason.BeamTransport) { shouldPause = true; break; }
+        if (shouldPause == worldPaused) return;
+        worldPaused = shouldPause;
+        if (worldPaused)
+        {
+            previousTimeScale = Time.timeScale;
+            previousCursorLock = Cursor.lockState;
+            previousCursorVisible = Cursor.visible;
+            Time.timeScale = 0f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Time.timeScale = previousTimeScale;
+            Cursor.lockState = previousCursorLock;
+            Cursor.visible = previousCursorVisible;
+        }
     }
 
     private void Restore()
     {
-        Time.timeScale = previousTimeScale;
         if (input != null)
             input.SetGameplayInputBlocked(previousInputBlocked);
         if (previousEnabled != null)
@@ -127,8 +151,6 @@ public sealed class GameplaySuspensionController : MonoBehaviour
                 )
                     gameplayBehaviours[i].enabled = previousEnabled[i];
         previousEnabled = null;
-        Cursor.lockState = previousCursorLock;
-        Cursor.visible = previousCursorVisible;
         SuspensionChanged?.Invoke(false);
     }
 

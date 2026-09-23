@@ -25,3 +25,5 @@ MonoBehaviour:
   fireMode: 1
   animationStyle: 2
   requiredSkill: {fileID: 11400000, guid: a83f5a0e4cb792b46bf779932755bbcf, type: 2}
+  fireHaptic: {fileID: 11400000, guid: 67dc812b2f0e4762a7cfcfd2c16e16bd, type: 2}
+  fireCameraFeedback: {fileID: 11400000, guid: 61e1770f13984291b7cc0cba61625284, type: 2}

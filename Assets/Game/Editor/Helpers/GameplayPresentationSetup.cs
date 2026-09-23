@@ -16,12 +16,12 @@ using UnityEngine.UI;
 
 public static class GameplayPresentationSetup
 {
-    public const string MenuPath = "Tools/Kids VS Aliens/Setup/Knowledge Feedback & Pause V1";
+    public const string MenuPath = "Tools/Setup/Knowledge Feedback & Pause V1";
     public const string DataFolder = "Assets/Game/Data/Presentation";
     public const string RootName = "GameplayPresentationV1";
     private const string LayerName = "KnowledgePreview";
     public const string LightweightRendererPath =
-        "Assets/Game/Settings/Rendering/Mobile_Renderer.asset";
+        "Assets/Game/Settings/Rendering/KnowledgePreview_Renderer.asset";
 
     // Reuse the exact visual language already used by the main menu.
     // GUIDs are stable inside this project even if the assets move folders.
@@ -154,12 +154,22 @@ public static class GameplayPresentationSetup
             "Assets/Game/Data/Items/Grenades/ElectricGrenade.asset",
             "You can now activate alien grenades.",
             "Select a grenade. Hold FIRE to charge; release to throw.",
-            SkillDemoType.Stance,
-            CharacterActionId.EquippedStance,
+            SkillDemoType.GrenadeThrow,
+            CharacterActionId.GrenadeThrow,
             0,
             0.7f,
             2.0f
         );
+        Tutorial("BeamHoist", null, "Use alien beams to reach elevated areas.",
+            "Stand in a valid hoist zone and press Jump.", SkillDemoType.BeamHoist,
+            CharacterActionId.EquippedStance, 0, .7f, 2f);
+        var beamTutorial = AssetDatabase.LoadAssetAtPath<SkillTutorialData>(DataFolder + "/BeamHoistTutorial.asset");
+        if (beamTutorial != null && beamTutorial.beamPrefab == null)
+        {
+            beamTutorial.beamPrefab = AssetDatabase.LoadAssetAtPath<BeamTransportVFX>("Assets/Game/Prefabs/PF_BeamTransportVFX.prefab");
+            EditorUtility.SetDirty(beamTutorial);
+            AssetDatabase.SaveAssetIfDirty(beamTutorial);
+        }
     }
 
     public static GameObject ConfigureScene(PlayerCharacter player)
@@ -212,12 +222,7 @@ public static class GameplayPresentationSetup
         // Input-only blocker. Keep it visually transparent so suspension never
         // tints the mobile HUD. Knowledge dimming is handled by a separate
         // low-sorting canvas beneath the gameplay HUD.
-        RectTransform blocker = Panel(
-            root.transform,
-            "SuspensionInputBlocker",
-            Color.clear,
-            true
-        );
+        RectTransform blocker = Panel(root.transform, "SuspensionInputBlocker", Color.clear, true);
         Stretch(blocker);
         blocker.SetAsFirstSibling();
         blocker.gameObject.SetActive(false);
@@ -256,52 +261,11 @@ public static class GameplayPresentationSetup
         Reference(feedbackPresenter, "message", message);
         Reference(feedbackPresenter, "accent", null);
 
-        RectTransform pause = Panel(safe, "PauseButton", Color.white, true);
-        Fixed(pause, new Vector2(1, 1), new Vector2(-28, -28), new Vector2(96, 96));
-        StyleSprite(pause, neonCircle, Image.Type.Simple, new Color(1f, 1f, 1f, 0.96f), true);
-        DisableOutline(pause.gameObject);
-        Button pauseButton = Button(pause.gameObject);
-
-        RectTransform pauseIcon = Child(pause, "PauseIcon");
-        Stretch(pauseIcon);
-        Anchors(
-            Panel(pauseIcon, "LeftBar", Color.white, false),
-            new Vector2(0.34f, 0.29f),
-            new Vector2(0.43f, 0.71f)
-        );
-        Anchors(
-            Panel(pauseIcon, "RightBar", Color.white, false),
-            new Vector2(0.57f, 0.29f),
-            new Vector2(0.66f, 0.71f)
-        );
-
-        RectTransform playIcon = Child(pause, "PlayIcon");
-        Anchors(playIcon, new Vector2(0.35f, 0.28f), new Vector2(0.70f, 0.72f));
-        // PlayIconGraphic is a custom Graphic, so make the renderer explicit.
-        // The previous generated object had no CanvasRenderer and therefore drew
-        // an empty button while paused.
-        Component<CanvasRenderer>(playIcon.gameObject);
-        var triangle = Component<PlayIconGraphic>(playIcon.gameObject);
-        triangle.color = Color.white;
-        triangle.raycastTarget = false;
-        playIcon.gameObject.SetActive(false);
-        var manual = Component<ManualPauseButton>(pause.gameObject);
-        Reference(manual, "suspension", suspension);
-        Reference(manual, "button", pauseButton);
-        Reference(manual, "input", player.GetComponent<StarterAssetsInputs>());
-        Reference(manual, "pauseIcon", pauseIcon.gameObject);
-        Reference(manual, "playIcon", playIcon.gameObject);
-
         // KnowledgeOverlay stays on the high presentation canvas so it can
         // block gameplay pointer input and keep the modal above the HUD, but
         // the overlay itself is transparent. This prevents the dark tint from
         // washing over joystick/action-button edges.
-        RectTransform overlay = Panel(
-            root.transform,
-            "KnowledgeOverlay",
-            Color.clear,
-            true
-        );
+        RectTransform overlay = Panel(root.transform, "KnowledgeOverlay", Color.clear, true);
         Stretch(overlay);
         overlay.SetAsLastSibling();
 
@@ -365,12 +329,7 @@ public static class GameplayPresentationSetup
 
         RectTransform previewFrame = Panel(content, "PreviewFrame", Color.white, false);
         Anchors(previewFrame, new Vector2(0.27f, 0.38f), new Vector2(0.73f, 0.86f));
-        StyleSprite(
-            previewFrame,
-            neonPill,
-            Image.Type.Sliced,
-            new Color(1f, 1f, 1f, 0.78f)
-        );
+        StyleSprite(previewFrame, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.78f));
         DisableOutline(previewFrame.gameObject);
         // CharacterRender uses a square RenderTexture/AspectRatioFitter. Mask it
         // to the neon frame so the preview can never bleed into title/text space.
@@ -391,31 +350,13 @@ public static class GameplayPresentationSetup
 
         TMP_Text description = Text(content, "Description", "", 25);
         description.color = new Color(0.90f, 0.92f, 1f, 1f);
-        Anchors(
-            description.rectTransform,
-            new Vector2(0.10f, 0.205f),
-            new Vector2(0.90f, 0.285f)
-        );
+        Anchors(description.rectTransform, new Vector2(0.10f, 0.205f), new Vector2(0.90f, 0.285f));
 
-        RectTransform instructionPlate = Panel(
-            content,
-            "InstructionPlate",
-            Color.white,
-            false
-        );
+        RectTransform instructionPlate = Panel(content, "InstructionPlate", Color.white, false);
         // Leave enough vertical room for two-line instructions (grenades and future
         // skills) while keeping the same compact NeonPill treatment for short text.
-        Anchors(
-            instructionPlate,
-            new Vector2(0.17f, 0.105f),
-            new Vector2(0.83f, 0.215f)
-        );
-        StyleSprite(
-            instructionPlate,
-            neonPill,
-            Image.Type.Sliced,
-            new Color(1f, 1f, 1f, 0.58f)
-        );
+        Anchors(instructionPlate, new Vector2(0.17f, 0.105f), new Vector2(0.83f, 0.215f));
+        StyleSprite(instructionPlate, neonPill, Image.Type.Sliced, new Color(1f, 1f, 1f, 0.58f));
 
         // V4 kept Instructions as a sibling of the plate. Move/reuse that generated
         // object inside the plate so wrapping/autosizing is constrained by the pill.
@@ -431,11 +372,7 @@ public static class GameplayPresentationSetup
         instructions.enableAutoSizing = true;
         instructions.fontSizeMin = 15f;
         instructions.fontSizeMax = 22f;
-        Anchors(
-            instructions.rectTransform,
-            new Vector2(0.055f, 0.10f),
-            new Vector2(0.945f, 0.90f)
-        );
+        Anchors(instructions.rectTransform, new Vector2(0.055f, 0.10f), new Vector2(0.945f, 0.90f));
 
         RectTransform acknowledge = Panel(content, "Acknowledge", Color.white, true);
         Anchors(acknowledge, new Vector2(0.34f, 0.018f), new Vector2(0.66f, 0.095f));
@@ -473,6 +410,7 @@ public static class GameplayPresentationSetup
             SceneManager.MoveGameObjectToScene(events, scene);
             Debug.Log("Created missing EventSystem for this gameplay scene.", events);
         }
+        InGameMenuSetup.ConfigureScene(player, root);
         return root;
     }
 
@@ -576,15 +514,30 @@ public static class GameplayPresentationSetup
         );
     }
 
-    private static ScriptableRendererData EnsurePreviewRenderer()
+    public static ScriptableRendererData EnsurePreviewRenderer()
     {
-        var renderer = AssetDatabase.LoadAssetAtPath<ScriptableRendererData>(
+        var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(
             LightweightRendererPath
         );
-        if (renderer == null || renderer.rendererFeatures.Count != 0)
-            throw new InvalidOperationException(
-                "Knowledge preview requires the existing feature-free Mobile_Renderer."
-            );
+        // Gameplay renderers may acquire features over time. The preview owns a
+        // separate renderer, so repairing it never strips features from gameplay.
+        if (renderer == null)
+        {
+            EnsureFolder("Assets/Game/Settings/Rendering");
+            renderer = ScriptableObject.CreateInstance<UniversalRendererData>();
+            renderer.name = "KnowledgePreview_Renderer";
+            AssetDatabase.CreateAsset(renderer, LightweightRendererPath);
+        }
+        if (renderer.rendererFeatures.Count != 0)
+        {
+            renderer.rendererFeatures.Clear();
+            renderer.SetDirty();
+            EditorUtility.SetDirty(renderer);
+        }
+        var rendererData = new SerializedObject(renderer);
+        rendererData.FindProperty("m_RendererFeatureMap").arraySize = 0;
+        rendererData.ApplyModifiedPropertiesWithoutUndo();
+        AssetDatabase.SaveAssetIfDirty(renderer);
         var pipelines = new HashSet<UniversalRenderPipelineAsset>();
         if (GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset defaultPipeline)
             pipelines.Add(defaultPipeline);
@@ -608,7 +561,7 @@ public static class GameplayPresentationSetup
             serialized.ApplyModifiedProperties();
             AssetDatabase.SaveAssetIfDirty(pipeline);
             Debug.Log(
-                $"Registered existing lightweight preview renderer at index {index} in {pipeline.name}; gameplay default preserved."
+                $"Registered dedicated Knowledge preview renderer at index {index} in {pipeline.name}; gameplay default preserved."
             );
         }
         return renderer;
@@ -682,7 +635,7 @@ public static class GameplayPresentationSetup
         {
             tutorial.shortDescription = description;
             tutorial.instructions = instructions;
-            tutorial.equipment = AssetDatabase.LoadAssetAtPath<ItemData>(equipmentPath);
+            tutorial.equipment = string.IsNullOrEmpty(equipmentPath) ? null : AssetDatabase.LoadAssetAtPath<ItemData>(equipmentPath);
             tutorial.localizationKey = "knowledge." + skill.Id;
         }
 

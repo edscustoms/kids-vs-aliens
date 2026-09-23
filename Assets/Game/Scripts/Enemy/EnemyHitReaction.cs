@@ -52,6 +52,7 @@ public sealed class EnemyHitReaction :
     private void Awake()
     {
         CacheReferences();
+        animator = EnemyCombatPresentation.Resolve(this, animator);
 
         hitStateHash =
             Animator.StringToHash(

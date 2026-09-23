@@ -14,16 +14,16 @@ public sealed class PlayerMeleeController : MonoBehaviour
     [SerializeField] private PlayerAim aim;
     [SerializeField] private GameplaySuspensionController suspension;
     private StarterAssetsInputs input;
+    private PlayerHealth health;
 
     [Header("Stance")]
     [SerializeField, Min(.1f)] private float enterDistance = 2f;
     [SerializeField, Min(.1f)] private float exitDistance = 2.5f;
     [SerializeField, Min(0)] private float inactivityTimeout = 3f;
     [SerializeField, Min(.02f)] private float proximityInterval = .1f;
-    [Header("Impact volume (world metres)")]
+    [Header("Damage and contact safety (shape is authored in Animation Actions)")]
     [SerializeField, Min(0)] private float damage = 10f;
     [SerializeField, Min(.1f)] private float reach = 1.35f;
-    [SerializeField, Min(.01f)] private float hitRadius = .3f;
     [SerializeField, Min(0)] private float strikeHeight = 1f;
     [SerializeField] private LayerMask collisionMask = ~0;
 
@@ -31,19 +31,25 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private readonly RaycastHit[] sightHits = new RaycastHit[32];
     private UnarmedCombatItemData selectedItem;
     private bool stance, nearby, waitingForImpact, buffered;
+    private bool recovering, committed;
+    private bool contactPending;
+    private MeleeContactShape contactShape;
     private int nextAttack;
     private CharacterActionId pendingAction;
     private float lastInputTime = float.NegativeInfinity, nextProximityCheck;
 
     public UnarmedCombatItemData SelectedItem => selectedItem;
+    public UnarmedCombatItemData DefaultCombatItem => defaultCombatItem;
     public bool IsCombatStance => stance;
     public bool IsWaitingForImpact => waitingForImpact;
     public bool HasBufferedAttack => buffered;
+    public bool RequiresPlantedFeet => recovering && committed && CanAct
+        && (selectedItem != null ? selectedItem : defaultCombatItem).RequiresPlantedFeet(pendingAction);
     public bool IsUnlocked => HasKnowledge(selectedItem != null ? selectedItem : defaultCombatItem);
     public bool IsEligible => isActiveAndEnabled && IsUnlocked
         && (equipment == null || equipment.EquippedWeapon == null)
         && (grenades == null || !grenades.IsGrenadeSelected);
-    private bool CanAct => IsEligible && Time.timeScale > 0
+    private bool CanAct => IsEligible && Time.timeScale > 0 && (health == null || !health.IsDead)
         && (suspension == null || !suspension.IsSuspended)
         && (input == null || input.CanProcessGameplayInput);
     public event Action StateChanged;
@@ -52,6 +58,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private void Awake()
     {
         input = GetComponent<StarterAssetsInputs>();
+        health = GetComponent<PlayerHealth>();
         if (playerAnimation == null) playerAnimation = GetComponent<PlayerAnimation>();
         if (equipment == null) equipment = GetComponent<PlayerEquipment>();
         if (grenades == null) grenades = GetComponent<PlayerGrenadeController>();
@@ -63,6 +70,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (health != null) health.OnDied += CancelCombat;
         if (playerAnimation != null)
         {
             playerAnimation.AnimationEventReceived += HandleImpact;
@@ -77,6 +85,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private void OnDisable()
     {
         CancelCombat();
+        if (health != null) health.OnDied -= CancelCombat;
         if (playerAnimation != null)
         {
             playerAnimation.AnimationEventReceived -= HandleImpact;
@@ -88,10 +97,12 @@ public sealed class PlayerMeleeController : MonoBehaviour
         if (suspension != null) suspension.SuspensionChanged -= HandleSuspension;
     }
 
-    public bool SelectCombatItem(UnarmedCombatItemData item)
+    public bool SelectCombatItem(UnarmedCombatItemData item) => SelectCombatItemCore(item, false);
+    public bool RestoreRunSelection(UnarmedCombatItemData item) => SelectCombatItemCore(item, true);
+    private bool SelectCombatItemCore(UnarmedCombatItemData item, bool restoring)
     {
-        if (!isActiveAndEnabled || !HasKnowledge(item) || Time.timeScale <= 0
-            || (input != null && !input.CanProcessGameplayInput)) return false;
+        if (!HasKnowledge(item) || (!restoring && (!isActiveAndEnabled || Time.timeScale <= 0
+            || (input != null && !input.CanProcessGameplayInput)))) return false;
         CancelCombat();
         grenades?.CancelThrow();
         equipment?.UnequipWeapon();
@@ -108,7 +119,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
         if (!CanAct) return false;
         lastInputTime = Time.time;
         SetStance(true);
-        if (waitingForImpact || buffered)
+        if (waitingForImpact || buffered || recovering)
         {
             buffered = true; // Exactly one next attack, regardless of extra taps.
             return true;
@@ -118,7 +129,14 @@ public sealed class PlayerMeleeController : MonoBehaviour
 
     private bool BeginAttack()
     {
-        pendingAction = nextAttack == 0 ? CharacterActionId.MeleeLight1 : CharacterActionId.MeleeLight2;
+        var chain = (selectedItem != null ? selectedItem : defaultCombatItem)?.attackChain;
+        if (chain == null || chain.Length == 0) return false;
+        pendingAction = chain[nextAttack % chain.Length];
+        var visual = character != null ? character.ActiveVisual : null;
+        if (visual == null || visual.AnimationActions == null
+            || !visual.AnimationActions.TryGetBinding(pendingAction, out var binding)
+            || binding.meleeContact.radius <= 0) return false;
+        contactShape = binding.meleeContact;
         waitingForImpact = true;
         if (playerAnimation == null || !playerAnimation.TryPlayAction(pendingAction, CharacterAnimationEventId.MeleeImpact))
         {
@@ -126,7 +144,8 @@ public sealed class PlayerMeleeController : MonoBehaviour
             buffered = false;
             return false; // Missing presentation must never cause invisible damage.
         }
-        nextAttack ^= 1;
+        nextAttack = (nextAttack + 1) % chain.Length;
+        recovering = committed = true;
         AttackRequested?.Invoke(pendingAction);
         return true;
     }
@@ -134,15 +153,21 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private void Update()
     {
         if (!CanAct) { CancelCombat(); return; }
+        if (recovering && !waitingForImpact && playerAnimation.CanChainAction(pendingAction)) committed = false;
         if (Time.time >= nextProximityCheck)
         {
             nextProximityCheck = Time.time + proximityInterval;
             nearby = HasNearbyTarget(nearby ? Mathf.Max(enterDistance, exitDistance) : enterDistance);
         }
-        bool active = nearby || Time.time - lastInputTime <= inactivityTimeout || waitingForImpact || buffered;
+        if (recovering && !waitingForImpact && !playerAnimation.IsActionPlaying(pendingAction))
+        {
+            recovering = buffered = false;
+            nextAttack = 0;
+        }
+        bool active = nearby || Time.time - lastInputTime <= inactivityTimeout || waitingForImpact || buffered || recovering;
         if (!active) { CancelCombat(); return; }
         SetStance(true);
-        if (buffered && !waitingForImpact)
+        if (buffered && !waitingForImpact && playerAnimation.CanChainAction(pendingAction))
         {
             buffered = false;
             BeginAttack(); // Outside the native Animator event callback.
@@ -151,13 +176,12 @@ public sealed class PlayerMeleeController : MonoBehaviour
 
     public void CancelCombat()
     {
-        if (!stance && !waitingForImpact && !buffered) return;
-        waitingForImpact = buffered = nearby = false;
+        if (!stance && !waitingForImpact && !buffered && !recovering) return;
+        waitingForImpact = buffered = nearby = recovering = committed = contactPending = false;
         nextAttack = 0;
         lastInputTime = float.NegativeInfinity;
         nextProximityCheck = 0;
-        playerAnimation?.CancelAction(CharacterActionId.MeleeLight1);
-        playerAnimation?.CancelAction(CharacterActionId.MeleeLight2);
+        playerAnimation?.CancelAction(pendingAction);
         SetStance(false);
     }
 
@@ -183,7 +207,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
     private void HandleSuspension(bool suspended) { if (suspended) CancelCombat(); }
     private void HandleInterrupted(CharacterActionId action)
     {
-        if (waitingForImpact && action == pendingAction) CancelCombat();
+        if ((waitingForImpact || contactPending || recovering) && action == pendingAction) CancelCombat();
     }
     private void ClearSelection()
     {
@@ -224,10 +248,23 @@ public sealed class PlayerMeleeController : MonoBehaviour
     {
         if (marker != CharacterAnimationEventId.MeleeImpact || !waitingForImpact) return;
         waitingForImpact = false; // Consume first; reactions/events cannot reenter damage.
+        contactPending = true;
+    }
+
+    private void LateUpdate()
+    {
+        // Animation events run before the final blended pose is written. Query the actual
+        // rendered limb after Animator evaluation, once, on that same player-loop frame.
+        if (!contactPending) return;
+        contactPending = false;
         if (!CanAct) { CancelCombat(); return; }
+        if (playerAnimation == null || !playerAnimation.IsActionPlaying(pendingAction)) return;
+        var visual = character != null ? character.ActiveVisual : null;
+        if (visual == null || !contactShape.TryGetCenter(visual.Animator, out Vector3 center)) return;
+        Physics.SyncTransforms();
         Vector3 origin = StrikeOrigin;
-        int count = Physics.OverlapCapsuleNonAlloc(origin, origin + transform.forward * reach,
-            hitRadius, volumeHits, collisionMask, QueryTriggerInteraction.Ignore);
+        int count = Physics.OverlapSphereNonAlloc(center, contactShape.radius,
+            volumeHits, collisionMask, QueryTriggerInteraction.Ignore);
         if (count >= volumeHits.Length) return; // Saturated queries fail closed.
         Collider chosen = null;
         Vector3 chosenPoint = default;
@@ -237,19 +274,22 @@ public sealed class PlayerMeleeController : MonoBehaviour
             Collider body = volumeHits[i];
             AimTarget target = body.GetComponentInParent<AimTarget>();
             if (!ValidTarget(target) || !ValidBody(body, target)) continue;
-            Vector3 point = body.ClosestPoint(origin);
+            if (!contactShape.Touches(body, center, out Vector3 point)) continue;
             Vector3 offset = point - origin;
-            if (offset.sqrMagnitude > reach * reach || Vector3.Dot(offset, transform.forward) < 0
+            Vector3 planar = Vector3.ProjectOnPlane(body.bounds.center - transform.position, Vector3.up);
+            if (offset.sqrMagnitude > reach * reach || Vector3.Dot(planar.normalized, transform.forward) < .5f
                 || !HasClearPath(origin, point, target)) continue;
-            float score = offset.sqrMagnitude;
-            if (aim != null && aim.CurrentTarget == target) score -= reach * reach;
+            float score = (point-center).sqrMagnitude;
             if (score >= bestScore) continue;
             chosen = body; chosenPoint = point; bestScore = score;
         }
         if (chosen == null) return; // Air punches are valid actions.
         Vector3 direction = (chosenPoint - origin).normalized;
         var hit = new HitInfo(damage, chosenPoint, -direction, direction, gameObject);
-        CombatHitResolver.Resolve(chosen, hit)?.ReceiveHit(hit);
+        var receiver = CombatHitResolver.Resolve(chosen, hit);
+        if (receiver == null) return;
+        receiver.ReceiveHit(hit);
+        AudioService.Play((selectedItem != null ? selectedItem : defaultCombatItem).impactSound, chosenPoint);
     }
 
     private bool HasClearPath(Vector3 origin, Vector3 point, AimTarget target)

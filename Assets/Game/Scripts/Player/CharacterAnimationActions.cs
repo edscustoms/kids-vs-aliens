@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Characters/Animation Actions")]
+[CreateAssetMenu(menuName = "Characters/Animation Actions")]
 public sealed class CharacterAnimationActions : ScriptableObject
 {
     [Serializable]
@@ -15,6 +15,12 @@ public sealed class CharacterAnimationActions : ScriptableObject
         public AnimationClip clip;
         [Tooltip("Optional layer state used to blend out a cancelled action. Leave empty for existing action behavior.")]
         public string cancellationStatePath;
+        [Tooltip("Earliest normalized recovery point at which a queued action may blend in. Damage still requires its authored impact event.")]
+        [Range(0, 1)] public float chainStart;
+        [Tooltip("Keep authored leg motion even while moving (kicks). Otherwise locomotion supplies moving feet.")]
+        public bool requiresLegMotion;
+        [Tooltip("Optional physical contact for a melee marker. Authored per semantic action, independent of gameplay clip names.")]
+        public MeleeContactShape meleeContact;
     }
 
     [SerializeField]

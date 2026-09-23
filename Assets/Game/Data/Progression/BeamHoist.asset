@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b204195a5570ac40a19b6a7553602b7, type: 3}
+  m_Name: BeamHoist
+  m_EditorClassIdentifier: Assembly-CSharp::SkillData
+  id: beam_hoist
+  displayName: Beam Hoist
+  description: Use alien beam energy to lift Amy onto elevated areas. Stand beside
+    a hoistable surface and press Jump to lift onto it.
+  tutorialData: {fileID: 11400000, guid: fa509693e9f0ded48accddfaf8ca8837, type: 2}
+  startingLevel: 1
+  xpPerLevel: 100
+  unlocks: []

@@ -1,5 +1,44 @@
 # Knowledge, Feedback and Pause V1
 
+## 16 September update: in-game Menu and Options
+
+The top-right button and desktop Escape now open an in-game menu and acquire one
+manual suspension lease. Repeated presses never resume gameplay. OPTIONS opens
+camera selection, BACK returns to the menu while paused, and only RESUME releases
+the menu's lease. Knowledge/modal owners continue to suspend independently.
+
+`InGameMenuController` owns this routing and lease; `ManualPauseButton` is now only
+the existing button/input adapter. The screen roots live under
+`GameplayPresentationV1/SafeArea/InGameMenuRoot`. Buttons are instances of the shared
+`Btn_Pill` and `Btn_IconCircle` prefabs. The old pause-bars icon is retained until a
+suitable menu icon asset exists; the Play indicator is no longer used.
+
+Camera arrows cycle the existing `GameplayCameraMode` enum and update
+`GameplayCameraSettings.Mode`, including its existing PlayerPrefs persistence.
+`GameplayCameraController` evaluates its invalidated Cinemachine rig once when a
+mode changes during suspension, then asks the existing brain to publish the state.
+Gameplay time stays at zero; no preset tuning or brain update configuration changes.
+
+`GameplayPresentationSetup` delegates menu wiring to `InGameMenuSetup`, including
+through **Tools > Setup > Setup or Repair Active Gameplay Scene**. The feature helper
+preserves existing menu geometry, repairs callbacks/references and creates no
+duplicates on rerun. ConstructionSite and GamePoc are already wired. No manual
+Inspector work is needed for those scenes. Other existing gameplay scenes can use
+the central repair command.
+
+Validation: runtime/Editor compilation and all 98 Core tests passed. The real-scene
+Play Mode test covered both levels, exclusive screen visibility, repeated pause
+input, camera wraparound/persistence, actual paused camera output, Back/Resume,
+input blocking and simulated focus loss/return. Existing Knowledge, grenade,
+feedback and suspension tests also passed. Results: `Logs/InGameMenuTask/core-tests.xml`.
+The user's camera profile tuning was preserved byte for byte.
+
+Device acceptance remains: touch input, safe areas/aspect ratios, app backgrounding,
+and Knowledge/Acknowledge interaction with the menu. The underlying mobile lifecycle
+policy is unchanged; this adds no active-run suspend/resume save framework.
+
+The older implementation notes below describe the original presentation foundation.
+
 6 September update: gameplay grenade throws now use the shared action/marker path.
 See [grenade animation integration](08-GRENADE-ANIMATION.md). The original Knowledge
 preview V1 stance assets remain as authored; gameplay animation events stay disabled
@@ -14,9 +53,9 @@ Visual appearance, actual rendering and device input still require the checks be
 ## Setup in the existing Unity project
 
 1. Open a gameplay scene containing exactly one `PlayerCharacter`, outside Play Mode.
-2. Run **Tools → Kids VS Aliens → Setup → Knowledge Feedback & Pause V1**.
+2. Run **Tools → Setup → Knowledge Feedback & Pause V1**.
 3. Inspect the selected `GameplayPresentationV1` root and save the scene yourself.
-4. Enter Play Mode. Escape toggles desktop pause; mobile uses the top-right Pause/Play button.
+4. Enter Play Mode. Escape or the top-right button opens Menu; RESUME returns to gameplay.
 
 There is no additional Inspector wiring for the existing player configuration.
 Run setup once in each gameplay scene that should use this presentation. Menu scenes
@@ -37,7 +76,7 @@ authoring migration system.
   optional bounded queue. The presenter formats/fades using unscaled time.
 - `GameplaySuspensionController` owns time, cursor, input blocking and independent
   disposable leases. Only the last release restores the previous state. Manual
-  pause and Knowledge can coexist. Desktop pause cannot toggle through a modal.
+  menu and Knowledge can coexist. Desktop pause cannot open a menu through a modal.
 - `StarterAssetsInputs` continues ingesting raw input while blocking gameplay.
   Suspension cancels FIRE rather than emitting the normal release that throws a
   grenade. Resume suppresses the dismissal frame and requires held input to return

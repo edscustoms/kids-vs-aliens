@@ -11,15 +11,15 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools
+namespace EditorTools
 {
     public sealed class PolyHavenMaterialImporter : EditorWindow
     {
-        private const string MenuPath = "Tools/Kids VS Aliens/Helpers/Poly Haven Material Importer";
+        private const string MenuPath = "Tools/Helpers/Poly Haven Material Importer";
         private const string ApiBase = "https://api.polyhaven.com";
         private const string MaterialsRoot = "Assets/Game/Art/Environment/Materials";
         private const string TexturesRoot = "Assets/Game/Art/Environment/Textures";
-        private const string UserAgent = "KidsVSAliens-Unity-PolyHaven-Importer/1.0";
+        private const string UserAgent = "Unity-PolyHaven-Importer/1.0";
 
         private static readonly HttpClient Http = CreateHttpClient();
 

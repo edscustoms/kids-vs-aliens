@@ -109,38 +109,39 @@ public sealed class GameplaySuspensionTests
     }
 
     [Test]
-    public void DesktopPauseIntentWorksWhileBlocked_ButCannotToggleThroughModal()
+    public void DesktopMenuIntentCannotResume_AndRespectsKnowledgeOwnership()
     {
         var view = new GameObject("Pause test view");
         var manual = view.AddComponent<ManualPauseButton>();
+        var menu = view.AddComponent<InGameMenuController>();
+        menu.Configure(suspension, null, null, null);
         var flags =
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
-        typeof(ManualPauseButton).GetField("suspension", flags).SetValue(manual, suspension);
+        typeof(ManualPauseButton).GetField("menu", flags).SetValue(manual, menu);
+        typeof(InGameMenuController).GetMethod("OnEnable", flags).Invoke(menu, null);
         typeof(ManualPauseButton).GetField("input", flags).SetValue(manual, input);
         typeof(ManualPauseButton).GetMethod("OnEnable", flags).Invoke(manual, null);
         try
         {
             input.PauseInput();
-            Assert.That(manual.OwnsManualPause, Is.True);
+            Assert.That(menu.IsOpen, Is.True);
             var modal = suspension.Acquire(SuspensionReason.KnowledgePresentation);
             input.PauseInput();
-            Assert.That(manual.OwnsManualPause, Is.True);
+            Assert.That(menu.IsOpen, Is.True);
             Assert.That(suspension.OwnerCount, Is.EqualTo(2));
             modal.Dispose();
             input.PauseInput();
-            Assert.That(manual.OwnsManualPause, Is.False);
+            Assert.That(menu.IsOpen, Is.True, "Repeated pause intent must not resume.");
+            menu.ResumeGame();
             Assert.That(suspension.IsSuspended, Is.False);
             input.PauseInput();
             suspension.ReleaseAll();
-            Assert.That(
-                manual.OwnsManualPause,
-                Is.False,
-                "Teardown invalidates manual ownership too."
-            );
+            Assert.That(menu.IsOpen, Is.False, "Teardown invalidates manual ownership too.");
         }
         finally
         {
             typeof(ManualPauseButton).GetMethod("OnDisable", flags).Invoke(manual, null);
+            typeof(InGameMenuController).GetMethod("OnDisable", flags).Invoke(menu, null);
             Object.DestroyImmediate(view);
         }
     }

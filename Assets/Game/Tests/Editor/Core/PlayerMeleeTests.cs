@@ -23,6 +23,7 @@ public sealed class PlayerMeleeTests
     private PlayerShooter shooter;
     private StarterAssetsInputs input;
     private GameplaySuspensionController suspension;
+    private PlayerHealth health;
     private UnarmedCombatItemData item;
     private float oldTimeScale;
     private readonly List<GameObject> objects = new();
@@ -36,6 +37,7 @@ public sealed class PlayerMeleeTests
         item = AssetDatabase.LoadAssetAtPath<UnarmedCombatItemData>(UnarmedCombatSetup.ItemPath);
         player = new GameObject("Melee fixture"); player.transform.position = new Vector3(1000, 0, 1000);
         input = player.AddComponent<StarterAssetsInputs>();
+        health = player.AddComponent<PlayerHealth>(); Call(health, "Awake");
         skills = player.AddComponent<PlayerSkillState>();
         inventory = player.AddComponent<PlayerInventory>();
         var character = player.AddComponent<PlayerCharacter>();
@@ -43,6 +45,7 @@ public sealed class PlayerMeleeTests
         typeof(PlayerCharacter).GetProperty("ActiveVisual").GetSetMethod(true).Invoke(character, new object[] { actor });
         actor.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         actor.Animator.Rebind(); actor.Animator.Update(0);
+        actor.Animator.SetLayerWeight(actor.Animator.GetLayerIndex("CombatFootwork"), 1);
         equipment = player.AddComponent<PlayerEquipment>();
         shooter = player.AddComponent<PlayerShooter>();
         Set(equipment, "playerShooter", shooter); Call(equipment, "Awake");
@@ -74,7 +77,7 @@ public sealed class PlayerMeleeTests
     [Test]
     public void MissingSkillBlocksFireAndSelection_EvenBesideTarget()
     {
-        Target(1); input.ShootInput(true); Call(melee, "Update");
+        Target(.7f); input.ShootInput(true); Call(melee, "Update");
         Assert.That(melee.IsEligible, Is.False); Assert.That(melee.IsCombatStance, Is.False);
         Assert.That(melee.SelectCombatItem(item), Is.False); Assert.That(requests, Is.Empty);
     }
@@ -87,6 +90,8 @@ public sealed class PlayerMeleeTests
         Assert.That(melee.HasBufferedAttack, Is.False);
         Impact(); Assert.That(melee.IsWaitingForImpact, Is.False);
         input.ShootInput(false); input.ShootInput(true);
+        Assert.That(requests.Count, Is.EqualTo(1), "A second tap must preserve contact and recovery.");
+        AdvanceToNextAttack();
         Assert.That(requests.Last(), Is.EqualTo(CharacterActionId.MeleeLight2));
     }
 
@@ -94,7 +99,7 @@ public sealed class PlayerMeleeTests
     [TestCase("PlasmaRifleItem")]
     public void EquippedWeaponOwnsFire_EvenWithNearbyEnemy(string weapon)
     {
-        Learn(); Target(1);
+        Learn(); Target(.7f);
         Set(equipment, "equippedWeapon", AssetDatabase.LoadAssetAtPath<WeaponItemData>($"Assets/Game/Items/Weapons/{weapon}.asset"));
         input.ShootInput(true); Call(melee, "Update");
         Assert.That(Get<bool>(shooter, "triggerHeld"), Is.True);
@@ -105,7 +110,7 @@ public sealed class PlayerMeleeTests
     [Test]
     public void GrenadeOwnsFire_PointerCancellationCancelsChargeButKeepsSelection()
     {
-        Learn(); Target(1); SelectGrenade(); input.ShootInput(true);
+        Learn(); Target(.7f); SelectGrenade(); input.ShootInput(true);
         Assert.That(grenades.IsCharging, Is.True); Assert.That(requests, Is.Empty);
         input.CancelShootInput();
         Assert.That(grenades.IsGrenadeSelected, Is.True); Assert.That(grenades.IsCharging, Is.False);
@@ -116,7 +121,7 @@ public sealed class PlayerMeleeTests
     public void SelectingFightingUsesInventoryAndUnequipsWeapon_SelectionOutlivesStance()
     {
         Learn(); Set(equipment, "equippedWeapon", AssetDatabase.LoadAssetAtPath<WeaponItemData>("Assets/Game/Items/Weapons/PlasmaPistolItem.asset"));
-        inventory.TryAddItem(item); inventory.UseItem(0);
+        inventory.UseItem(PlayerInventory.CombatEntry);
         Assert.That(equipment.EquippedWeapon, Is.Null); Assert.That(melee.SelectedItem, Is.SameAs(item));
         Assert.That(melee.IsCombatStance, Is.True);
         Set(melee, "lastInputTime", Time.time - 3.1f); Call(melee, "Update");
@@ -126,7 +131,7 @@ public sealed class PlayerMeleeTests
     [Test]
     public void SelectingFightingCancelsSelectedGrenade()
     {
-        Learn(); SelectGrenade(); inventory.TryAddItem(item); inventory.UseItem(1);
+        Learn(); SelectGrenade(); inventory.UseItem(PlayerInventory.CombatEntry);
         Assert.That(grenades.IsGrenadeSelected, Is.False); Assert.That(melee.SelectedItem, Is.SameAs(item));
         Assert.That(melee.IsCombatStance, Is.True);
     }
@@ -148,13 +153,41 @@ public sealed class PlayerMeleeTests
     [Test]
     public void ImpactAppliesOneHitAndReaction_DuplicateAndLateMarkersAreIgnored()
     {
-        Learn(); var target = Target(1); var probe = target.GetComponent<MeleeImpactProbe>();
+        Learn(); var target = Target(.7f); var probe = target.GetComponent<MeleeImpactProbe>();
         Assert.That(melee.TryAttack(), Is.True); Assert.That(probe.DamageCount, Is.Zero);
         Impact(); Assert.That(probe.DamageCount, Is.EqualTo(1)); Assert.That(probe.ReactionCount, Is.EqualTo(1));
         Assert.That(probe.LastHit.Damage, Is.EqualTo(10)); Assert.That(probe.LastHit.Instigator, Is.SameAs(player));
         Call(animation, "HandleMarker", CharacterAnimationEventId.MeleeImpact, State(CharacterActionId.MeleeLight1));
         Call(melee, "HandleImpact", CharacterAnimationEventId.MeleeImpact);
         Assert.That(probe.DamageCount, Is.EqualTo(1));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ImpactSound_RequiresAResolvedReceiver(bool hasReceiver)
+    {
+        var clip = AudioClip.Create("Contact", 44100, 1, 44100, false);
+        var sound = ScriptableObject.CreateInstance<SoundEvent>(); sound.variants = new[] { clip };
+        var library = ScriptableObject.CreateInstance<AudioLibrary>(); library.events.Add(sound);
+        var combat = Object.Instantiate(item); combat.impactSound = sound; Set(melee, "defaultCombatItem", combat);
+        var audioRoot = new GameObject("Melee audio test");
+        var audio = audioRoot.AddComponent<AudioService>(); Set(audio, "library", library); Set(audio, "oneShotCapacity", 1);
+        Call(audio, "Awake"); Call(audio, "OnEnable");
+        try
+        {
+            Learn(); var target = Target(.7f);
+            if (!hasReceiver) Object.DestroyImmediate(target.GetComponent<MeleeImpactProbe>());
+            Assert.That(melee.TryAttack(), Is.True); Impact();
+            Assert.That(audioRoot.GetComponentsInChildren<AudioSource>().Any(s => s.clip == clip), Is.EqualTo(hasReceiver),
+                "An aimable collider alone is not a confirmed melee receiver.");
+            if (hasReceiver) Assert.That(target.GetComponent<MeleeImpactProbe>().ReactionCount, Is.EqualTo(1));
+        }
+        finally
+        {
+            Call(audio, "OnDisable"); Object.DestroyImmediate(audioRoot);
+            Set(melee, "defaultCombatItem", item);
+            Object.DestroyImmediate(combat); Object.DestroyImmediate(library); Object.DestroyImmediate(sound); Object.DestroyImmediate(clip);
+        }
     }
 
     [TestCase("wall")]
@@ -177,7 +210,7 @@ public sealed class PlayerMeleeTests
     [Test]
     public void OnePunchHitsAtMostOneOfSeveralTargets()
     {
-        Learn(); var first = Target(.9f); var second = Target(1.2f);
+        Learn(); var first = Target(.7f); var second = Target(.9f);
         melee.TryAttack(); Impact();
         Assert.That(first.GetComponent<MeleeImpactProbe>().DamageCount + second.GetComponent<MeleeImpactProbe>().DamageCount, Is.EqualTo(1));
     }
@@ -192,7 +225,7 @@ public sealed class PlayerMeleeTests
     [TestCase("skill")]
     public void InvalidatedAttackNeverDealsDelayedDamage(string reason)
     {
-        Learn(); var target = Target(1); melee.TryAttack(); actor.Animator.Update(.02f); Call(animation, "LateUpdate");
+        Learn(); var target = Target(.7f); melee.TryAttack(); actor.Animator.Update(.02f); Call(animation, "LateUpdate");
         GameplaySuspensionController.Lease lease = null;
         switch (reason)
         {
@@ -219,21 +252,22 @@ public sealed class PlayerMeleeTests
     [Test]
     public void OneBufferedTapChainsNextSemanticAction_ExtraTapsDoNotQueueMore()
     {
-        Learn(); var target = Target(1); melee.TryAttack(); melee.TryAttack(); melee.TryAttack();
+        Learn(); var target = Target(.7f); melee.TryAttack(); melee.TryAttack(); melee.TryAttack();
         Assert.That(melee.HasBufferedAttack, Is.True); Impact();
-        Call(melee, "Update"); Assert.That(requests, Is.EqualTo(new[] { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2 }));
+        Call(melee, "Update"); Assert.That(requests.Count,Is.EqualTo(1),"Impact must not open the recovery window prematurely.");
+        AdvanceToNextAttack(); Assert.That(requests, Is.EqualTo(new[] { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2 }));
         Call(animation, "HandleMarker", CharacterAnimationEventId.MeleeImpact, State(CharacterActionId.MeleeLight1));
         Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount, Is.EqualTo(1));
         Impact(); Call(melee, "Update"); Assert.That(requests.Count, Is.EqualTo(2));
         Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount, Is.EqualTo(2));
         Set(melee, "lastInputTime", Time.time - 4); target.SetTargetable(false); Scan();
-        actor.Animator.Update(1); melee.TryAttack(); Assert.That(requests.Last(), Is.EqualTo(CharacterActionId.MeleeLight1));
+        actor.Animator.Update(1); Call(melee,"Update"); melee.TryAttack(); Assert.That(requests.Last(), Is.EqualTo(CharacterActionId.MeleeLight1));
     }
 
     [Test]
     public void MissingMappingFailsWithoutInvisibleDamageAndLeavesStanceUsable()
     {
-        Learn(); var target = Target(1);
+        Learn(); var target = Target(.7f);
         Set(animation, "driver", new CharacterAnimatorDriver(actor.Animator));
         Assert.That(melee.TryAttack(), Is.False); Assert.That(melee.IsWaitingForImpact, Is.False);
         Assert.That(melee.IsCombatStance, Is.True); Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount, Is.Zero);
@@ -242,22 +276,67 @@ public sealed class PlayerMeleeTests
     }
 
     [Test]
-    public void BookUnlocksKnowledgeAndReplacesItsSlotWithFighting_WhenInventoryIsFull()
+    public void BookUnlocksPermanentFightingAccess_WithoutADeadBackpackItem()
     {
         Set(inventory, "maxSlots", 1);
         var book = AssetDatabase.LoadAssetAtPath<KnowledgeBookItemData>(UnarmedCombatSetup.BookPath);
         Assert.That(inventory.TryAddItem(book), Is.True); inventory.UseItem(0);
         Assert.That(skills.HasSkill(item.requiredSkill), Is.True);
-        Assert.That(inventory.Items.Count, Is.EqualTo(1)); Assert.That(inventory.Items[0], Is.SameAs(item));
-        Assert.That(item.worldPrefab, Is.Null); inventory.UseItem(0); Assert.That(melee.SelectedItem, Is.SameAs(item));
+        Assert.That(inventory.Items, Is.Empty); Assert.That(inventory.LearnedCombat, Is.SameAs(item));
+        Assert.That(item.worldPrefab, Is.Null); inventory.UseItem(PlayerInventory.CombatEntry); Assert.That(melee.SelectedItem, Is.SameAs(item));
+    }
+
+    [Test]
+    public void NonlethalPlayerDamageKeepsTheExistingAttackPolicy_DeathCancelsContact()
+    {
+        Learn(); var target=Target(.7f); melee.TryAttack();health.TakeDamage(1);Impact();
+        Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount,Is.EqualTo(1));
+        melee.CancelCombat(); actor.Animator.Update(1); melee.TryAttack();health.TakeDamage(1000);
+        Assert.That(melee.IsWaitingForImpact,Is.False);
+        for(int i=0;i<120;i++){actor.Animator.Update(1f/120);Call(melee,"LateUpdate");}
+        Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount,Is.EqualTo(1));
+    }
+
+    [Test]
+    public void CancellationAfterMarkerBeforePoseQueryAlsoInvalidatesContact()
+    {
+        Learn();var target=Target(.7f);melee.TryAttack();
+        for(int i=0;i<120&&melee.IsWaitingForImpact;i++)actor.Animator.Update(1f/120);
+        Assert.That(melee.IsWaitingForImpact,Is.False);
+        melee.CancelCombat();Call(melee,"LateUpdate");
+        Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount,Is.Zero);
     }
 
     private void Learn() => skills.UnlockSkill(item.requiredSkill);
+    private void AdvanceToNextAttack()
+    {
+        int count=requests.Count;
+        for(int i=0;i<240 && requests.Count==count;i++)
+        { actor.Animator.Update(1f/120); Call(animation,"LateUpdate"); Call(melee,"Update"); }
+        Assert.That(requests.Count,Is.EqualTo(count+1));
+    }
+
+    [Test]
+    public void CompleteChainUsesOneInputAndOneImpactPerStep_ThenResetsAfterRecovery()
+    {
+        Learn(); var target=Target(.7f); Assert.That(melee.TryAttack(),Is.True);
+        for(int step=0;step<item.attackChain.Length;step++)
+        {
+            Assert.That(requests.Last(),Is.EqualTo(item.attackChain[step]));
+            if(step+1<item.attackChain.Length) Assert.That(melee.TryAttack(),Is.True);
+            Impact();
+            Assert.That(target.GetComponent<MeleeImpactProbe>().DamageCount,Is.EqualTo(step+1));
+            if(step+1<item.attackChain.Length) AdvanceToNextAttack();
+        }
+        for(int i=0;i<240;i++) { actor.Animator.Update(1f/120); Call(melee,"Update"); }
+        Assert.That(requests.Count,Is.EqualTo(item.attackChain.Length));
+        Assert.That(melee.TryAttack(),Is.True); Assert.That(requests.Last(),Is.EqualTo(CharacterActionId.MeleeLight1));
+    }
     private void Scan() { Set(melee, "nextProximityCheck", 0f); Call(melee, "Update"); }
     private void Impact()
     {
         for (int i = 0; i < 240 && melee.IsWaitingForImpact; i++)
-        { actor.Animator.Update(1f / 120); Call(animation, "LateUpdate"); }
+        { actor.Animator.Update(1f / 120); Call(animation, "LateUpdate"); Call(melee, "LateUpdate"); }
         Assert.That(melee.IsWaitingForImpact, Is.False, "The authored marker must complete the attack.");
     }
     private int State(CharacterActionId action)
@@ -267,8 +346,9 @@ public sealed class PlayerMeleeTests
     }
     private AimTarget Target(float forward)
     {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere); objects.Add(go);
-        go.transform.position = player.transform.position + new Vector3(0, 1, forward); go.transform.localScale = Vector3.one * .4f;
+        var go = GameObject.CreatePrimitive(PrimitiveType.Capsule); objects.Add(go);
+        go.transform.position = player.transform.position + Vector3.forward * forward;
+        var body=go.GetComponent<CapsuleCollider>(); body.center=Vector3.up*.9f; body.height=1.8f; body.radius=.28f;
         go.AddComponent<MeleeImpactProbe>(); var target = go.AddComponent<AimTarget>(); target.CacheBodyData();
         Call(target, "OnEnable"); // EditMode fixtures explicitly run ordinary gameplay lifecycle hooks.
         Physics.SyncTransforms(); return target;

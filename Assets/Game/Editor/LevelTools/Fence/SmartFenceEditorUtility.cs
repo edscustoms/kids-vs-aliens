@@ -2,7 +2,7 @@ using KidsVsAliens.Environment;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools.Fence
+namespace EditorTools.Fence
 {
     internal static class SmartFenceEditorUtility
     {

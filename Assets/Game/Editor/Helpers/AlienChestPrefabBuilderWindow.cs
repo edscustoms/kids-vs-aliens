@@ -7,7 +7,7 @@ using KidsVsAliens.Interaction;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools
+namespace EditorTools
 {
     public sealed class AlienChestPrefabBuilderWindow : EditorWindow
     {
@@ -58,7 +58,7 @@ namespace KidsVsAliens.EditorTools
         private GameObject initialLootPrefab;
 
         [MenuItem(
-            "Tools/Kids VS Aliens/Helpers/Alien Chest Prefab Builder")]
+            "Tools/Helpers/Alien Chest Prefab Builder")]
         public static void Open()
         {
             GetWindow<AlienChestPrefabBuilderWindow>(
@@ -123,7 +123,7 @@ namespace KidsVsAliens.EditorTools
                     basePrefabName);
 
             EditorGUILayout.HelpBox(
-                "Example source KVA_AlienChest_POC_V1 becomes:\n" +
+                "Example source AlienChest_POC_V1 becomes:\n" +
                 "PF_AlienChest_POC_V1\n" +
                 "PF_AlienChest_POC_V1_MenuPreview",
                 MessageType.None);
@@ -998,14 +998,6 @@ namespace KidsVsAliens.EditorTools
         {
             string result =
                 NormalizeBaseName(sourceName);
-
-            if (result.StartsWith(
-                    "KVA_",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                result =
-                    result.Substring(4);
-            }
 
             return result;
         }

@@ -1,0 +1,47 @@
+# Weapon alignment and alien ranged refinement
+
+## Requested report
+
+1. **Scale ownership.** Attachment roots and GripPoint/Muzzle/LeftGripPoint helpers are unit scale. Pistol model scale remains 0.23; rifle model scale remains 0.01 on VisualRoot. Existing PlasmaCore visuals remain under the corresponding scaled hierarchy. No shared PlasmaCore implementation or model asset was changed.
+2. **Size parity.** Unity compared all 16 mesh-bound corners per prefab, including the core mesh, across equipped/dropped/menu variants of both weapons. Matching tolerance is 0.00025 m. Reloaded prefab geometry also passed. Menu previews retain connected instances of the equipped prefab and their existing framing transforms.
+3. **Weapon contract.** The weapon owns geometry, right-hand grip, optional support-hand reference and muzzle. Helpers use barrel +Z / weapon +Y, independent of rig wrist orientation. The rifle's old Muzzle pointed approximately 90 degrees away from its barrel and helpers had scale 23. Both errors are corrected. Rifle GripPoint is now (0.0009, -0.03, -0.05) metres; LeftGripPoint is (0, -0.02, 0.178), under the foregrip. Actual barrel-tip muzzle position is retained.
+4. **Body contract.** CharacterVisual owns a serialized Weapon Mounts array keyed by WeaponAnimationStyle. RightHand/WeaponMounts/Pistol and Rifle follow the animated hand, with distinct authored poses for Amy, SportyGranny and the current alien. WeaponInstance uses this shared contract once. The old enemy-only mount array/calibration was retired. WeaponSocket remains the fallback and grenade socket; grenade behavior is unchanged.
+5. **Amy.** Both pistol and rifle were inspected in three close-up views and sampled moving poses. Muzzles follow the ready-facing direction, and attachment remains stable. Rifle right-hand placement and stock clearance were adjusted; detailed support-finger contact is not final.
+6. **SportyGranny.** Both styles use her own mount poses and were checked similarly. Her larger hands visibly need finer finger/support-hand posing; the weapon was not enlarged to hide this mismatch.
+7. **Alien pistol.** Corrected shared weapon-axis contract and an authored body mount produce a forward-facing pistol with the handle at the right hand. Real encounter muzzle diagnostics agree with the visible direction. The original weapon size is retained.
+8. **Alien rifle.** The sideways compensation for the old muzzle axis is gone. The rifle now extends forward with its stock alongside the shoulder rather than across the head. The shared grip and a 3.5 cm outward body-mount adjustment improve handle/stock clearance. Inspected ready and moving poses still expose some finger curl mismatch.
+9. **Support hand.** LeftGripPoint is a clean weapon-side target, not a runtime IK system. No safe existing support-hand IK mechanism was present. Exact palm contact/finger curl remains a visible follow-up, especially for Granny. This is not a claim of finished close-up hand animation.
+10. **Reactive movement cause.** The old narrow preferred-distance cutoff repeatedly requested movement and reset settling. Facing/clearance interruptions also restarted settling, so minor player steps could repeatedly delay firing.
+11. **Commitments.** Ranged position decisions use 0.18–0.32 s intervals. Valid positions have bounded hold durations. Tracking a small change in bearing does not renew aim delay. Short reposition destinations remain committed until reached or timed out; meaningful close-range conditions still interrupt through existing melee hysteresis.
+12. **Variation.** Profile ranges control hold duration, initial settle multiplier, burst pause multiplier, bounded automatic burst length, occasional short sidesteps and a side preference. Variation occurs between bursts, not on every small target move. Real muzzle/body/target geometry still gates every shot.
+13. **Pistol.** Comfortable band is 4.2–8.1 m for this profile, capped by weapon range; holds 1.1–2.0 s; deliberate step probability 0.18 per expired hold. Single shots remain separated by measured pauses.
+14. **Rifle.** Band is 4.8–10.2 m; holds 2.4–3.8 s; deliberate step probability 0.06. It sustains firing from useful positions while tolerating small target steps. Larger withdrawals prompt approach; lost perception still uses the existing investigation system.
+15. **Cadence.** Automatic bursts are 4–6 rounds. Rifle pause is 0.455–0.735 s; pistol pause 0.7–1.05 s. Settling varies around the existing 0.65 s base. WeaponItemData damage, fire rate, maximum range, magazine and reload values are unchanged. Accuracy remains profile-controlled (2.5 degrees on the reference asset).
+16. **Melee fallback.** Existing 1.05 m melee entry / 1.8 m ranged resume hysteresis and committed melee completion remain intact. Interruption, stun, disable and equipment changes cancel ranged intent. Tests cover close entry, the hysteresis interval, retreat and renewed ranged fire.
+17. **Death drops.** Only ConstructionSite gate instances (7) and (8) gained Drop Weapon On Death overrides. Existing Starting Weapon references remain pistol/rifle respectively; canonical prefab remains unarmed with pickup disabled. Tests verify the exact ItemData on one normal world pickup per armed death, repeated lethal hits cannot duplicate it, and a second Drop cannot duplicate it. No loot economy was added.
+18. **Mixed encounter.** Three seeded isolated encounters use the real pistol/rifle/melee alien prefab together. The final three runs produced 41/42/37 ranged shots and 6/6/5 melee contact events respectively. Cover diagnostics exposed an early-stop loop: a turning muzzle briefly cleared cover, causing a stop followed by another blocked aim. Completing the selected sidestep fixes that loop. Candidate side checks now prefer a physically clear firing lane before falling back to incremental local repositioning. This remains local navigation, not tactical cover AI.
+19. **Unity validation.** Compile, EditMode authoring tests, EditMode-hosted Play Mode encounters and render captures were run in Unity 6000.5.6f1. Evidence is under Logs/WeaponRefinement and Logs/AlienCombat. The final saved-asset suite passed 17/17 checks in `Logs/WeaponRefinement/verified.xml` (exit code 0): five authoring checks, eight encounter checks, two weapon/alignment checks and two preview checks. No Android build, installation or device test was performed.
+20. **Remaining limits.** Fine hand/finger poses and support-hand IK; native recoil/reload choreography; broader manually played encounter/balance review. Some sidesteps still use the existing navigation locomotion rather than a dedicated combat sidestep animation. Tests establish specific correctness and inspected poses, not universal animation quality or fairness in every authored layout.
+
+## Tuning and future models
+
+- Open `Assets/Game/Data/Enemies/AlienCombatV1.asset` for range bands, holds, settle/pause multipliers, automatic burst count/variation, step probability and accuracy.
+- Open Amy, SportyGranny, or the CharacterVisual inside `PF_Enemy_Melee_POC_V1.prefab`; edit its referenced Pistol/Rifle transforms under RightHand/WeaponMounts. Normal setup/repair preserves these authored transforms.
+- New alien: Humanoid visual + CharacterVisual + compatible EnemyAnimationProfile, then author/calibrate style mounts on that visual. Reuse the same WeaponItemData/equipped prefabs. No AI change or per-alien weapon copy is required.
+- Edit shared weapon geometry/grip/muzzle only on the weapon prefab. Menu previews inherit equipped-prefab changes. Dropped variants retain their existing pickup components and physics dimensions.
+- `WeaponContractRefinement` is an explicit one-time editor migration/calibration utility, not normal scene repair. Calibration exports are review artifacts; do not rerun migration to repair an ordinary scene.
+
+## Files changed by this follow-up
+
+Runtime: `Scripts/Player/CharacterVisual.cs`, `Scripts/Items/WeaponInstance.cs`, `Scripts/Enemy/EnemyEquipment.cs`, `EnemyCombatPresentation.cs`, `EnemyCombatProfile.cs`, `Scripts/Enemy/AI/EnemyRangedAttack.cs` (under Assets/Game).
+
+Assets: Amy/SportyGranny character prefabs; existing PF_Enemy_Melee_POC_V1 prefab; pistol/rifle Equipped, Dropped and MenuPreview prefabs; AlienCombatV1 profile; two drop flags in ConstructionSite.unity. Mesh/material source assets and WeaponItemData balance definitions are unchanged.
+
+Editor/tests: `Editor/WeaponContractRefinement.cs`, retirement of old calibration in `Editor/Enemy/EnemyCombatantSetup.cs`, `Tests/Editor/Core/WeaponAlignmentTests.cs`, expanded AlienCombatantTests and AlienAuthoringTests. New files have Unity .meta files. The workspace also retains prior generic-alien implementation changes.
+
+## Short manual review checklist
+
+1. In Unity, view Amy, Granny and alien with each weapon from front/side while aiming and moving; inspect handle, head clearance and remaining finger mismatch.
+2. Take tiny back/side steps near one ranged alien, then withdraw substantially, break LOS, rush to melee and retreat. Check position commitment and readable firing windows.
+3. Repeat with pistol/rifle/melee together; verify clear damage sources and geometry blocking.
+4. Kill each armed gate alien; collect its normal weapon pickup and confirm no duplicate drop. Rerun setup and confirm authored mounts/loadouts remain intact.

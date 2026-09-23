@@ -9,6 +9,16 @@ public sealed class CharacterAnimatorDriver
     private static readonly int WeaponStyle = Animator.StringToHash("WeaponStyle");
     private static readonly int CombatStance = Animator.StringToHash("CombatStance");
     private readonly bool supportsCombatStance;
+    private static readonly int Floating = Animator.StringToHash("Floating");
+    public const string FloatingLayerName = "FloatingPresentation";
+    private readonly bool supportsFloating;
+    private readonly int floatingLayer = -1;
+    private readonly int footworkLayer = -1;
+    private readonly int guardLayer = -1;
+    private bool combatReady, legActionEntered;
+    private CharacterActionId lastAction;
+    private bool legAction;
+    private bool footworkAction;
     private readonly Animator animator;
     private readonly CharacterAnimationActions actions;
     private readonly HashSet<int> triggers = new();
@@ -25,6 +35,8 @@ public sealed class CharacterAnimatorDriver
             style = false;
         foreach (AnimatorControllerParameter parameter in animator.parameters)
         {
+            if (parameter.nameHash == Floating && parameter.type == AnimatorControllerParameterType.Bool)
+                supportsFloating = true;
             if (
                 parameter.nameHash == CombatStance
                 && parameter.type == AnimatorControllerParameterType.Bool
@@ -49,6 +61,9 @@ public sealed class CharacterAnimatorDriver
                 triggers.Add(parameter.nameHash);
         }
         IsCompatible = x && y && style;
+        floatingLayer = animator.GetLayerIndex(FloatingLayerName);
+        footworkLayer = animator.GetLayerIndex("CombatFootwork");
+        guardLayer = animator.GetLayerIndex("CombatGuard");
     }
 
     public void SetWeaponStyle(WeaponAnimationStyle style)
@@ -59,8 +74,18 @@ public sealed class CharacterAnimatorDriver
 
     public void SetCombatStance(bool active)
     {
+        combatReady = active;
         if (supportsCombatStance && animator != null)
             animator.SetBool(CombatStance, active);
+    }
+
+    public void SetFloating(bool active)
+    {
+        if (!supportsFloating || animator == null) return;
+        animator.SetBool(Floating, active);
+        // A zero-weight override is essential: even an empty masked layer can affect
+        // the existing controller's mixed write-defaults animation poses.
+        if (floatingLayer >= 0) animator.SetLayerWeight(floatingLayer, active ? 1f : 0f);
     }
 
     public void SetMovement(Vector2 movement, float deltaTime)
@@ -69,6 +94,19 @@ public sealed class CharacterAnimatorDriver
             return;
         animator.SetFloat(MoveX, movement.x, 0.05f, deltaTime);
         animator.SetFloat(MoveY, movement.y, 0.05f, deltaTime);
+        if (guardLayer >= 0)
+            animator.SetLayerWeight(guardLayer, Mathf.MoveTowards(animator.GetLayerWeight(guardLayer), combatReady ? 1 : 0, deltaTime/ .25f));
+        if (footworkLayer >= 0)
+        {
+            if (footworkAction && IsActionPlaying(lastAction)) legActionEntered = true;
+            else if (legActionEntered) footworkAction = legAction = legActionEntered = false;
+            bool exiting = TryActionState(lastAction,out _,out int layer,out int state) && IsExitingState(layer,state);
+            bool standingGuard = combatReady && movement.sqrMagnitude < .01f;
+            bool plantedAction = footworkAction && !exiting && legAction && !CanChainAction(lastAction);
+            float target = standingGuard || plantedAction ? 1 : 0;
+            float blend = footworkAction ? .125f : .25f;
+            animator.SetLayerWeight(footworkLayer, Mathf.MoveTowards(animator.GetLayerWeight(footworkLayer), target, deltaTime / blend));
+        }
     }
 
     public bool TryPlayAction(CharacterActionId action)
@@ -84,11 +122,40 @@ public sealed class CharacterAnimatorDriver
         )
             return false;
         animator.SetTrigger(trigger);
+        lastAction = action;
+        legAction = actions.TryGetBinding(action, out var binding) && binding.requiresLegMotion;
+        footworkAction = binding.layerName == "UnarmedCombatActions";
+        legActionEntered = false;
         return true;
+    }
+
+    public bool IsActionPlaying(CharacterActionId action) => TryActionState(action, out _, out int layer, out int state)
+        && IsInState(layer,state);
+
+    public bool CanChainAction(CharacterActionId action)
+    {
+        if (!TryActionState(action,out var binding,out int layer,out int state) || IsExitingState(layer,state)) return false;
+        var info = animator.GetCurrentAnimatorStateInfo(layer);
+        return info.fullPathHash == state && info.normalizedTime >= binding.chainStart && info.normalizedTime < 1;
+    }
+
+    private bool TryActionState(CharacterActionId action, out CharacterAnimationActions.Binding binding, out int layer, out int state)
+    {
+        binding=default; layer=-1; state=0;
+        if (animator == null || !animator.isActiveAndEnabled || actions == null || !actions.TryGetBinding(action,out binding)
+            || string.IsNullOrEmpty(binding.layerName) || string.IsNullOrEmpty(binding.statePath)) return false;
+        layer=animator.GetLayerIndex(binding.layerName); state=Animator.StringToHash(binding.statePath);
+        return layer >= 0;
     }
 
     public void CancelAction(CharacterActionId action)
     {
+        if (lastAction == action)
+        {
+            footworkAction = legAction = legActionEntered = false;
+            if (animator != null && animator.isActiveAndEnabled && footworkLayer >= 0)
+                animator.CrossFadeInFixedTime("CombatFootwork.Guard", .16f, footworkLayer);
+        }
         if (
             animator != null
             && actions != null

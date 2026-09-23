@@ -31,7 +31,7 @@ public sealed class FeedbackPresentation
     public float queueLifetime = 8f;
 }
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Presentation/Feedback Catalog")]
+[CreateAssetMenu(menuName = "Presentation/Feedback Catalog")]
 public sealed class FeedbackPresentationCatalog : ScriptableObject
 {
     [SerializeField]

@@ -7,6 +7,165 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE — 18 Sep 2026 — Interface / Active Run
+
+The requested interface and functional active-run foundation are implemented on the
+existing uGUI/TMP, inventory, Knowledge and suspension-lease architecture. Main Menu
+retains its selectors, preview and text-only controls; Play conditionally offers
+Continue, confirmed New Game, Options and Knowledge Log. Gameplay has the themed
+HUD, pause/settings/inventory flow, touch quick-slot assignment, Knowledge review and
+lightweight tutorial floor. The resource bar displays the existing armor resource.
+
+Permanent Knowledge, XP and acknowledgements persist separately from the active run.
+The active run includes current player state, original loadout, inventory/equipment/
+ammo, world pickups, chests, enemy health/resolution/awareness and spawn state.
+Checksummed alternating generations provide recovery from a torn snapshot. Periodic,
+important-mutation and lifecycle saves support safe Quit and relaunch/Continue.
+Foreground/restore returns paused; resume does not replay the fresh-start beam.
+Snapshots taken during a beam use a safe endpoint, not a transient in-flight pose.
+
+Confirmed New Game replacement is an additional explicitly authorized active-run
+discard operation, alongside death and confirmed Hard Restart. Permanent progression
+and settings survive all three. Ordinary exit/backgrounding never discards a run.
+Future mission/door/set-piece state plugs into IRunStateParticipant; no new objective
+architecture was introduced. Canonical setup repairs the required scene dependencies.
+
+See Docs/RunInterface.md for exact changed files, tuning, verified behavior and the
+remaining release/device checks. This supersedes older notes treating persistence and
+the current interface pass as unimplemented.
+
+CURRENT IMPLEMENTATION OVERRIDE — 18 Sep 2026 — Beam Hoist / Camera Fade / Persistence
+
+This override is newer than the 7 Sep and earlier implementation notes below. Where it
+conflicts with older Beam Hoist, camera-fade or suspend/resume text, this section wins.
+
+Camera Occlusion Fade V2 — DONE WITH EXTRA TODO
+
+The current logical blocker/group-based Camera Occlusion Fade V2 is working and should be
+treated as production-sensitive. Continue real Construction Site/device regression and
+small readability tuning, but do not casually rewrite the working architecture.
+
+Alien Beam / Hoist V1 — DONE WITH EXTRA TODO
+
+Beam Hoist is no longer a future placeholder feature.
+
+Manual upward hoist:
+
+uses normal Jump; there is no dedicated HOIST button
+
+requires Beam Hoist Knowledge
+
+uses one continuous cubic Bézier from Amy's true start position directly to landing
+
+release/control1/control2 only shape the curve
+
+no separate vertical phase, reset, second curve or teleport
+
+Beam Transport VFX follows Amy horizontally on X/Z while its root/Y remains grounded
+as currently implemented
+
+working movement/path logic is production-sensitive and should not be casually refactored
+
+Automatic level-start Beam arrival is separate from manual hoisting and must not show the
+manual hoist-start holographic pad.
+
+Generic authoring:
+
+BeamHoistSurface
+→ BeamHoistSurfaceBaker
+→ fixed baked valid lower approach/start cells
+→ gameplay + Beam Hoist presentation use the same authored data
+
+BeamHoistAbility limits are the single source for gameplay/bake reach constraints. There
+is no independent approach-width tuning that can drift from actual gameplay reach.
+
+New BeamHoistSurface instances in a configured gameplay scene automatically refresh/bake
+through the standard authoring/setup workflow. Runtime-added surfaces must carry the
+scene-authored bake; no runtime baker reshapes the area.
+
+Manual hoist-start VFX:
+
+visual quality/glow is approved
+
+current active flicker/power-up while Amy is in a valid hoist position is approved
+
+hidden before Knowledge
+
+hidden while far away
+
+configurable Reveal/Hide distances with hysteresis
+
+fades in/out with proximity
+
+fixed world-space position and shape; Amy movement never resizes/rebuilds it
+
+exact baked valid start area is the visual source of truth
+
+runtime availability may change idle vs active state but must not reshape the pad
+
+hoist start hides the pad and real Beam Transport VFX takes over
+
+genuinely disconnected valid pockets remain separate
+
+contiguous valid regions should visually merge into one connected pad while preserving
+real invalid gaps/holes
+
+Floating animation presentation is integrated for Beam transport/hoist and genuine long
+falls. Keep gameplay independent from clip/state names. The visually preferred/original
+Floating import behavior should be preserved; setup tooling must not silently force an
+import configuration that changes the approved motion.
+
+Remaining Beam/animation follow-ups:
+
+finish/verify the contiguous-region visual merge if the current pass is still open
+
+Beam Hoist tutorial demonstration
+
+Grenade tutorial demonstration
+
+audit existing Pistol/Rifle/Fighting learned-action demos
+
+later BeamTransportVFX spark polish only
+
+fix automatic LevelStart/BeamInSpawn placement + lingering-beam issue independently
+
+investigate the pre-existing desktop Space/Jump lock independently
+
+Android/device regression
+
+Active-run suspend/resume — ABSOLUTE MUST
+
+Mobile interruption is not death.
+
+Incoming calls, backgrounding, phone lock, normal manual quit, app close/reopen and
+recoverable OS termination must preserve the current attempt. Relaunch/Continue should
+restore the same functional run and Amy's place/state.
+
+Only two intentional actions discard the active run:
+
+death
+→ active run discarded
+→ current large story level restarts from the beginning
+
+explicit Hard Restart from the in-game menu
+→ confirmation
+→ active run discarded
+→ current large story level restarts from the beginning
+
+Ordinary Quit must preserve the run.
+
+Keep permanent/meta progression, active-run state and platform lifecycle handling as
+separate concerns.
+
+The active-run save must ultimately be able to preserve meaningful functional state such
+as player transform/state, objectives, mission items, changed doors/gates/interactables,
+meaningful enemy/encounter state and set-piece progress such as excavator repair status.
+It does not need frame-perfect serialization of transient particles/projectiles/animation
+frames.
+
+The current player is effectively in god mode, so death-triggered reset can be tested
+later, but the architecture must reserve death as an explicit active-run discard path.
+
 CURRENT DESIGN OVERRIDE — 7 Sep 2026 — Handcrafted Roguelite Loop / Level 1 / Post-Game Tiers
 
 This override is newer than the 3 Sep progression notes below. Where they conflict,
@@ -85,7 +244,7 @@ Current recommended model to prototype:
 
 permanent weapon Knowledge / handling / progression
 
-- run-specific physical acquisition / loadout opportunities
+run-specific physical acquisition / loadout opportunities
 
 Avoid a system where dying strips the player of a strong weapon and makes the next run
 materially weaker. Permanent guns, re-find-every-run guns and the hybrid model should be
@@ -267,7 +426,7 @@ kick chains, Ultras, proficiency expansion, final impact feel/VFX/SFX and final 
 animation polish remain later work.
 
 Gameplay scene setup is now centralized through:
-Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
+Tools > Setup > Setup or Repair Active Gameplay Scene
 
 The helper was used successfully to repair another gameplay level so the Knowledge
 tutorial/popup, feedback/pause stack and current melee requirements work there. This
@@ -309,7 +468,7 @@ gameplay SSAO/default renderer remain unchanged.
 
 Final runtime/Editor compilation and the full Core EditMode suite passed: 43 tests,
 0 failures, 0 skipped, including integrated Knowledge Book/manual-pause ownership.
-Scene wiring is generated by Tools > Kids VS Aliens > Setup > Knowledge Feedback
+Scene wiring is generated by Tools > Setup > Knowledge Feedback
 & Pause V1; gameplay scenes have NOT been auto-saved or migrated. Setup reruns
 reapply generated UI visual defaults, so checkpoint before rerunning after polish.
 Play Mode, GPU rendering and Android/iOS acceptance are still required.
@@ -1305,6 +1464,9 @@ final premium chest art/polish comes later
 
 Alien Beam / Hoist 100% doing this in a generic way
 
+DONE WITH EXTRA TODO — implemented; see the 18 Sep current implementation override above.
+The historical bullets below are preserved as original design intent.
+
 Large top-to-bottom alien beam:
 
 captures/lifts the player
@@ -1356,6 +1518,14 @@ Knowledge and skill XP/proficiency remain.
 
 Mobile interruption is separate from death. Suspend/resume must preserve the current
 attempt safely.
+
+CURRENT CLARIFICATION — 18 Sep 2026:
+
+Normal manual quit also preserves the attempt. Incoming calls, backgrounding, phone lock,
+app close/reopen and recoverable OS termination all belong to suspend/resume, not death.
+
+Only death or an explicit confirmed Hard Restart from the in-game menu may intentionally
+discard the active run and restart the current large story level.
 
 Physical gun/inventory persistence is still a design test item. The current recommended
 prototype is permanent weapon Knowledge/progression with run-specific acquisition or

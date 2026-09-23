@@ -7,6 +7,16 @@
             "id": "f62a4b92-ef5e-4175-8f4c-c9075429d32c",
             "actions": [
                 {
+                    "name": "Hoist",
+                    "type": "Button",
+                    "id": "9baf619e-0892-4914-97d7-88251ca4aa00",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
                     "name": "Pause",
                     "type": "Button",
                     "id": "67756cd9-c1c1-4bdc-9666-7e4ac2b49abc",
@@ -68,6 +78,17 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "d9132b41-96d4-4d35-903c-59ae3241600b",
+                    "path": "<Keyboard>/h",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "Hoist",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "",
                     "id": "7bb6c4da-46a6-48af-8b61-0ca092bd0db0",

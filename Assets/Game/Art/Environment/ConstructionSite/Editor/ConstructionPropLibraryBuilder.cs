@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 
 public static class ConstructionPropLibraryBuilder
 {
-    private const string MenuPath = "Tools/Kids VS Aliens/Construction Site/Build Prop Library";
+    private const string MenuPath = "Tools/Construction Site/Build Prop Library";
 
     private const float BagWidth = 0.60f;
     private const float BagDepth = 0.38f;
@@ -72,22 +72,22 @@ public static class ConstructionPropLibraryBuilder
             MigrateLegacyPrefabFolderIfNeeded(p);
             EnsureOutputFolders(p);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Creating shared materials...", 0.08f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Creating shared materials...", 0.08f);
             Library lib = BuildMaterials(p);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Creating cement bags...", 0.20f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Creating cement bags...", 0.20f);
             BuildCementBagPrefabs(p, lib);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Creating pallets...", 0.40f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Creating pallets...", 0.40f);
             BuildPalletPrefabs(p, lib);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Creating timber props...", 0.62f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Creating timber props...", 0.62f);
             BuildTimberPrefabs(p, lib);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Creating cable reel props...", 0.78f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Creating cable reel props...", 0.78f);
             BuildCablePrefabs(p, lib);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Creating storage clusters...", 0.90f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Creating storage clusters...", 0.90f);
             BuildStorageClusters(p);
 
             AssetDatabase.SaveAssets();
@@ -97,13 +97,13 @@ public static class ConstructionPropLibraryBuilder
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(p.PrefabRoot);
 
             Debug.Log(
-                "[KVA] Construction prop library built successfully.\n" +
+                "Construction prop library built successfully.\n" +
                 "Created 3 cement bag variants, 3 loaded cement pallets, timber kits, cable reels and storage clusters.\n" +
                 $"Output: {p.PrefabRoot}"
             );
 
             EditorUtility.DisplayDialog(
-                "KVA Construction Props",
+                "Construction Props",
                 "Done.\n\nCreated:\n" +
                 "• 3 individual cement bags\n" +
                 "• 3 different loaded cement pallets\n" +
@@ -123,14 +123,14 @@ public static class ConstructionPropLibraryBuilder
             EditorUtility.ClearProgressBar();
             Debug.LogException(ex);
             EditorUtility.DisplayDialog(
-                "KVA Construction Props - Failed",
+                "Construction Props - Failed",
                 ex.Message + "\n\nSee Console for the full stack trace.",
                 "OK"
             );
         }
     }
 
-    [MenuItem("Tools/Kids VS Aliens/Construction Site/Update Cement Pallets + Timber Scale")]
+    [MenuItem("Tools/Construction Site/Update Cement Pallets + Timber Scale")]
     public static void UpdateCementPalletsAndTimberOnly()
     {
         try
@@ -138,10 +138,10 @@ public static class ConstructionPropLibraryBuilder
             Paths p = ResolvePaths();
             EnsureOutputFolders(p);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Rebuilding cement pallets only...", 0.20f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Rebuilding cement pallets only...", 0.20f);
             BuildDenseCementPalletsOnly(p);
 
-            EditorUtility.DisplayProgressBar("KVA Construction Props", "Scaling timber + straps to 1.5x...", 0.65f);
+            EditorUtility.DisplayProgressBar("Construction Props", "Scaling timber + straps to 1.5x...", 0.65f);
             Library timberLib = new Library
             {
                 TimberWood = LoadRequired<Material>(p.EnvironmentRoot + "/Materials/Wood/M_Plywood.mat"),
@@ -155,7 +155,7 @@ public static class ConstructionPropLibraryBuilder
             EditorUtility.ClearProgressBar();
 
             EditorUtility.DisplayDialog(
-                "KVA Construction Props",
+                "Construction Props",
                 "Done.\n\nOnly these assets were rebuilt:\n" +
                 "• 3 loaded cement pallets\n" +
                 "• timber board / strap / bundles / loose pile\n\n" +
@@ -169,7 +169,7 @@ public static class ConstructionPropLibraryBuilder
             EditorUtility.ClearProgressBar();
             Debug.LogException(ex);
             EditorUtility.DisplayDialog(
-                "KVA Construction Props - Failed",
+                "Construction Props - Failed",
                 ex.Message + "\n\nSee Console for the full stack trace.",
                 "OK"
             );
@@ -236,7 +236,7 @@ public static class ConstructionPropLibraryBuilder
         if (AssetDatabase.IsValidFolder(p.PrefabRoot))
         {
             Debug.LogWarning(
-                "[KVA] Legacy construction prefabs still exist at " + p.LegacyPrefabRoot +
+                "Legacy construction prefabs still exist at " + p.LegacyPrefabRoot +
                 ". The new builder writes to " + p.PrefabRoot + "."
             );
             return;
@@ -249,13 +249,13 @@ public static class ConstructionPropLibraryBuilder
         if (!string.IsNullOrEmpty(error))
         {
             Debug.LogWarning(
-                "[KVA] Could not automatically move the legacy prefab folder. " + error +
+                "Could not automatically move the legacy prefab folder. " + error +
                 " New prefabs will still be created at " + p.PrefabRoot + "."
             );
         }
         else
         {
-            Debug.Log("[KVA] Moved legacy construction prefabs to " + p.PrefabRoot);
+            Debug.Log("Moved legacy construction prefabs to " + p.PrefabRoot);
         }
     }
 
@@ -477,11 +477,11 @@ public static class ConstructionPropLibraryBuilder
         Bounds bagBounds,
         Color accentColor)
     {
-        Shader shader = Shader.Find("Kids VS Aliens/Environment/Cement Bag Projected Print");
+        Shader shader = Shader.Find("Environment/Cement Bag Projected Print");
         if (shader == null)
             throw new InvalidOperationException(
                 "Projected cement-bag shader was not found. Expected shader: " +
-                "Kids VS Aliens/Environment/Cement Bag Projected Print"
+                "Environment/Cement Bag Projected Print"
             );
 
         Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -535,7 +535,7 @@ public static class ConstructionPropLibraryBuilder
             importer.SaveAndReimport();
         }
 
-        GameObject tempRoot = new GameObject("__KVA_NormalizeMesh");
+        GameObject tempRoot = new GameObject("__NormalizeMesh");
         Mesh combined = null;
 
         try

@@ -1,4 +1,4 @@
-Shader "KVA/Environment/Mesh Decal"
+Shader "Environment/Mesh Decal"
 {
     Properties
     {

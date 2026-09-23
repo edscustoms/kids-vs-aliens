@@ -7,7 +7,7 @@ public enum MenuPreviewType
     Grenade,
 }
 
-[CreateAssetMenu(fileName = "MenuPreviewItem", menuName = "Kids VS Aliens/Menu/Preview Item")]
+[CreateAssetMenu(fileName = "MenuPreviewItem", menuName = "Menu/Preview Item")]
 public class MenuPreviewItem : ScriptableObject
 {
     [Header("Identity")]

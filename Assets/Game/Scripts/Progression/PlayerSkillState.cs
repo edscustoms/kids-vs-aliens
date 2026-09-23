@@ -28,11 +28,25 @@ public sealed class PlayerSkillState : MonoBehaviour
         public int totalXp;
     }
 
-    // POC persistence:
-    // survives scene/player recreation for the current app session.
-    // A real save/profile system can replace this later.
+    // Live cache backed by the permanent save, independent of active-run resets.
     private static readonly Dictionary<string, MutableSkillProgress>
         RuntimeSkills = new();
+
+    private static bool loaded;
+    public static void LoadPermanentSkills()
+    {
+        if (loaded || !Application.isPlaying) return;
+        loaded = true;
+        var catalog = RunContentCatalog.Instance;
+        if (catalog == null) return;
+        foreach (var entry in catalog.entries)
+            if (entry.asset is SkillData skill)
+                foreach (var saved in PermanentProgress.Data.skills)
+                    if (saved.id == skill.Id) RuntimeSkills[skill.Id] = new MutableSkillProgress { skill = skill, totalXp = Mathf.Max(0, saved.xp) };
+    }
+    public static IEnumerable<SkillData> LearnedSkills { get { LoadPermanentSkills(); foreach (var value in RuntimeSkills.Values) yield return value.skill; } }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void BeginSession() { RuntimeSkills.Clear(); loaded = false; }
 
     public event Action<SkillData> SkillUnlocked;
     public event Action<SkillData, int, int> SkillXpChanged;
@@ -40,6 +54,7 @@ public sealed class PlayerSkillState : MonoBehaviour
 
     public bool HasSkill(SkillData skill)
     {
+        LoadPermanentSkills();
         if (!TryGetSkillId(skill, out string id))
             return false;
 
@@ -48,6 +63,7 @@ public sealed class PlayerSkillState : MonoBehaviour
 
     public bool UnlockSkill(SkillData skill)
     {
+        LoadPermanentSkills();
         if (!TryGetSkillId(skill, out string id))
             return false;
 
@@ -62,6 +78,8 @@ public sealed class PlayerSkillState : MonoBehaviour
                 totalXp = 0
             });
 
+        PermanentProgress.Update(skill, 0);
+        PermanentProgress.Flush();
         SkillUnlocked?.Invoke(skill);
 
         return true;
@@ -86,6 +104,7 @@ public sealed class PlayerSkillState : MonoBehaviour
                 progress.totalXp);
 
         progress.totalXp += amount;
+        PermanentProgress.Update(skill, progress.totalXp);
 
         int newLevel =
             skill.GetLevelForTotalXp(
@@ -110,6 +129,7 @@ public sealed class PlayerSkillState : MonoBehaviour
         SkillData skill,
         out SkillProgress progress)
     {
+        LoadPermanentSkills();
         progress = default;
 
         if (!TryGetSkillId(skill, out string id) ||
@@ -151,6 +171,7 @@ public sealed class PlayerSkillState : MonoBehaviour
     public static void ResetRuntimeSkills()
     {
         RuntimeSkills.Clear();
+        loaded = true;
     }
 
     private static bool TryGetSkillId(

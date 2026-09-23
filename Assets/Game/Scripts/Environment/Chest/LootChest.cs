@@ -91,6 +91,11 @@ namespace KidsVsAliens.Environment
 
         public bool IsOpen => isOpen;
         public bool IsOpening => isOpening;
+        public void RestoreRunOpen(bool opened)
+        {
+            StopAllCoroutines(); isOpening = false; isOpen = opened; lootSpawned = opened;
+            if (lidPivot != null) lidPivot.localRotation = opened ? closedLidRotation * Quaternion.Euler(openAngle, 0, 0) : closedLidRotation;
+        }
 
         private void Awake()
         {
@@ -171,6 +176,7 @@ namespace KidsVsAliens.Environment
             isOpen = true;
 
             SpawnLoot(opener);
+            ActiveRunController.Instance?.MarkDirty();
         }
 
         private void SpawnLoot(Transform opener)
@@ -262,6 +268,7 @@ namespace KidsVsAliens.Environment
                 GameObject spawned = Instantiate(prefab, groundPoint, rotation);
 
                 PlaceSpawnedObjectOnGround(spawned, groundPoint.y);
+                RunWorldObject.TrackSpawn(spawned, prefab);
             }
         }
 

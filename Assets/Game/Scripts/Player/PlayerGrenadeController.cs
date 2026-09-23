@@ -159,10 +159,12 @@ public sealed class PlayerGrenadeController : MonoBehaviour
         return inventory != null && SelectGrenade(inventory.GetFirstGrenade());
     }
 
-    public bool SelectGrenade(GrenadeItemData grenade)
+    public bool SelectGrenade(GrenadeItemData grenade) => SelectGrenadeCore(grenade, false);
+    public bool RestoreRunSelection(GrenadeItemData grenade) => SelectGrenadeCore(grenade, true);
+    private bool SelectGrenadeCore(GrenadeItemData grenade, bool restoring)
     {
         if (IsThrowing || isCommittingThrow) return false;
-        if (input != null && !input.CanProcessGameplayInput)
+        if (!restoring && input != null && !input.CanProcessGameplayInput)
             return false;
         if (
             grenade == null

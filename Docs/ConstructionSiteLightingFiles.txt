@@ -1,0 +1,61 @@
+ConstructionSite lighting pass - exact production file manifest
+
+MODIFIED
+Assets/Game/Art/Environment/ConstructionSite/FBX/CableReel_A.fbx.meta
+Assets/Game/Art/Environment/ConstructionSite/FBX/TimberStrap_A.fbx.meta
+Assets/Game/Art/Environment/ConstructionSite/FBX/TimberWood_A.fbx.meta
+Assets/Game/Art/Environment/ConstructionSite/FBX/WoodenPallet.fbx.meta
+Assets/Game/Art/Environment/ConstructionSite/Generated/SM_CementBag_A_Optimized.asset
+Assets/Game/Art/Environment/ConstructionSite/Shaders/CementBagProjectedPrint.shader
+Assets/Game/Art/Environment/Machinery/FBX/SkidSteer_Loader_A.fbx.meta
+Assets/Game/Prefabs/Items/Grenades/ElectricGrenade_Dropped.prefab
+Assets/Game/Prefabs/Weapons/PlasmaPistol/PlasmaPistol_Dropped.prefab
+Assets/Game/Prefabs/Weapons/PlasmaRifle/Plasma_Rifle_Dropped.prefab
+Assets/Game/Scenes/ConstructionSite.unity
+Assets/Game/ThirdParty/Concrete Barriers/Models/SM_Concrete Barrier.fbx.meta
+Assets/Game/ThirdParty/Fence pack/Models/Fence_ef.FBX.meta
+Assets/Game/ThirdParty/Fence pack/Models/fence_b.FBX.meta
+Assets/Game/ThirdParty/Fence pack/Models/fence_c.FBX.meta
+Assets/Game/ThirdParty/HQ Shipping Container (Modular)/Model/Floor 2.fbx.meta
+Assets/Game/ThirdParty/HQ Shipping Container (Modular)/Model/Front End Frame.fbx.meta
+Assets/Game/ThirdParty/HQ Shipping Container (Modular)/Model/Rear End Frame.fbx.meta
+Assets/Game/ThirdParty/HQ Shipping Container (Modular)/Model/Roof Panel.fbx.meta
+Assets/Game/ThirdParty/HQ Shipping Container (Modular)/Model/Sidewall.fbx.meta
+Assets/New Terrain.asset
+Assets/TerrainData_514950e3-77e9-4375-aa7c-c9142c423934.asset
+Assets/TerrainData_ffcac561-2dd8-41a1-bc2a-6706816b36ce.asset
+
+ADDED
+Assets/Game/Editor/ConstructionSiteLighting.cs
+Assets/Game/Editor/ConstructionSiteLighting.cs.meta
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage.meta
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage/GrassDry_A_NoShadow.prefab
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage/GrassDry_A_NoShadow.prefab.meta
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage/GrassDry_B_NoShadow.prefab
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage/GrassDry_B_NoShadow.prefab.meta
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage/GrassDry_C_NoShadow.prefab
+Assets/Game/Prefabs/Environment/ConstructionSite/Foliage/GrassDry_C_NoShadow.prefab.meta
+Assets/Game/Scenes/ConstructionSite/LightingData.asset
+Assets/Game/Scenes/ConstructionSite/LightingData.asset.meta
+Assets/Game/Scenes/ConstructionSite/Lightmap-0_comp_dir.png
+Assets/Game/Scenes/ConstructionSite/Lightmap-0_comp_dir.png.meta
+Assets/Game/Scenes/ConstructionSite/Lightmap-0_comp_light.exr
+Assets/Game/Scenes/ConstructionSite/Lightmap-0_comp_light.exr.meta
+Assets/Game/Scenes/ConstructionSite/Lightmap-0_comp_shadowmask.png
+Assets/Game/Scenes/ConstructionSite/Lightmap-0_comp_shadowmask.png.meta
+Assets/Game/Scenes/ConstructionSite/ReflectionProbe-0.exr
+Assets/Game/Scenes/ConstructionSite/ReflectionProbe-0.exr.meta
+Assets/Game/Scenes/ConstructionSite/ReflectionProbe-1.exr
+Assets/Game/Scenes/ConstructionSite/ReflectionProbe-1.exr.meta
+Assets/Game/Scenes/ConstructionSite/ReflectionProbe-2.exr
+Assets/Game/Scenes/ConstructionSite/ReflectionProbe-2.exr.meta
+Assets/Game/Settings/Lighting.meta
+Assets/Game/Settings/Lighting/ConstructionSite.lighting
+Assets/Game/Settings/Lighting/ConstructionSite.lighting.meta
+Docs/ConstructionSiteLighting.md
+Docs/ConstructionSiteLightingFiles.txt
+
+Preserved pre-existing user change (not part of this pass):
+ProjectSettings/Packages/com.unity.probuilder/Settings.json
+
+ConstructionSite.unity also contained pre-existing user changes; those were retained.

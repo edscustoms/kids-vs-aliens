@@ -27,12 +27,30 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
 
     [SerializeField, Range(128, 1024)]
     private int textureSize = 512;
+    [SerializeField] private Material floorMaterial;
+    private GameObject presentationFloor;
     private PreviewStageContent content;
     private RenderTexture texture;
 
     public GameObject Actor => content?.CurrentInstance;
     public Transform StagingRoot => previewRoot;
     public int PreviewLayer => previewLayer;
+    public Camera PreviewCamera => previewCamera;
+
+    // Fixed framing for a preview-only motion envelope. Account for Canvas/rig
+    // scale instead of treating authored stage metres as world-space offsets.
+    public void FrameTravel(Vector3 localTravel)
+    {
+        if (!PreviewStageContent.TryGetModelBounds(Actor, out Bounds bounds)) return;
+        Vector3 worldTravel = previewRoot.TransformVector(localTravel);
+        Bounds end = new Bounds(bounds.center + worldTravel, bounds.size);
+        bounds.Encapsulate(end);
+        float halfFov = previewCamera.fieldOfView * Mathf.Deg2Rad * .5f;
+        float distance = Mathf.Max(bounds.extents.y, bounds.extents.x) / Mathf.Tan(halfFov);
+        distance = (distance + bounds.extents.z) * 1.22f;
+        previewCamera.transform.position = bounds.center + Vector3.back * distance;
+        previewCamera.transform.rotation = Quaternion.identity;
+    }
     public bool IsRendering => previewCamera != null && previewCamera.enabled;
 
     // Resolve per pipeline, since desktop/mobile can use different indices.
@@ -108,7 +126,42 @@ public sealed class KnowledgePreviewStage : MonoBehaviour
         if (output != null)
             output.texture = texture;
         content.FrameCurrent(Mathf.Max(0.1f, distanceMultiplier), targetOffset);
+        EnsureBackdrop();
+        if (floorMaterial != null && presentationFloor == null)
+        {
+            presentationFloor = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            presentationFloor.name = "Tutorial Floor";
+            Destroy(presentationFloor.GetComponent<Collider>());
+            presentationFloor.transform.SetParent(previewRoot, false);
+            presentationFloor.transform.localPosition = new Vector3(0, -.025f, 0);
+            presentationFloor.transform.localRotation = Quaternion.Euler(90,0,0);
+            // Keep the pad/grid in stage units while extending the shared ground
+            // beyond every authored preview frustum.
+            presentationFloor.transform.localScale = Vector3.one * floorMaterial.GetFloat("_StageSize");
+            presentationFloor.layer = previewLayer;
+            presentationFloor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
+        }
         SetVisible(true);
+    }
+
+    // The character keeps its authored square output/framing. A separate shared
+    // procedural backdrop fills the entire inner frame, including its side bands.
+    public void EnsureBackdrop()
+    {
+        if (output == null || output.transform.parent == null) return;
+        var parent = output.transform.parent;
+        var existing = parent.Find("StageBackdrop");
+        var rect = existing != null ? (RectTransform)existing
+            : InterfaceFactory.Rect(parent, "StageBackdrop", new Vector2(.015f,.015f), new Vector2(.985f,.985f));
+        var graphic = rect.GetComponent<Image>() ?? rect.gameObject.AddComponent<Image>();
+        graphic.raycastTarget = false;
+        graphic.material = Resources.Load<Material>("TutorialBackdrop");
+        graphic.color = Color.white;
+        if (rect.GetSiblingIndex() != output.transform.GetSiblingIndex()-1)
+        {
+            rect.SetAsLastSibling();
+            rect.SetSiblingIndex(output.transform.GetSiblingIndex());
+        }
     }
 
     private void SetVisible(bool visible)

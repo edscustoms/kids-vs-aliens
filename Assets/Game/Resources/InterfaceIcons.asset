@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef88a5b399585c046989f5a10bb35312, type: 3}
+  m_Name: InterfaceIcons
+  m_EditorClassIdentifier: Assembly-CSharp::InterfaceIconCatalog
+  entries:
+  - role: 0
+    sprite: {fileID: -3489523382018142636, guid: af369da92e44ffd409103bf81a399412, type: 3}
+    item: {fileID: 11400000, guid: 77617bb5e17b45159e2fd175797c1e86, type: 2}
+    skill: {fileID: 0}
+  - role: 1
+    sprite: {fileID: 7492993829064388897, guid: af369da92e44ffd409103bf81a399412, type: 3}
+    item: {fileID: 11400000, guid: 3765c3b1e078cf14487dc137ccde2ce1, type: 2}
+    skill: {fileID: 0}
+  - role: 2
+    sprite: {fileID: -4292712553443018290, guid: af369da92e44ffd409103bf81a399412, type: 3}
+    item: {fileID: 11400000, guid: f70783c94c394824cae0a35867011521, type: 2}
+    skill: {fileID: 0}
+  - role: 3
+    sprite: {fileID: 1464748337670562286, guid: af369da92e44ffd409103bf81a399412, type: 3}
+    item: {fileID: 11400000, guid: 92e2ba6e5eb8dc84ab05d1933af0f3c7, type: 2}
+    skill: {fileID: 0}
+  - role: 4
+    sprite: {fileID: -3283882407380739057, guid: af369da92e44ffd409103bf81a399412, type: 3}
+    item: {fileID: 0}
+    skill: {fileID: 0}
+  - role: 5
+    sprite: {fileID: 1802072023575487455, guid: 259750d5d0d99a946b53ac581d224eae, type: 3}
+    item: {fileID: 0}
+    skill: {fileID: 11400000, guid: 94743da28ec6b6f4490915236f431a5f, type: 2}
+  - role: 6
+    sprite: {fileID: 8495014875662131884, guid: 259750d5d0d99a946b53ac581d224eae, type: 3}
+    item: {fileID: 0}
+    skill: {fileID: 11400000, guid: 4b9774f1e764486594fcc435fa91847c, type: 2}
+  - role: 7
+    sprite: {fileID: 5712171335399937929, guid: 259750d5d0d99a946b53ac581d224eae, type: 3}
+    item: {fileID: 0}
+    skill: {fileID: 11400000, guid: 43103a442e5f3e149b2a468065a892c7, type: 2}
+  - role: 8
+    sprite: {fileID: 7897621925726079081, guid: 259750d5d0d99a946b53ac581d224eae, type: 3}
+    item: {fileID: 0}
+    skill: {fileID: 11400000, guid: a83f5a0e4cb792b46bf779932755bbcf, type: 2}
+  - role: 9
+    sprite: {fileID: 1026366838149057641, guid: 259750d5d0d99a946b53ac581d224eae, type: 3}
+    item: {fileID: 0}
+    skill: {fileID: 11400000, guid: 75084ba52cac8634ba9b947bcb1d3f35, type: 2}

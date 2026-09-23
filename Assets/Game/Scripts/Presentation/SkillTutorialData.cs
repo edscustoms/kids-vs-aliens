@@ -5,9 +5,10 @@ public enum SkillDemoType
     Stance = 0,
     WeaponFire = 1,
     GrenadeThrow = 2,
+    BeamHoist = 3,
 }
 
-[CreateAssetMenu(menuName = "Kids VS Aliens/Presentation/Skill Tutorial")]
+[CreateAssetMenu(menuName = "Presentation/Skill Tutorial")]
 public sealed class SkillTutorialData : ScriptableObject
 {
     public string titleOverride;
@@ -60,6 +61,19 @@ public sealed class SkillTutorialData : ScriptableObject
 
     [Min(0.01f)]
     public float weaponRecoilDuration = 0.12f;
+
+    [Header("Beam demonstration (presentation only)")]
+    public BeamTransportVFX beamPrefab;
+    [Min(.5f)] public float beamHeight = 1.6f;
+    [Min(.1f)] public float beamTravelDuration = 1.8f;
+    [Min(0f)] public float beamUpperPause = .5f;
+    [Min(0f)] public float beamLowerPause = 1f;
+
+    [Header("Grenade demonstration (presentation only)")]
+    [Min(0f)] public float grenadeInitialDelay = .6f;
+    [Min(0f)] public float grenadeDistantDelay = 1.5f;
+    [Min(.1f)] public float grenadeFlashDuration = .35f;
+    [Min(0f)] public float grenadeResetPause = .8f;
 
     [Header("Preview framing")]
     [Min(0.1f)]

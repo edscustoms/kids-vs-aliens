@@ -8,6 +8,8 @@ public enum EnemyBrainState
     Attack,
     Investigate,
     Dead,
+    Ranged,
+    AcquireWeapon,
 }
 
 /// <summary>
@@ -41,6 +43,9 @@ public sealed class EnemyBrain : MonoBehaviour
 
     [SerializeField]
     private EnemyMeleeAttack meleeAttack;
+    private EnemyEquipment equipment;
+    private EnemyRangedAttack rangedAttack;
+    private EnemyWeaponAwareness weaponAwareness;
 
     [Header("Dynamic chase")]
     [SerializeField]
@@ -96,15 +101,23 @@ public sealed class EnemyBrain : MonoBehaviour
         CacheReferences();
     }
 
+    private bool restoredAwareness;
+    public Vector3 RunInvestigationAnchor => actor != null && actor.CurrentTarget != null ? actor.CurrentTarget.position : investigationAnchor;
+    public void RestoreRunAwareness(EnemyBrainState state, Vector3 anchor)
+    {
+        restoredAwareness = true;
+        if (state == EnemyBrainState.Investigate || state == EnemyBrainState.Chase || state == EnemyBrainState.Attack || state == EnemyBrainState.Ranged) BeginInvestigation(anchor);
+        else EnterIdle();
+    }
+
     private void Start()
     {
-        EnterIdle();
+        if (!restoredAwareness) EnterIdle();
     }
 
     private void Update()
     {
-        // Decisions can apply immediate melee damage even when no game time
-        // advances. Keep this Update-driven simulation asleep during pause.
+        // Keep attack requests and other decisions asleep during pause.
         if (Time.timeScale <= 0f)
             return;
         if (actor == null || !actor.IsAlive)
@@ -120,7 +133,10 @@ public sealed class EnemyBrain : MonoBehaviour
 
             SyncActorTarget(perception.Target);
 
-            if (meleeAttack != null && meleeAttack.CanAttack(perception.Target))
+            if (weaponAwareness != null && weaponAwareness.Tick(perception.Target)) { State = EnemyBrainState.AcquireWeapon; return; }
+            if (rangedAttack != null && rangedAttack.TickVisibleTarget(perception.Target)) { State = EnemyBrainState.Ranged; return; }
+
+            if (MeleeEnabled && meleeAttack != null && meleeAttack.CanAttack(perception.Target))
             {
                 UpdateAttack(perception.Target);
             }
@@ -131,6 +147,9 @@ public sealed class EnemyBrain : MonoBehaviour
 
             return;
         }
+
+        rangedAttack?.Cancel();
+        if (!incomingShotPending && weaponAwareness != null && weaponAwareness.Tick(null)) { State = EnemyBrainState.AcquireWeapon; return; }
 
         // A hit reaction movement-locks the enemy.
         // Keep the direction in memory, but do not start walking until the
@@ -270,8 +289,11 @@ public sealed class EnemyBrain : MonoBehaviour
 
         motor?.FacePosition(target.position);
 
-        meleeAttack?.TryAttack(target);
+        if (MeleeEnabled) meleeAttack?.TryAttack(target);
     }
+
+    private bool MeleeEnabled => equipment == null || equipment.Profile == null || equipment.Profile.meleeEnabled;
+    private void OnDisable() { rangedAttack?.Cancel(); weaponAwareness?.Cancel(); }
 
     private void BeginInvestigation(Vector3 anchor)
     {
@@ -420,6 +442,7 @@ public sealed class EnemyBrain : MonoBehaviour
         incomingShotPending = false;
 
         State = EnemyBrainState.Dead;
+        rangedAttack?.Cancel(); weaponAwareness?.Cancel();
 
         motor?.Stop();
 
@@ -465,6 +488,9 @@ public sealed class EnemyBrain : MonoBehaviour
 
     private void CacheReferences()
     {
+        equipment = GetComponent<EnemyEquipment>();
+        rangedAttack = GetComponent<EnemyRangedAttack>();
+        weaponAwareness = GetComponent<EnemyWeaponAwareness>();
         if (actor == null)
             actor = GetComponent<EnemyActor>();
 

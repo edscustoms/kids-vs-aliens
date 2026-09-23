@@ -74,15 +74,17 @@ public static class MeleeMotionReview
                     animator.SetBool("CombatStance", true);
                     animator.SetFloat("MoveX", Moves[row].x); animator.SetFloat("MoveY", Moves[row].y);
                     animator.Update(0);
-                    for (int step = 0; step < 30; step++) animator.Update(1f / 60);
-                    new CharacterAnimatorDriver(animator, actor.AnimationActions).TryPlayAction(action); animator.Update(0);
+                    var driver = new CharacterAnimatorDriver(animator, actor.AnimationActions);
+                    driver.SetCombatStance(true);
+                    for (int step = 0; step < 30; step++) { driver.SetMovement(Moves[row],1f/60); animator.Update(1f / 60); }
+                    driver.TryPlayAction(action); animator.Update(0);
                     float time = 0;
                     for (int column = 0; column < times.Length; column++)
                     {
                         while (time + .00001f < times[column])
                         {
                             float dt = Mathf.Min(1f / 120, times[column] - time);
-                            animator.Update(dt); time += dt;
+                            driver.SetMovement(Moves[row],dt); animator.Update(dt); time += dt;
                         }
                         // This is a presentation capture; native marker/gameplay launch is tested separately.
 

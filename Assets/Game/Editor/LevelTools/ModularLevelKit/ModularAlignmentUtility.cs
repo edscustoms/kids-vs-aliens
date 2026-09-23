@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace KidsVsAliens.EditorTools.ModularLevelKit
+namespace EditorTools.ModularLevelKit
 {
     internal static class ModularAlignmentUtility
     {

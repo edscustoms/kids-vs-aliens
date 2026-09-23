@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37f349a51c244bf7a2c0e6506c4fa590, type: 3}
+  m_Name: Config
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFeedbackConfig
+  playerDamage: {fileID: 11400000, guid: 0e3c7a9b353e47d4a80ae8fc34ad3d30, type: 2}
+  hardLanding: {fileID: 11400000, guid: d39ac67bcd2040f2bf1fe5348a72db73, type: 2}
+  minimumLandingSpeed: 8
+  fullLandingSpeed: 16
+  maximumRotation: 1.5
+  maximumPosition: 0.06

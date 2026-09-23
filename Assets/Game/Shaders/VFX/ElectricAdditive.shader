@@ -1,4 +1,4 @@
-Shader "KidsVsAliens/VFX/ElectricAdditive"
+Shader "VFX/ElectricAdditive"
 {
     Properties
     {

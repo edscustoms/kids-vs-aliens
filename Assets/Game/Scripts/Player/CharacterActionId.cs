@@ -10,4 +10,7 @@ public enum CharacterActionId
     GauntletPrimary = 6,
     MeleeLight1 = 7,
     MeleeLight2 = 8,
+    MeleeLight3 = 9,
+    MeleeHeavy = 10,
+    HeavyKick = 11,
 }

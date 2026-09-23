@@ -45,6 +45,7 @@ public sealed class EnemyMotor : MonoBehaviour
 
     public EnemyMovementLockReason MovementLocks =>
         movementLocks;
+    public event System.Action<EnemyMovementLockReason> MovementLocksChanged;
 
     public Vector3 Velocity =>
         agent != null
@@ -168,6 +169,7 @@ public sealed class EnemyMotor : MonoBehaviour
     {
         if (reason == EnemyMovementLockReason.None)
             return;
+        var previous = movementLocks;
 
         if (locked)
         {
@@ -184,6 +186,7 @@ public sealed class EnemyMotor : MonoBehaviour
         {
             Stop();
         }
+        if (previous != movementLocks) MovementLocksChanged?.Invoke(movementLocks);
     }
 
     private void ApplyPerEnemyVariation()

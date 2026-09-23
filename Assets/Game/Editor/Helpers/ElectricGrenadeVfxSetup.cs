@@ -36,7 +36,7 @@ public static class ElectricGrenadeVfxSetup
     private const string EnergyCloudTexturePath =
         GeneratedFolder + "/T_ElectricEnergyCloud.asset";
 
-    [MenuItem("Tools/Kids VS Aliens/Setup/Electric Grenade VFX V5")]
+    [MenuItem("Tools/Setup/Electric Grenade VFX V5")]
     public static void Run()
     {
         ElectricGrenadeEffectData effectData =
@@ -1449,7 +1449,7 @@ public static class ElectricGrenadeVfxSetup
 
         Shader shader =
             Shader.Find(
-                "KidsVsAliens/VFX/ElectricAdditive");
+                "VFX/ElectricAdditive");
 
         if (shader == null)
         {
@@ -1507,7 +1507,7 @@ public static class ElectricGrenadeVfxSetup
 
         Shader shader =
             Shader.Find(
-                "KidsVsAliens/VFX/ElectricAdditive");
+                "VFX/ElectricAdditive");
 
         if (shader == null)
         {

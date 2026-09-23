@@ -35,7 +35,7 @@ public static class GenerateGrenadeThrowAnimation
     private static readonly float[] Times =
         { 0f, .18f, .32f, .43f, ReleaseTime, .66f, .95f, Duration };
 
-    [MenuItem("Tools/Kids VS Aliens/Helpers/Generate Grenade Throw Animation")]
+    [MenuItem("Tools/Helpers/Generate Grenade Throw Animation")]
     public static void Generate()
     {
         AnimationClip idle = FindIdleClip();
@@ -160,7 +160,7 @@ public static class GenerateGrenadeThrowAnimation
             "Use Capture Grenade Throw Motion to review the generated action over locomotion.");
     }
 
-    [MenuItem("Tools/Kids VS Aliens/Helpers/Wire Grenade Throw Animation")]
+    [MenuItem("Tools/Helpers/Wire Grenade Throw Animation")]
     public static void WireExistingAnimation()
     {
         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(OutputClipPath);

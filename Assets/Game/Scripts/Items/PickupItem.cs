@@ -2,6 +2,22 @@ using UnityEngine;
 
 public class PickupItem : MonoBehaviour
 {
+    private static readonly System.Collections.Generic.HashSet<PickupItem> available = new();
+    public static System.Collections.Generic.IEnumerable<PickupItem> Available => available;
+    public ItemData Item => item;
+    private MonoBehaviour reservation;
+    private void OnEnable() { available.Add(this); }
+    private void OnDisable() { available.Remove(this); reservation = null; }
+    public bool CanReserve(MonoBehaviour owner) => !collected && isActiveAndEnabled && (reservation == null || !reservation.isActiveAndEnabled || reservation == owner);
+    public bool TryReserve(MonoBehaviour owner) { if (owner == null || !CanReserve(owner)) return false; reservation = owner; return true; }
+    public bool IsReservedBy(MonoBehaviour owner) => !collected && isActiveAndEnabled && reservation == owner;
+    public void ReleaseReservation(MonoBehaviour owner) { if (reservation == owner) reservation = null; }
+    public bool ConsumeReserved(MonoBehaviour owner) { if (!IsReservedBy(owner)) return false; Consume(); return true; }
+    private void Consume()
+    {
+        collected = true; available.Remove(this); reservation = null;
+        GetComponent<RunWorldObject>()?.MarkRemoved(); Destroy(gameObject);
+    }
     [SerializeField]
     private ItemData item;
 
@@ -17,7 +33,7 @@ public class PickupItem : MonoBehaviour
         if (inventory == null)
             return;
 
-        if (!inventory.TryAddItem(item, out InventoryAddFailure failure))
+        if (!inventory.CanAcceptItem(item, out InventoryAddFailure failure))
         {
             if (failure == InventoryAddFailure.Full)
                 inventory
@@ -29,12 +45,16 @@ public class PickupItem : MonoBehaviour
                             action: FeedbackAction.Pickup
                         )
                     );
+            else if (failure == InventoryAddFailure.AlreadyLearned)
+                inventory.GetComponent<PlayerFeedback>()?.Report(
+                    new GameplayFeedbackEvent(FeedbackCode.KnowledgeAlreadyKnown,
+                        ((KnowledgeBookItemData)item).skill, item, FeedbackAction.Pickup));
             else if (failure == InventoryAddFailure.InvalidItem)
                 Debug.LogWarning("Pickup has no ItemData assigned.", this);
             return;
         }
 
-        collected = true;
-        Destroy(gameObject);
+        if (!inventory.TryAddItem(item, out _)) return;
+        Consume();
     }
 }

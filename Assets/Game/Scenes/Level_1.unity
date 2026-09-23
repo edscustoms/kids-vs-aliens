@@ -5940,7 +5940,7 @@ MonoBehaviour:
   previewLight: {fileID: 167220408}
   previewRoot: {fileID: 752943727}
   output: {fileID: 452072413}
-  lightweightRenderer: {fileID: 11400000, guid: 65bc7dbf4170f435aa868c779acfb082, type: 2}
+  lightweightRenderer: {fileID: 11400000, guid: 1d458e5f3e9f65e45a367ea9a1132604, type: 2}
   previewLayer: 9
   textureSize: 512
 --- !u!114 &461420200
@@ -22009,7 +22009,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
   playerEquipment: {fileID: 1809920725}
-  maxSlots: 5
+  maxSlots: 25
   playerSkillState: {fileID: 0}
   playerGrenadeController: {fileID: 0}
   playerMeleeController: {fileID: 1809920745}

@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Existing top-right button and desktop pause intent open the menu; neither toggles resume.
 public sealed class ManualPauseButton : MonoBehaviour
 {
     [SerializeField]
-    private GameplaySuspensionController suspension;
+    private InGameMenuController menu;
 
     [SerializeField]
     private StarterAssets.StarterAssetsInputs input;
@@ -12,59 +13,25 @@ public sealed class ManualPauseButton : MonoBehaviour
     [SerializeField]
     private Button button;
 
-    [SerializeField]
-    private GameObject pauseIcon;
-
-    [SerializeField]
-    private GameObject playIcon;
-    private GameplaySuspensionController.Lease lease;
-
-    public bool OwnsManualPause => lease != null && lease.IsActive;
-
     private void OnEnable()
     {
         if (button != null)
-            button.onClick.AddListener(Toggle);
+            button.onClick.AddListener(OpenMenu);
         if (input != null)
-            input.PauseRequested += Toggle;
-        if (suspension != null)
-            suspension.SuspensionChanged += HandleSuspensionChanged;
-        Refresh();
+            input.PauseRequested += OpenMenu;
     }
 
     private void OnDisable()
     {
         if (button != null)
-            button.onClick.RemoveListener(Toggle);
+            button.onClick.RemoveListener(OpenMenu);
         if (input != null)
-            input.PauseRequested -= Toggle;
-        if (suspension != null)
-            suspension.SuspensionChanged -= HandleSuspensionChanged;
-        lease?.Dispose();
-        lease = null;
+            input.PauseRequested -= OpenMenu;
     }
 
-    public void Toggle()
+    public void OpenMenu()
     {
-        if (suspension == null || !suspension.isActiveAndEnabled || suspension.HasBlockingModal)
-            return;
-        if (!OwnsManualPause)
-            lease = suspension.Acquire(SuspensionReason.ManualPause);
-        else
-        {
-            lease.Dispose();
-            lease = null;
-        }
-        Refresh();
+        if (menu != null)
+            menu.OpenMenu();
     }
-
-    private void Refresh()
-    {
-        if (pauseIcon != null)
-            pauseIcon.SetActive(!OwnsManualPause);
-        if (playIcon != null)
-            playIcon.SetActive(OwnsManualPause);
-    }
-
-    private void HandleSuspensionChanged(bool suspended) => Refresh();
 }

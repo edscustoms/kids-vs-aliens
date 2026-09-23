@@ -8,8 +8,15 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
     private float currentHealth;
     private bool isDead;
+    private bool initialized;
 
-    public float CurrentHealth => currentHealth;
+    public float CurrentHealth { get { EnsureInitialized(); return currentHealth; } }
+    public void RestoreRunHealth(float value)
+    {
+        initialized = true;
+        currentHealth = Mathf.Clamp(value, 0, maxHealth); isDead = currentHealth <= 0; OnHealthChanged?.Invoke();
+        if (isDead) gameObject.SetActive(false);
+    }
     public float MaxHealth => maxHealth;
 
     public float HealthNormalized =>
@@ -25,6 +32,14 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
     private void Awake()
     {
+        EnsureInitialized();
+    }
+
+    // Inactive encounter children can be captured/restored before Unity calls Awake.
+    private void EnsureInitialized()
+    {
+        if (initialized) return;
+        initialized = true;
         currentHealth =
             Mathf.Max(0f, maxHealth);
 

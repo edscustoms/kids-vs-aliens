@@ -18,6 +18,9 @@ namespace StarterAssets
         public event Action<bool> ShootStateChanged;
         public event Action ShootCanceled;
         public event Action PauseRequested;
+        public event Action HoistRequested;
+        // One contextual traversal consumer can claim a fresh jump before locomotion sees it.
+        public event Func<bool> ContextualJumpRequested;
 
         public bool GameplayInputBlocked { get; private set; }
         private int blockedThroughFrame = -1;
@@ -71,6 +74,11 @@ namespace StarterAssets
         {
             if (value.isPressed && !InputModeController.IsMobile)
                 PauseInput();
+        }
+
+        public void OnHoist(InputValue value)
+        {
+            if (value.isPressed && !InputModeController.IsMobile) HoistInput();
         }
 
         public void OnMove(InputValue value)
@@ -143,12 +151,19 @@ namespace StarterAssets
 
         public void JumpInput(bool newJumpState)
         {
+            bool pressed = newJumpState && !rawJump;
             rawJump = newJumpState;
             if (!newJumpState)
                 waitJumpNeutral = false;
             if (!CanProcessGameplayInput || waitJumpNeutral)
             {
                 jump = false;
+                return;
+            }
+            if (pressed && ContextualJumpRequested?.Invoke() == true)
+            {
+                jump = false;
+                waitJumpNeutral = true;
                 return;
             }
             jump = newJumpState;
@@ -201,6 +216,11 @@ namespace StarterAssets
 
         // UI intent remains available while gameplay input is blocked.
         public void PauseInput() => PauseRequested?.Invoke();
+
+        public void HoistInput()
+        {
+            if (CanProcessGameplayInput) HoistRequested?.Invoke();
+        }
 
         private void OnApplicationFocus(bool hasFocus)
         {

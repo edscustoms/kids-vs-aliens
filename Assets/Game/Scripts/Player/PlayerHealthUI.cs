@@ -8,6 +8,12 @@ public class PlayerHealthUI : MonoBehaviour
     [SerializeField] private Slider armorBar;
     [SerializeField] private Slider healthBar;
 
+    public void HideLegacyBars()
+    {
+        if (armorBar != null) armorBar.gameObject.SetActive(false);
+        if (healthBar != null) healthBar.gameObject.SetActive(false);
+    }
+
     private void Start()
     {
         playerHealth.OnHealthChanged += Refresh;

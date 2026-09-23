@@ -24,6 +24,15 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             : 0f;
 
     public event Action OnHealthChanged;
+    public event Action OnDied;
+    public float CurrentHealth => currentHealth;
+    public float CurrentArmor => currentArmor;
+    public bool IsDead => isDead;
+    public void RestoreRunHealth(float health, float armor)
+    {
+        currentHealth = Mathf.Clamp(health, 0, maxHealth); currentArmor = Mathf.Clamp(armor, 0, maxArmor);
+        isDead = currentHealth <= 0; OnHealthChanged?.Invoke();
+    }
 
     private void Awake()
     {
@@ -38,9 +47,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         HitInfo hit
     )
     {
-        TakeDamage(
-            hit.Damage
-        );
+        ApplyDamage(hit.Damage, hit.Direction);
     }
 
     // Kept for existing direct callers such as current enemy/practice
@@ -49,13 +56,23 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         float damage
     )
     {
+        ApplyDamage(damage, Vector3.zero);
+    }
+
+    private void ApplyDamage(float damage, Vector3 direction)
+    {
         if (
             isDead
             || damage <= 0f
+            || float.IsNaN(damage)
+            || float.IsInfinity(damage)
         )
         {
             return;
         }
+
+        float previousHealth = currentHealth;
+        float previousArmor = currentArmor;
 
         float armorDamage =
             Mathf.Min(
@@ -78,6 +95,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
                 0f
             );
 
+        if (currentHealth < previousHealth || currentArmor < previousArmor)
+        {
+            HapticService.PlayerDamaged();
+            CameraFeedbackService.PlayerDamaged(direction);
+        }
+
         OnHealthChanged?.Invoke();
 
         if (currentHealth <= 0f)
@@ -89,5 +112,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private void Die()
     {
         isDead = true;
+        OnDied?.Invoke();
     }
 }

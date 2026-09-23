@@ -12,6 +12,259 @@ NOW
 
 CURRENT FOCUS — NEXT ~2 WEEKS
 
+CURRENT STATUS UPDATE — 18 Sep 2026
+
+IMPLEMENTED — Centralized Audio V1 — 23 Sep 2026
+
+SoundEvent/AudioLibrary, pooled AudioService, local AudioEmitter, Audio Library window,
+MainAudioMixer, opt-in mobile import presets and validator are implemented. Pistol fire,
+confirmed melee contact and Beam phases are wired. Starter audio now supplies six live
+Placeholder events and twelve unused Candidates; only Beam_Loop remains Missing.
+Runtime manifest contains only seven wired events; unused Candidates remain Editor-only.
+Shared UI_Click/UI_PlayConfirm obey the final-launch rule, with pooled transition tails.
+Central UI audio excludes gameplay action inputs; navigation and inventory/quick slots still click.
+Gameplay and menu scene repair include audio. See Docs/StarterAudioPack.md and
+Docs/AudioSystem.md for workflow, executed checks and pending full-scene/device listening.
+Other audio integrations and legacy Starter Assets footstep migration remain deferred.
+
+IMPLEMENTED — Interface / active-run persistence
+
+The existing menu now uses conditional Play -> Active Run Found, with Continue and
+confirmed New Game replacement. HUD, Pause, full inventory/quick-slot drag/drop,
+Knowledge review/unread feedback and the reusable tutorial floor use the shared theme.
+Main-menu selectors, Amy preview and text-only buttons remain in place.
+
+Permanent Knowledge/XP/acknowledgements and active-run snapshots are separate.
+Safe Quit, periodic/mutation/lifecycle saves, paused foreground return and explicit
+resume entry are implemented. Current player, inventory/equipment/ammo, pickups,
+chests, enemies and spawners restore functional state. Future mission/door/set-piece
+components use IRunStateParticipant; no objective counter architecture was added.
+Death, confirmed Hard Restart and confirmed New Game replacement discard active state
+only. Canonical scene repair includes the new dependencies and stable identities.
+
+Validation and remaining device acceptance are recorded in Docs/RunInterface.md.
+Do not reopen this as a save/UI rewrite; extend the existing implementation.
+
+DONE WITH EXTRA TODO — Camera Occlusion Fade V2
+
+The V2 production direction is now implemented and working around logical occluder
+grouping, exact camera → Amy sampling, stable hysteresis, MaterialPropertyBlock-driven
+fade and production authoring/setup. Treat the current working system as
+production-sensitive rather than an open rewrite target.
+
+Extra TODO:
+
+keep validating/tuning against real Construction Site blockers
+
+retain Android/device regression testing whenever fade/material work changes
+
+only revisit architecture if a real readability/performance problem appears
+
+DONE WITH EXTRA TODO — Alien Beam / Hoist V1
+
+Manual upward Beam Hoist is now working as a reusable production system.
+
+Locked rules:
+
+normal Jump activates manual hoist when Amy is inside a valid hoist start area and
+Beam Hoist Knowledge is unlocked
+
+hoist movement is one continuous cubic Bézier from the real start position directly
+to the landing position
+
+release/control1/control2 only shape that curve
+
+do not reintroduce a separate vertical phase, reset, second curve or teleport
+
+automatic level-start Beam arrival is a separate use and must not receive the manual
+hoist-start holographic pad
+
+Authoring is generic:
+
+BeamHoistSurface
+→ BeamHoistSurfaceBaker
+→ fixed baked valid lower approach/start cells
+→ gameplay + Beam Hoist zone presentation use the same baked data
+
+BeamHoistAbility gameplay limits are the source of truth for the bake. There is no
+independent approach-width tuning that may drift away from gameplay reach.
+
+New BeamHoistSurface instances in a configured gameplay scene automatically refresh/bake
+through the standard authoring/setup workflow. Runtime-added surfaces must carry their
+authored bake; no runtime baker should reshape the area.
+
+The hoist-start hologram is also implemented:
+
+manual upward hoist only
+
+completely hidden before Beam Hoist Knowledge
+
+hidden while far away
+
+fades in only when Amy comes within configurable Reveal Distance
+
+fades out beyond configurable Hide Distance with hysteresis
+
+fixed world-space footprint; player movement never moves/resizes/rebuilds it
+
+exact baked allowed start area is the visual source of truth
+
+current idle glow/look is approved; do not redesign it casually
+
+when Amy is in a valid start position, the current stronger flicker/power-up is approved
+
+hoist start hides the pad and the real Beam Transport VFX takes over
+
+genuinely disconnected valid pockets stay separate
+
+contiguous valid regions should visually read as one connected pad without filling
+invalid gaps
+
+Floating presentation is integrated for Beam transport/hoist and genuine long falls.
+The runtime semantic path is good; presentation remains swappable.
+
+Extra TODO:
+
+preserve the visually preferred/original Floating import behavior and make sure setup
+tooling does not silently force an importer configuration that changes the motion
+
+finish/verify the connected-region visual merge if the current Astra pass is not yet
+closed
+
+add/verify the Beam Hoist Knowledge tutorial demonstration after presentation is final
+
+polish BeamTransportVFX sparks later; do not touch working movement for VFX polish
+
+investigate the automatic LevelStart/BeamInSpawn placement issue independently:
+moving the authored start can leave Amy elsewhere and the beam visible
+
+investigate the pre-existing desktop Space/Jump lock independently from Beam Hoist
+
+perform Android/device regression checks for the final zone/floating presentation
+
+DONE WITH EXTRA TODO — Knowledge + Feedback + Pause + Tutorial Presentation V1
+
+The generic framework is working and should not be rebuilt.
+
+Extra TODO:
+
+add a proper Grenade learned-action tutorial demonstration
+
+add a proper Beam Hoist learned-action tutorial demonstration
+
+audit Pistol / Rifle / Fighting demonstrations and keep them semantic/swappable
+
+final control/tutorial UI polish belongs to the later HUD/control redesign pass
+
+IMMEDIATE ADDITION — LEVEL 1 GAME LOOP / EXCAVATOR ESCAPE — ABSOLUTE MUST
+
+Keep the existing roadmap below intact. This is an added near-term gameplay-loop requirement.
+
+Level 1 core framing:
+
+Amy wakes up on the Construction Site after being beamed into the starting location.
+
+The main Level 1 goal is to get out of the Construction Site / find a way toward school.
+
+The entire playable Level 1 remains on the Construction Site for now.
+Do not add school gameplay/interactions yet.
+
+Target first/early successful run:
+
+roughly 12–20 minutes
+
+mastered/replay target:
+
+roughly 6–10 minutes
+
+Inside that main goal, keep changing the immediate task roughly every 1–3 minutes so the
+level does not become one long traversal/combat sequence.
+
+Use short, concrete site-specific tasks such as:
+
+find a weapon / useful item
+
+reach or clear a route
+
+survive a combat encounter
+
+retrieve a required construction-site item
+
+activate / repair a piece of machinery
+
+move through a new functional area of the site
+
+The first run should be genuinely interesting, but failure should also make the player
+want to retry because they understand the route/encounters better.
+
+MUST-HAVE SET-PIECE — BREAK YOUR WAY OUT WITH THE EXCAVATOR
+
+A Construction Site exit/route is physically blocked by stacked concrete roadblocks /
+barriers.
+
+Do not solve this specific escape beat with a random key or keycard.
+
+Amy must repair/activate the excavator and use it to physically clear the obstruction.
+
+Repair objective:
+
+REPAIR EXCAVATOR — 0/3
+
+Battery cables / jumper leads
+
+Hydraulic fluid
+
+Fuse
+
+Each required item should be placed in a believable Construction Site zone so the task
+naturally makes the player move through/use the site, for example:
+
+battery cables → maintenance / electrical / workshop area
+
+hydraulic fluid → machinery service / fuel area
+
+fuse → site office / electrical storage area
+
+V1 interaction must stay deliberately simple:
+
+find required item
+→ pick it up
+→ bring it to the excavator repair/drop-off zone
+→ matching repair step completes automatically
+→ show basic text/status feedback
+
+Example feedback:
+
+Battery cables installed — 1/3
+
+Hydraulic fluid added — 2/3
+
+Fuse replaced — 3/3
+
+Do not build bespoke cable-connecting, fluid-pouring, fuse-insertion or mechanic repair
+animations for V1.
+
+After 3/3:
+
+excavator becomes activatable
+
+excavator base can remain static
+
+arm/bucket only needs simple authored rotation/translation
+
+arm/bucket is authoritative for the set-piece and physically pushes/topples the stacked
+concrete roadblocks with Rigidbody physics
+
+use sound / dust / impact VFX / camera feedback later as needed
+
+do not build a complex real-time wall-fracture/destruction system for this V1 beat
+
+progression must not depend entirely on perfect physics; add a deterministic exit-clear
+check/fail-safe so a badly wedged barrier can never soft-lock the level
+
+This excavator escape is now a must-have Level 1 gameplay beat and should be implemented
+relatively early rather than treated as distant polish.
+
 Two parallel tracks are the current priority.
 
 A. Camera Occlusion Fade V2 — ABSOLUTE MUST
@@ -55,7 +308,7 @@ Editor fade works, but stock URP/Lit occluders remain visually opaque on Android
 Device logs confirmed that blocker detection and fade state are correct on Android:
 ENTER / EXIT fires correctly, alpha reaches roughly 0.05 / 1.0, Surface is switched to
 Transparent, blend factors are correct, ZWrite is 0, render queue is 3000 and
-_SURFACE_TYPE_TRANSPARENT is enabled.
+\_SURFACE_TYPE_TRANSPARENT is enabled.
 
 The problem is the runtime conversion of authored Opaque URP/Lit materials to
 Transparent. Android player builds can strip unused transparent Lit shader variants,
@@ -64,26 +317,26 @@ effectively opaque.
 
 Production solution:
 
-create a custom KVA / URP Lit Fade shader based on URP Lit
+create a custom URP Lit Fade shader based on URP Lit
 
-add a built-in _Fade property with default value 1.0
+add a built-in \_Fade property with default value 1.0
 
 implement fade through opaque dither / clip logic that is always compiled into the shader
 
 keep environment blocker materials Opaque permanently
 
-Camera Occlusion controls only _Fade; do not switch Surface Type / render queue / blend
+Camera Occlusion controls only \_Fade; do not switch Surface Type / render queue / blend
 state at runtime for supported environment materials
 
 add an editor migration tool that replaces relevant environment URP/Lit materials with
-KVA / URP Lit Fade while preserving compatible Lit properties/textures
+URP Lit Fade while preserving compatible Lit properties/textures
 
 do not blindly convert characters, weapons, VFX or other Lit materials that can never
 act as camera blockers
 
 Authoring helper target:
 
-Tools > Kids VS Aliens > Level Tools > Configure Camera Occluders
+Tools > Level Tools > Configure Camera Occluders
 
 Helper should:
 
@@ -93,7 +346,7 @@ collect child renderers
 
 configure relevant collider child layers
 
-validate that camera-blocking materials/shaders support _Fade
+validate that camera-blocking materials/shaders support \_Fade
 
 warn on incompatible renderers/materials
 
@@ -146,13 +399,70 @@ before building a 45–90+ minute full authored level.
 
 ABSOLUTE MUSTS — CORE LOOP / MOBILE
 
-Keep large handcrafted story locations. Do not redesign KVA into procedural rooms.
+Keep large handcrafted story locations. Do not redesign the campaign into procedural rooms.
 
 Working death rule: death restarts the current large story level from the beginning.
 
 Mobile pause/background/app close must NEVER count as death.
 
-Add safe active-run suspend/resume before release.
+Active-run suspend/resume is implemented; finish the remaining release/device checks
+listed in Docs/RunInterface.md.
+
+ACTIVE-RUN SUSPEND / RESUME — ABSOLUTE MUST
+
+This is stricter than ordinary checkpoint saving.
+
+Incoming calls, app backgrounding, locking the phone, OS interruption/termination where
+recoverable, normal manual quit and closing/reopening the app must preserve the current
+attempt.
+
+On relaunch, Continue must restore the same functional run state and place Amy back where
+the run was suspended.
+
+Only two intentional actions discard the active run:
+
+death
+→ delete/reset active-run state
+→ restart the current large story level from the beginning
+
+Hard Restart from the in-game menu
+→ explicit confirmation
+→ delete/reset active-run state
+→ restart the current large story level from the beginning
+
+Hard Restart should live in the in-game pause/menu near Options/Settings. Ordinary Quit
+must NOT behave like Hard Restart.
+
+Keep permanent/meta progression separate from the active-run snapshot.
+
+At minimum, the active-run architecture must be able to preserve meaningful state such as:
+
+current scene/level and Amy transform/facing
+
+player health and relevant run-specific player state
+
+equipped/owned run items as finally decided by the inventory persistence model
+
+current objective and objective progress
+
+picked-up/consumed mission items
+
+doors/gates/interactables already changed
+
+enemy dead/alive and other meaningful encounter state
+
+mission/set-piece state such as excavator repair 0/3 → 3/3
+
+spawned/removed required mission objects
+
+temporary/run-local progression that must survive a normal suspend
+
+Do not attempt frame-perfect serialization of particles, animation frames or transient
+projectiles. Resume must be functionally equivalent and safe.
+
+The current player is effectively in god mode, so death-triggered reset can be wired and
+tested later, but the persistence architecture must support death as an explicit active-run
+discard path from the start.
 
 Knowledge / learned skills persist permanently.
 
@@ -279,7 +589,7 @@ Gameplay Scene Setup Rule — permanent project convention
 
 Canonical command:
 
-Tools > Kids VS Aliens > Setup > Setup or Repair Active Gameplay Scene
+Tools > Setup > Setup or Repair Active Gameplay Scene
 
 Whenever a new standard player/scene dependency, gameplay presentation system,
 controller, shared reference or required scene component is added, extend the central
@@ -406,7 +716,7 @@ Final cleanup removed the obsolete Ionized Mist path.
 
 Current setup command:
 
-Tools > Kids VS Aliens > Setup > Electric Grenade VFX V5
+Tools > Setup > Electric Grenade VFX V5
 
 Do not continue polishing Electric Grenade VFX until the broader game V1 polish pass unless a real gameplay/readability problem appears.
 
@@ -926,6 +1236,10 @@ combat encounter tools
 FUTURE SYSTEMS
 
 Alien Beam / Hoist
+
+DONE WITH EXTRA TODO — this historical future item is now implemented as the reusable
+Beam Transport + manual upward Beam Hoist system described in the 18 Sep current-status
+override above. Keep the historical bullets below as original intent/context.
 
 Reusable traversal prefab:
 

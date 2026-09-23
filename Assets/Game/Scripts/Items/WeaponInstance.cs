@@ -17,7 +17,7 @@ public class WeaponInstance : MonoBehaviour
     public Transform GripPoint => gripPoint;
     public Transform Muzzle => muzzle;
 
-    public bool AttachTo(CharacterVisual characterVisual)
+    public bool AttachTo(CharacterVisual characterVisual, WeaponAnimationStyle style = WeaponAnimationStyle.Unarmed)
     {
         if (characterVisual == null || !characterVisual.HasWeaponSocket)
         {
@@ -33,7 +33,7 @@ public class WeaponInstance : MonoBehaviour
             return false;
         }
 
-        GripAttachmentUtility.AlignGripToSocket(transform, gripPoint, characterVisual.WeaponSocket);
+        GripAttachmentUtility.AlignGripToSocket(transform, gripPoint, characterVisual.GetWeaponMount(style));
 
         if (plasmaCoreSetup != null)
         {
@@ -74,7 +74,7 @@ public class WeaponInstance : MonoBehaviour
             return null;
         }
 
-        if (!instance.AttachTo(characterVisual))
+        if (!instance.AttachTo(characterVisual, weaponData.animationStyle))
         {
             Destroy(weaponObject);
             return null;
