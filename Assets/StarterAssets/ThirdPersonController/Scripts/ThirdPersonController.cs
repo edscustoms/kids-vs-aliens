@@ -54,9 +54,19 @@ namespace StarterAssets
 
         [Header("Player Grounded")]
         [Tooltip(
-            "True when the CharacterController's latest Move was supported by solid collision below"
+            "True when the CharacterController's latest Move was supported by a walkable surface"
         )]
         public bool Grounded = true;
+
+        // Latched across small gaps/contact loss; only walkable support releases the jump lock.
+        public bool OnSteepSlope { get; private set; }
+        private bool _walkableContact;
+        private bool _steepContact;
+        private bool _collectGroundContacts;
+        private bool _touchingSteepSurface;
+        private Vector3 _steepNormal = Vector3.up;
+        private Vector3 _groundNormal = Vector3.up;
+        private float _walkableNormalY;
 
         [Header("Cinemachine")]
         [Tooltip(
@@ -173,6 +183,9 @@ namespace StarterAssets
         public void ResetMotion()
         {
             _speed = _animationBlend = _verticalVelocity = 0f;
+            OnSteepSlope = _touchingSteepSurface = false;
+            _steepNormal = Vector3.up;
+            _groundNormal = Vector3.up;
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
         }
@@ -230,6 +243,8 @@ namespace StarterAssets
                 0.0f,
                 _controller.velocity.z
             ).magnitude;
+            // Sliding velocity must not feed back into the player's steering speed.
+            if (OnSteepSlope) currentHorizontalSpeed = _speed;
 
             float speedOffset = 0.1f;
 
@@ -282,15 +297,53 @@ namespace StarterAssets
                 targetDirection.Normalize();
             }
 
-            CollisionFlags collisionFlags = _controller.Move(
-                targetDirection.normalized * (_speed * Time.deltaTime)
-                    + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime
-            );
+            Vector3 inputVelocity = targetDirection.normalized * _speed;
+            Vector3 gravityVelocity = Vector3.up * _verticalVelocity;
+            if (OnSteepSlope)
+            {
+                Vector3 downhill = Vector3.ProjectOnPlane(Vector3.down, _steepNormal);
+                Vector3 downhillHorizontal = new Vector3(downhill.x, 0f, downhill.z).normalized;
+                // Retain lateral/downhill steering, but never let input cancel gravity uphill.
+                float downhillInput = Vector3.Dot(inputVelocity, downhillHorizontal);
+                if (downhillInput < 0f) inputVelocity -= downhillHorizontal * downhillInput;
+                if (_touchingSteepSurface)
+                    gravityVelocity = Vector3.ProjectOnPlane(gravityVelocity, _steepNormal);
+            }
 
-            // Grounding is based on the CharacterController's real collision result,
-            // not on an authored ground layer mask. Any solid collider that actually
-            // supports the controller from below can count as ground.
-            Grounded = (collisionFlags & CollisionFlags.Below) != 0;
+            _walkableContact = _steepContact = false;
+            _walkableNormalY = Mathf.Cos(_controller.slopeLimit * Mathf.Deg2Rad);
+            float authoredStepOffset = _controller.stepOffset;
+            float authoredSlopeLimit = _controller.slopeLimit;
+            CollisionFlags collisionFlags;
+            _collectGroundContacts = true;
+            try
+            {
+                if (OnSteepSlope) _controller.stepOffset = 0f;
+                // PhysX can reject an exactly-at-limit plane due to float rounding.
+                // Only relax its internal comparison on already confirmed walkable
+                // support; contact classification still uses the authored limit.
+                if (Grounded && Mathf.Abs(_groundNormal.y - _walkableNormalY) < .00001f)
+                    _controller.slopeLimit = Mathf.Min(90f, authoredSlopeLimit + .01f);
+                collisionFlags = _controller.Move((inputVelocity + gravityVelocity) * Time.deltaTime);
+            }
+            finally
+            {
+                _collectGroundContacts = false;
+                if (_controller.stepOffset != authoredStepOffset) _controller.stepOffset = authoredStepOffset;
+                if (_controller.slopeLimit != authoredSlopeLimit) _controller.slopeLimit = authoredSlopeLimit;
+            }
+
+            // Below alone also reports unwalkable slopes. Require the actual supporting
+            // collision normal, and let real ground at the foot of a slope take precedence.
+            Grounded = (collisionFlags & CollisionFlags.Below) != 0 && _walkableContact;
+            _touchingSteepSurface = !Grounded && _steepContact;
+            if (Grounded) OnSteepSlope = false;
+            else if (_steepContact)
+            {
+                OnSteepSlope = true;
+                _verticalVelocity = Mathf.Min(0f, _verticalVelocity);
+                _input.jump = false;
+            }
 
             if (_hasAnimator)
             {
@@ -337,6 +390,12 @@ namespace StarterAssets
 
         private void JumpAndGravity()
         {
+            if (OnSteepSlope)
+            {
+                Grounded = false;
+                _input.jump = false;
+                _verticalVelocity = Mathf.Min(0f, _verticalVelocity);
+            }
             if (Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
@@ -389,6 +448,34 @@ namespace StarterAssets
             if (_verticalVelocity < _terminalVelocity)
             {
                 _verticalVelocity += Gravity * Time.deltaTime;
+            }
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (!_collectGroundContacts) return;
+            // Side walls and stair risers are not supporting ground. Use the lower
+            // hemisphere of the real controller, not a separate authored ground mask.
+            Vector3 lowerCenter = transform.TransformPoint(_controller.center)
+                - Vector3.up * ((_controller.height * .5f - _controller.radius) * transform.lossyScale.y);
+            if (hit.point.y > lowerCenter.y + _controller.skinWidth * 2f) return;
+            Vector3 normal = hit.normal;
+            // Capsule/edge contacts may return a rounded collision normal at a stair
+            // nosing. Query the same collider for its actual face normal so an ordinary
+            // step does not masquerade as a steep ramp.
+            float probe = Mathf.Max(.01f, _controller.skinWidth * 2f);
+            if (hit.collider.Raycast(new Ray(hit.point + normal * probe, -normal), out RaycastHit face, probe * 2f))
+                normal = face.normal;
+            if (normal.y <= .001f) return;
+            if (normal.y >= _walkableNormalY - .00001f)
+            {
+                _walkableContact = true;
+                _groundNormal = normal;
+            }
+            else
+            {
+                _steepContact = true;
+                _steepNormal = normal;
             }
         }
 

@@ -107,6 +107,7 @@ public static class GameplaySceneSetup
             ProceduralUISetup.EnsureAssets();
             RunInterfaceSetup.ConfigureGameplay(player, presentation);
             EnemyCombatantSetup.ConfigureScene(scene);
+            AudioSceneSetup.ConfigureScene(player);
 
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);

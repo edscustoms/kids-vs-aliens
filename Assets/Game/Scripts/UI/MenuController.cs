@@ -610,6 +610,7 @@ public class MenuController : MonoBehaviour
         var flow = FindAnyObjectByType<ActiveRunMenu>();
         if (flow != null) flow.Play(gameSceneName);
         else if (!RunSaveService.StartFresh(gameSceneName, false)) Debug.LogError(RunSaveService.LastError);
+        else UIAudioFeedback.ConfirmGameplay(true);
     }
 
     public void ExitGame()

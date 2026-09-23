@@ -146,7 +146,7 @@ public sealed class GameplayInterface : MonoBehaviour
             var panel = Panel(root, "Recovery", new(.25f,.25f), new(.75f,.75f), true);
             Text(panel, "Title", "RUN COULD NOT BE RESTORED", new(.05f,.7f), new(.95f,.95f), 34, Magenta);
             Text(panel, "Details", "Your snapshot has been preserved.\n\n" + run.RestoreError, new(.05f,.3f), new(.95f,.68f), 26);
-            Button(panel, "Menu", "RETURN TO MENU", new(.15f,.07f), new(.85f,.24f), run.ReturnToMenuPreservingSnapshot);
+            Button(panel, "Menu", "RETURN TO MENU", new(.15f,.07f), new(.85f,.24f), () => { run.ReturnToMenuPreservingSnapshot(); UIAudioFeedback.Click(true); });
         }
         if(feedback!=null&&Time.unscaledTime>=feedbackUntil)feedback.transform.parent.gameObject.SetActive(false);
         if(badge!=null&&Time.unscaledTime>=nextBadge){nextBadge=Time.unscaledTime+.5f;int count=PermanentProgress.Data.skills.Count(s=>!s.acknowledged);badge.text=count>0?count.ToString():"";badge.transform.parent.gameObject.SetActive(count>0);}

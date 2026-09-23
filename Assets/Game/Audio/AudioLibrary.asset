@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3df8c9fdf2144a5fadd328127949299c, type: 3}
+  m_Name: AudioLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::AudioLibrary
+  events:
+  - {fileID: 11400000, guid: fd201790f296a67418e6a7e3927d3324, type: 2}
+  - {fileID: 11400000, guid: 76db233c16fbd7f439859826b5542b17, type: 2}
+  - {fileID: 11400000, guid: 14ca7746d89fa9d4eb24c6ca2ff04715, type: 2}
+  - {fileID: 11400000, guid: 54609b49074725e4c97063541ee34786, type: 2}
+  - {fileID: 11400000, guid: 72bf6457ddf7c1a429846be835d4b57b, type: 2}
+  - {fileID: 11400000, guid: 5f42be407d3d6734d8222ec4b60b8280, type: 2}
+  - {fileID: 11400000, guid: 840f6e51355cdee49b6050c940d6e3ae, type: 2}

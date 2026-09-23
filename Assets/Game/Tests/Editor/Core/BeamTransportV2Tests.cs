@@ -83,6 +83,11 @@ public sealed class BeamTransportV2Tests
     public void HoistFade_LocksBeforeTravel_ReleasesAtLanding_AndCancellationClearsTail()
     {
         Unlock();
+        var audioPhases = new List<string>();
+        transport.BeamShown += _ => audioPhases.Add("start");
+        transport.MotionStarted += () => audioPhases.Add("loop");
+        transport.DestinationReached += () => audioPhases.Add("end");
+        transport.TransportEnded += () => audioPhases.Add("cleanup");
         Set(effect, "hoistFadeInDuration", .4f);
         Assert.That(ability.TryActivate(), Is.True);
         var actual = (BeamHoistPath)typeof(BeamTransportController).GetField("hoistPath", Private).GetValue(transport);
@@ -95,8 +100,10 @@ public sealed class BeamTransportV2Tests
         transport.Advance(.2f);
         Assert.That(effect.Visibility, Is.EqualTo(1f));
         Assert.That(player.transform.position, Is.EqualTo(actual.start));
+        CollectionAssert.AreEqual(new[] { "start" }, audioPhases, "No loop before materialization completes.");
         float duration = actual.liftDuration + actual.transferDuration;
         transport.Advance(duration * .25f);
+        CollectionAssert.AreEqual(new[] { "start", "loop" }, audioPhases);
         Assert.That(Vector3.Distance(player.transform.position, actual.Evaluate(.25f)), Is.LessThan(.002f));
         transport.Advance(duration);
         Assert.That(transport.IsTransporting, Is.False);
@@ -104,6 +111,7 @@ public sealed class BeamTransportV2Tests
         Assert.That(player.GetComponent<CharacterController>().enabled, Is.True);
         Assert.That(Vector3.Distance(player.transform.position, actual.landing), Is.LessThan(.002f));
         Assert.That(effect.Visibility, Is.EqualTo(1f), "Release must precede independent fade-out");
+        CollectionAssert.AreEqual(new[] { "start", "loop", "end", "cleanup" }, audioPhases);
         transport.CancelTransport();
         Assert.That(effect.Visibility, Is.Zero);
         Assert.That(effect.GetComponentInChildren<ParticleSystem>(true).particleCount, Is.Zero);
@@ -113,6 +121,36 @@ public sealed class BeamTransportV2Tests
         transport.CancelTransport();
         Assert.That(effect.Visibility, Is.Zero);
         Assert.That(input.GameplayInputBlocked, Is.False);
+        CollectionAssert.AreEqual(new[] { "start", "loop", "end", "cleanup", "start", "cleanup" }, audioPhases,
+            "Cancelled materialization must not play loop or landing sound.");
+    }
+
+    [Test]
+    public void MotionStarted_IsOneTransitionPerTransport_EvenWithReentrantAdvance()
+    {
+        int starts = 0;
+        transport.MotionStarted += () => { if (++starts == 1) transport.Advance(.01f); };
+        Assert.That(transport.TryDeparture(3, 1, null), Is.True);
+        transport.Advance(0);
+        Assert.That(starts, Is.Zero);
+        transport.Advance(.1f);
+        transport.Advance(.1f);
+        Assert.That(starts, Is.EqualTo(1), "The transition is committed before notifying observers.");
+        transport.CancelTransport();
+        Assert.That(transport.TryDeparture(3, 1, null), Is.True);
+        transport.Advance(.1f);
+        Assert.That(starts, Is.EqualTo(2), "A new transport gets its own motion transition.");
+    }
+
+    [Test]
+    public void MotionStarted_CancellationDoesNotContinueMovement()
+    {
+        transport.MotionStarted += transport.CancelTransport;
+        Assert.That(transport.TryDeparture(3, 1, null), Is.True);
+        var before = player.transform.position;
+        transport.Advance(.2f);
+        Assert.That(transport.IsTransporting, Is.False);
+        Assert.That(player.transform.position, Is.EqualTo(before));
     }
 
     [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]

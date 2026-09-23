@@ -19,10 +19,12 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
         if (eventData.button == PointerEventData.InputButton.Left)
         {
+            UIAudioFeedback.Click();
             inventory.UseQuickSlot(slotIndex);
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
         {
+            UIAudioFeedback.Click();
             inventory.DropQuickSlot(slotIndex);
         }
     }

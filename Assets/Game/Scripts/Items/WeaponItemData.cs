@@ -12,6 +12,9 @@ public class WeaponItemData : ItemData
     [Header("Visual")]
     public GameObject equippedPrefab;
 
+    [Header("Audio")]
+    public SoundEvent fireSound;
+
     [Header("Weapon Stats")]
     public float damage = 10f;
     public float range = 15f;

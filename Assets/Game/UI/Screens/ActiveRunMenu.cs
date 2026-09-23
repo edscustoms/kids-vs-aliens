@@ -37,7 +37,7 @@ public sealed class ActiveRunMenu : MonoBehaviour
         Text(warning,"Title","REPLACE ACTIVE RUN?",new(.07f,.73f),new(.93f,.94f),36,Magenta);
         Text(warning,"Description","Your current run will be discarded. A fresh game starts from the beginning.\n\nPermanent Knowledge and settings are kept. This cannot be undone.",new(.07f,.29f),new(.93f,.71f),28);
         Button(warning,"Cancel","CANCEL",new(.06f,.06f),new(.47f,.23f),()=>confirmation.gameObject.SetActive(false));
-        Button(warning,"Replace","NEW GAME",new(.53f,.06f),new(.94f,.23f),()=>{if(!RunSaveService.StartFresh(newScene,true))message.text=RunSaveService.LastError;},true);
+        Button(warning,"Replace","NEW GAME",new(.53f,.06f),new(.94f,.23f),()=>{if(!RunSaveService.StartFresh(newScene,true))message.text=RunSaveService.LastError;else UIAudioFeedback.ConfirmGameplay(true);},true);
         confirmation.gameObject.SetActive(false);screen.gameObject.SetActive(false);
         var logRoot=Overlay(transform,"Screen_KnowledgeLog");knowledge=logRoot.gameObject.AddComponent<KnowledgeLogView>();knowledge.Build(null,null,null);logRoot.gameObject.SetActive(false);
         // Existing menu controls, labels, arrows and preview remain owned by MenuController.
@@ -48,13 +48,13 @@ public sealed class ActiveRunMenu : MonoBehaviour
     public void Play(string scene)
     {
         newScene=scene;
-        if(RunSaveService.TryReadActive(out var saved)&&saved==null){if(!RunSaveService.StartFresh(scene,false))ShowError();return;}
+        if(RunSaveService.TryReadActive(out var saved)&&saved==null){if(!RunSaveService.StartFresh(scene,false))ShowError();else UIAudioFeedback.ConfirmGameplay(true);return;}
         router.HideScreens();screen.gameObject.SetActive(true);confirmation.gameObject.SetActive(false);
         continueButton.interactable=saved!=null;
         metadata.text=saved!=null?$"{LevelName(saved.sceneName)}   ·   {System.TimeSpan.FromSeconds(saved.elapsedSeconds):hh\\:mm\\:ss}":"Existing save needs attention";
         message.text=RunSaveService.LastError??"";
     }
-    private void Continue(){if(!RunSaveService.Continue())ShowError();}
+    private void Continue(){if(!RunSaveService.Continue())ShowError();else UIAudioFeedback.ConfirmGameplay(true);}
     private void ShowError(){screen.gameObject.SetActive(true);message.text=RunSaveService.LastError??"Unable to start this run.";}
     private void OnApplicationPause(bool paused){if(paused){PermanentProgress.Flush();PlayerPrefs.Save();}}
     private void OnApplicationQuit(){PermanentProgress.Flush();PlayerPrefs.Save();}

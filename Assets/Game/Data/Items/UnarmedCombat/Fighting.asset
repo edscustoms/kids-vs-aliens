@@ -19,3 +19,4 @@ MonoBehaviour:
   requiredSkill: {fileID: 11400000, guid: 4b9774f1e764486594fcc435fa91847c, type: 2}
   attackChain: 0700000008000000090000000a00000005000000
   plantedAttacks: 050000000b000000
+  impactSound: {fileID: 11400000, guid: 76db233c16fbd7f439859826b5542b17, type: 2}

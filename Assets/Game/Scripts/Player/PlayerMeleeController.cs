@@ -286,7 +286,10 @@ public sealed class PlayerMeleeController : MonoBehaviour
         if (chosen == null) return; // Air punches are valid actions.
         Vector3 direction = (chosenPoint - origin).normalized;
         var hit = new HitInfo(damage, chosenPoint, -direction, direction, gameObject);
-        CombatHitResolver.Resolve(chosen, hit)?.ReceiveHit(hit);
+        var receiver = CombatHitResolver.Resolve(chosen, hit);
+        if (receiver == null) return;
+        receiver.ReceiveHit(hit);
+        AudioService.Play((selectedItem != null ? selectedItem : defaultCombatItem).impactSound, chosenPoint);
     }
 
     private bool HasClearPath(Vector3 origin, Vector3 point, AimTarget target)

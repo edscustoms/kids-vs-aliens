@@ -38,7 +38,11 @@ public sealed class UIButton : MonoBehaviour
         ApplyStyle();
     }
 
-    private void OnEnable() => ApplyStyle();
+    private void OnEnable()
+    {
+        if (Application.IsPlaying(gameObject)) UIAudioButton.Ensure(Button);
+        ApplyStyle();
+    }
     private void OnValidate() => ApplyStyle();
 
     public void ApplyStyle()

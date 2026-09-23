@@ -14,6 +14,19 @@ CURRENT FOCUS — NEXT ~2 WEEKS
 
 CURRENT STATUS UPDATE — 18 Sep 2026
 
+IMPLEMENTED — Centralized Audio V1 — 23 Sep 2026
+
+SoundEvent/AudioLibrary, pooled AudioService, local AudioEmitter, Audio Library window,
+MainAudioMixer, opt-in mobile import presets and validator are implemented. Pistol fire,
+confirmed melee contact and Beam phases are wired. Starter audio now supplies six live
+Placeholder events and twelve unused Candidates; only Beam_Loop remains Missing.
+Runtime manifest contains only seven wired events; unused Candidates remain Editor-only.
+Shared UI_Click/UI_PlayConfirm obey the final-launch rule, with pooled transition tails.
+Central UI audio excludes gameplay action inputs; navigation and inventory/quick slots still click.
+Gameplay and menu scene repair include audio. See Docs/StarterAudioPack.md and
+Docs/AudioSystem.md for workflow, executed checks and pending full-scene/device listening.
+Other audio integrations and legacy Starter Assets footstep migration remain deferred.
+
 IMPLEMENTED — Interface / active-run persistence
 
 The existing menu now uses conditional Play -> Active Run Found, with Continue and

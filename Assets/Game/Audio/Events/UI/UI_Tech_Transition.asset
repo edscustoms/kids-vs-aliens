@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d57abd141d33495aa45b24d641138efa, type: 3}
+  m_Name: UI_Tech_Transition
+  m_EditorClassIdentifier: Assembly-CSharp::SoundEvent
+  displayName: UI_Tech_Transition
+  category: 0
+  description: 'UNUSED candidate: future special transition; not normal menu navigation
+    or launch.'
+  status: 2
+  variants:
+  - {fileID: 8300000, guid: 1bb27baa3570619428e0368e24896110, type: 3}
+  volume: {x: 0.55, y: 0.55}
+  pitch: {x: 1, y: 1}
+  spatial: 0
+  minDistance: 2
+  maxDistance: 35
+  mixerGroup: {fileID: 3048520791030425231, guid: 7a7eb7dc85632ec43b4c5d6ec35e83f5, type: 2}
+  priority: 128
+  maxVoices: 4
+  cooldown: 0
+  playDuringPause: 1
+  notes: 'STARTER PACK / TEMPORARY TEST AUDIO. UNUSED candidate: future special transition;
+    not normal menu navigation or launch.'

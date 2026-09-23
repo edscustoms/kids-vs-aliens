@@ -27,10 +27,17 @@ public sealed class InGameMenuController : MonoBehaviour
     public void ConfigureAdditionalScreens(GameObject inventory, GameObject restart) { inventoryScreen = inventory; restartScreen = restart; }
     public void ShowInventory() { if (IsOpen) SetScreen(inventoryScreen); }
     public void ShowRestart() { if (IsOpen) SetScreen(restartScreen); }
-    public void QuitToMenu() => ActiveRunController.Instance?.QuitToMenu();
+    public void QuitToMenu()
+    {
+        if (ActiveRunController.Instance != null && ActiveRunController.Instance.QuitToMenu()) UIAudioFeedback.Click(true);
+    }
     public void ConfirmRestart()
     {
-        if (IsOpen && ActiveRunController.Instance != null && !ActiveRunController.Instance.RestartFromBeginning()) RunSaveService.Notify(RunSaveService.LastError);
+        if (IsOpen && ActiveRunController.Instance != null)
+        {
+            if (!ActiveRunController.Instance.RestartFromBeginning()) RunSaveService.Notify(RunSaveService.LastError);
+            else UIAudioFeedback.ConfirmGameplay(true);
+        }
     }
 
     public bool IsOpen => lease != null && lease.IsActive;
@@ -96,10 +103,12 @@ public sealed class InGameMenuController : MonoBehaviour
 
     public void ResumeGame()
     {
+        bool wasOpen = IsOpen;
         SetScreen(null);
         // Releasing our lease never releases a Knowledge/modal owner.
         lease?.Dispose();
         lease = null;
+        if (wasOpen && suspension != null && !suspension.IsSuspended) UIAudioFeedback.ConfirmGameplay();
     }
 
     public void PreviousCamera() => CycleCamera(-1);

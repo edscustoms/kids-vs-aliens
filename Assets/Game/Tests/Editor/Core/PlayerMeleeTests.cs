@@ -162,6 +162,34 @@ public sealed class PlayerMeleeTests
         Assert.That(probe.DamageCount, Is.EqualTo(1));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ImpactSound_RequiresAResolvedReceiver(bool hasReceiver)
+    {
+        var clip = AudioClip.Create("Contact", 44100, 1, 44100, false);
+        var sound = ScriptableObject.CreateInstance<SoundEvent>(); sound.variants = new[] { clip };
+        var library = ScriptableObject.CreateInstance<AudioLibrary>(); library.events.Add(sound);
+        var combat = Object.Instantiate(item); combat.impactSound = sound; Set(melee, "defaultCombatItem", combat);
+        var audioRoot = new GameObject("Melee audio test");
+        var audio = audioRoot.AddComponent<AudioService>(); Set(audio, "library", library); Set(audio, "oneShotCapacity", 1);
+        Call(audio, "Awake"); Call(audio, "OnEnable");
+        try
+        {
+            Learn(); var target = Target(.7f);
+            if (!hasReceiver) Object.DestroyImmediate(target.GetComponent<MeleeImpactProbe>());
+            Assert.That(melee.TryAttack(), Is.True); Impact();
+            Assert.That(audioRoot.GetComponentsInChildren<AudioSource>().Any(s => s.clip == clip), Is.EqualTo(hasReceiver),
+                "An aimable collider alone is not a confirmed melee receiver.");
+            if (hasReceiver) Assert.That(target.GetComponent<MeleeImpactProbe>().ReactionCount, Is.EqualTo(1));
+        }
+        finally
+        {
+            Call(audio, "OnDisable"); Object.DestroyImmediate(audioRoot);
+            Set(melee, "defaultCombatItem", item);
+            Object.DestroyImmediate(combat); Object.DestroyImmediate(library); Object.DestroyImmediate(sound); Object.DestroyImmediate(clip);
+        }
+    }
+
     [TestCase("wall")]
     [TestCase("far")]
     [TestCase("behind")]

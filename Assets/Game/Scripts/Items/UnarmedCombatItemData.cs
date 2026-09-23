@@ -4,6 +4,7 @@ using UnityEngine;
 public sealed class UnarmedCombatItemData : ItemData
 {
     public SkillData requiredSkill;
+    public SoundEvent impactSound;
     [Tooltip("One deliberate FIRE press per step. Animation mappings own contact and recovery timing.")]
     public CharacterActionId[] attackChain = { CharacterActionId.MeleeLight1, CharacterActionId.MeleeLight2,
         CharacterActionId.MeleeLight3, CharacterActionId.MeleeHeavy, CharacterActionId.Kick };

@@ -56,6 +56,7 @@ public static class RunInterfaceSetup
             Undo.RegisterCreatedObjectUndo(background,"Menu display camera");
             var camera=background.GetComponent<Camera>();camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=InterfaceFactory.Navy;camera.cullingMask=0;camera.depth=-100;
         }
+        AudioSceneSetup.ConfigureUiAudio(scene, true);
         EditorSceneManager.MarkSceneDirty(scene);
     }
     public static void EnsureCatalog()

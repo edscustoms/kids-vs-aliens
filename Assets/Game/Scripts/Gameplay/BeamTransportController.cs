@@ -41,6 +41,7 @@ public sealed class BeamTransportController : MonoBehaviour
     private bool controllerWasEnabled;
     private bool exitTransport;
     private bool awaitingExit;
+    private bool motionStarted;
 
     private Action completed;
 
@@ -57,6 +58,9 @@ public sealed class BeamTransportController : MonoBehaviour
     public float PresentationProgress => segment >= segmentCount ? 1f
         : Mathf.Clamp01(elapsed / Mathf.Max(.01f, durations[segment]));
     public event Action TransportEnded;
+    public event Action<Vector3> BeamShown;
+    public event Action MotionStarted;
+    public event Action DestinationReached;
 
     // Initialize after suspension (-200), before the arrival adapter (-150).
     private void Awake() => Resolve();
@@ -353,9 +357,11 @@ public sealed class BeamTransportController : MonoBehaviour
 
         exitTransport = false;
         awaitingExit = false;
+        motionStarted = false;
         curvedHoist = false;
 
         activeVfx.Show(beamPosition, direction);
+        BeamShown?.Invoke(beamPosition);
 
         return true;
     }
@@ -397,6 +403,13 @@ public sealed class BeamTransportController : MonoBehaviour
 
         if (segment < segmentCount)
         {
+            if (!motionStarted)
+            {
+                motionStarted = true;
+                var movingLease = lease;
+                MotionStarted?.Invoke();
+                if (lease != movingLease) return; // A subscriber may cancel or replace the transport.
+            }
             float duration = Mathf.Max(0.01f, durations[segment]);
 
             float previousT = Mathf.Clamp01(elapsed / duration);
@@ -474,6 +487,7 @@ public sealed class BeamTransportController : MonoBehaviour
             {
                 segment++;
                 elapsed = 0f;
+                if (segment == segmentCount) DestinationReached?.Invoke();
 
                 if (onCurve)
                 {

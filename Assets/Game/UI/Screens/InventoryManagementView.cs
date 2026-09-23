@@ -64,6 +64,7 @@ public sealed class InventoryManagementView : MonoBehaviour
     public ItemData ItemFor(int index,bool isQuick) => inventory.EntryItem(OwnedIndexFor(index,isQuick));
     public void Select(int index,bool isQuick)
     {
+        UIAudioFeedback.Click();
         if(assigning&&isQuick&&inventory.EntryItem(selected)!=null){inventory.AssignQuickSlot(index,selected);assigning=false;hint.text="Quick slot updated";return;}
         selected=OwnedIndexFor(index,isQuick);
         selectedQuick=isQuick?index:-1;Refresh();

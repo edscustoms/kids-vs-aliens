@@ -264,6 +264,7 @@ public class PlayerShooter : MonoBehaviour
         // =================================================
 
         SpawnMuzzleVFX(muzzle.position, direction, auraColor);
+        AudioService.Play(equippedWeapon.fireSound, muzzle.position);
 
         System.Action onArrive = null;
 

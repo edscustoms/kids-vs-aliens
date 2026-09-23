@@ -42,6 +42,7 @@ public static class InterfaceFactory
         var rect = Panel(parent, name, min, max, danger);
         rect.GetComponent<NeonPanel>().SetShape(NeonShape.Button);
         var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = rect.GetComponent<NeonPanel>();
+        if (Application.isPlaying) UIAudioButton.Ensure(button);
         NeonVisuals.Feedback(rect.gameObject, rect.GetComponent<NeonPanel>());
         var colors = ColorBlock.defaultColorBlock; colors.highlightedColor = new Color(.6f, .85f, 1); colors.pressedColor = new Color(.34f, .48f, .75f);
         colors.selectedColor = Color.white; colors.disabledColor = new Color(.4f, .42f, .55f, .5f); button.colors = colors;

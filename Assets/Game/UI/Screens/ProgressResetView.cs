@@ -39,7 +39,7 @@ public static class ProgressResetView
 
     public static void ConfirmReset(TMP_Text message)
     {
-        if(RunSaveService.ResetGameProgress())SceneManager.LoadScene("Menu");
+        if(RunSaveService.ResetGameProgress()){SceneManager.LoadScene("Menu");UIAudioFeedback.Click(true);}
         else if(message!=null)message.text=RunSaveService.LastError;
     }
 }
