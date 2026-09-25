@@ -111,11 +111,12 @@ public sealed class AlienCombatantTests
         var gun = Object.Instantiate(EnemyCombatantSetup.Weapon("PlasmaPistolItem").worldPrefab,Home+Vector3.forward*2,Quaternion.identity);
         yield return Seconds(4);
         int owners = (a.GetComponent<EnemyEquipment>().HasWeapon?1:0)+(b.GetComponent<EnemyEquipment>().HasWeapon?1:0);
-        Assert.That(owners, Is.EqualTo(1)); Assert.That(gun == null, Is.True);
+        Assert.That(owners, Is.EqualTo(1)); Assert.That(gun != null && !gun.activeSelf, Is.True);
         Assert.That(a.GetComponent<EnemyWeaponAwareness>().ReservedWeapon == null && b.GetComponent<EnemyWeaponAwareness>().ReservedWeapon == null, Is.True);
         Capture("pickup-competition");
         var equipped = a.GetComponent<EnemyEquipment>().HasWeapon ? a : b; var state = equipped.GetComponent<EnemyEquipment>().CaptureRunState();
         equipped.GetComponent<EnemyEquipment>().Unequip(); equipped.GetComponent<EnemyEquipment>().RestoreRunState(state); Assert.That(equipped.GetComponent<EnemyEquipment>().HasWeapon, Is.True);
+        Object.Destroy(gun);
         Object.Destroy(a); Object.Destroy(b); yield return EditorTestFrame.Next();
         var c = Spawn(null,Vector3.zero,true);
         var distant = Object.Instantiate(EnemyCombatantSetup.Weapon("PlasmaRifleItem").worldPrefab,Home+Vector3.right*4,Quaternion.identity);
@@ -128,6 +129,93 @@ public sealed class AlienCombatantTests
         Assert.That(c.GetComponent<EnemyWeaponAwareness>().ReservedWeapon,Is.Null,"Unseen incoming hit releases the gun before Brain's investigation wait");
         Assert.That(distant.GetComponent<PickupItem>().CanReserve(c.GetComponent<EnemyEquipment>()),Is.True);
         results.Add("Single ownership, local pickup and pressure cancellation passed.");
+    }
+    [UnityTest, Timeout(180000)] public IEnumerator AcquiredWeaponReturnsOriginalPickupOnceOnDeath()
+    {
+        target.transform.position = Home + Vector3.forward * 18;
+        foreach (bool authoredDrop in new[] { false, true })
+        {
+            var actor = Spawn(); var equipment = actor.GetComponent<EnemyEquipment>();
+            Set(equipment, "dropWeaponOnDeath", authoredDrop);
+            yield return EditorTestFrame.Next();
+            var weapon = EnemyCombatantSetup.Weapon("PlasmaPistolItem");
+            var gun = Object.Instantiate(weapon.worldPrefab, Home + Vector3.right * 3, Quaternion.identity);
+            var pickup = gun.GetComponent<PickupItem>();
+            yield return EditorTestFrame.Next(); // Cache the original floating anchor.
+            Assert.That(pickup.TryReserve(equipment), Is.True);
+            Assert.That(equipment.TryAcquire(pickup, equipment), Is.True);
+            Assert.That(equipment.HasWeapon, Is.True); Assert.That(equipment.Muzzle, Is.Not.Null);
+            Assert.That(equipment.SpendRound(), Is.True);
+            var world = gun.GetComponent<RunWorldObject>(); string id = world.Id;
+            Assert.That(world.Capture().removed, Is.False); Assert.That(gun.activeSelf, Is.False);
+            Assert.That(equipment.TryAcquire(pickup, equipment), Is.False);
+            actor.transform.position = Home + Vector3.right * 5;
+            actor.GetComponent<EnemyHealth>().TakeDamage(1000);
+            Assert.That(equipment.HasWeapon, Is.False);
+            Assert.That(gun != null && gun.activeSelf, Is.True);
+            Assert.That(world.Id, Is.EqualTo(id)); Assert.That(world.Capture().removed, Is.False);
+            Assert.That(equipment.Drop(), Is.Null, "Death already returned the weapon");
+            yield return Seconds(.15f);
+            Assert.That(gun.transform.position.x, Is.EqualTo(actor.transform.position.x).Within(.01f), "Bobbing must use the dropped position");
+            int copies = 0; foreach (var item in PickupItem.Available) if (item.Item == weapon) copies++;
+            Assert.That(copies, Is.EqualTo(1));
+            Object.Destroy(actor); yield return EditorTestFrame.Next();
+            Assert.That(gun != null && gun.activeSelf, Is.True, "Corpse cleanup cannot destroy the pickup");
+            var player = new GameObject("Recover weapon", typeof(BoxCollider), typeof(PlayerInventory));
+            gun.SendMessage("OnTriggerEnter", player.GetComponent<Collider>());
+            Assert.That(player.GetComponent<PlayerInventory>().Items, Is.EqualTo(new[] { weapon }));
+            yield return EditorTestFrame.Next(); Assert.That(gun == null, Is.True);
+            Object.Destroy(player);
+        }
+    }
+    [UnityTest, Timeout(180000)] public IEnumerator AcquiredOwnershipAndWorldIdentitySurviveResumeThenDeath()
+    {
+        target.transform.position = Home + Vector3.forward * 18;
+        var runOwner = new GameObject("Isolated world registry");
+        var run = runOwner.AddComponent<ActiveRunController>(); run.enabled = false;
+        var weapon = EnemyCombatantSetup.Weapon("PlasmaPistolItem");
+        var actor = Spawn(); var equipment = actor.GetComponent<EnemyEquipment>();
+        yield return EditorTestFrame.Next();
+        var gun = Object.Instantiate(weapon.worldPrefab, Home + Vector3.right * 3, Quaternion.identity);
+        var world = RunWorldObject.TrackSpawn(gun, weapon.worldPrefab);
+        var pickup = gun.GetComponent<PickupItem>(); pickup.TryReserve(equipment);
+        Assert.That(equipment.TryAcquire(pickup, equipment), Is.True);
+        equipment.SpendRound(); int ammo = equipment.Ammo;
+        string savedEquipment = equipment.CaptureRunState();
+        var snapshot = JsonUtility.FromJson<SavedWorldObject>(JsonUtility.ToJson(world.Capture()));
+        Object.Destroy(actor); Object.Destroy(gun); yield return EditorTestFrame.Next();
+        // Recreate saved world entities exactly as Continue does, retaining identity.
+        var restoredGun = Object.Instantiate(RunContentCatalog.Instance.Resolve<GameObject>(snapshot.prefab));
+        var restoredWorld = restoredGun.AddComponent<RunWorldObject>(); restoredWorld.ConfigureIdentity(snapshot.id); run.Register(restoredWorld);
+        var restoredActor = Spawn(); var restoredEquipment = restoredActor.GetComponent<EnemyEquipment>();
+        yield return EditorTestFrame.Next();
+        restoredEquipment.RestoreRunState(savedEquipment); restoredWorld.Restore(snapshot);
+        restoredEquipment.RestoreRunState(savedEquipment); // Continue's second pass must be idempotent.
+        Assert.That(restoredEquipment.Ammo, Is.EqualTo(ammo));
+        Assert.That(restoredGun.activeSelf, Is.False); Assert.That(restoredWorld.Capture().removed, Is.False);
+        restoredActor.GetComponent<EnemyHealth>().TakeDamage(1000);
+        Assert.That(restoredGun.activeSelf, Is.True); Assert.That(restoredWorld.Id, Is.EqualTo(snapshot.id));
+        var droppedSave = JsonUtility.FromJson<SavedWorldObject>(JsonUtility.ToJson(restoredWorld.Capture()));
+        Assert.That(droppedSave.active && !droppedSave.removed, Is.True);
+        restoredGun.SetActive(false); restoredWorld.Restore(droppedSave);
+        int copies = 0; foreach (var item in PickupItem.Available) if (item.Item == weapon) copies++;
+        Assert.That(copies, Is.EqualTo(1));
+        Object.Destroy(runOwner);
+    }
+    [UnityTest, Timeout(180000)] public IEnumerator StartingWeaponsKeepAuthoredDeathDropPolicy()
+    {
+        target.transform.position = Home + Vector3.forward * 18;
+        foreach (bool authoredDrop in new[] { false, true })
+        {
+            var actor = Spawn("PlasmaPistolItem"); Set(actor.GetComponent<EnemyEquipment>(), "dropWeaponOnDeath", authoredDrop);
+            yield return EditorTestFrame.Next();
+            actor.GetComponent<EnemyHealth>().TakeDamage(1000);
+            int copies = 0; GameObject dropped = null;
+            foreach (var item in PickupItem.Available) if (item.Item == EnemyCombatantSetup.Weapon("PlasmaPistolItem")) { copies++; dropped = item.gameObject; }
+            Assert.That(copies, Is.EqualTo(authoredDrop ? 1 : 0));
+            Object.Destroy(actor); if (dropped != null) Object.Destroy(dropped);
+            yield return EditorTestFrame.Next();
+        }
     }
     [UnityTest, Timeout(180000)] public IEnumerator MixedEncounterAndAlternateVisual()
     {

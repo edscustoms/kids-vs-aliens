@@ -26,6 +26,8 @@ using UnityEngine;
     public string character, equipped, selected;
     public int ammo;
     public List<string> items = new();
+    // Null in older saves: each item entry then represents one unit.
+    public int[] itemCounts;
     public int[] quickSlots;
 }
 [Serializable] public sealed class SavedWorldObject

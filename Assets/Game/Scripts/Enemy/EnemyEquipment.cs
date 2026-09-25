@@ -10,6 +10,7 @@ public sealed class EnemyEquipment : MonoBehaviour, IRunStateParticipant
     private EnemyCombatPresentation presentation;
     private EnemyHealth health;
     private WeaponInstance instance;
+    private PickupItem acquiredPickup;
     private bool restored, initialized;
     public EnemyCombatProfile Profile => profile;
     public WeaponItemData Weapon { get; private set; }
@@ -40,8 +41,17 @@ public sealed class EnemyEquipment : MonoBehaviour, IRunStateParticipant
             return false;
         }
         initialized = true;
+        ReturnAcquiredPickup();
         ReleaseVisual(); instance = next; Weapon = weapon; Ammo = Mathf.Max(1, weapon.magazineSize);
         SetRangedPresentation(true); Changed?.Invoke(); Dirty(); return true;
+    }
+    public bool TryAcquire(PickupItem pickup, MonoBehaviour reservationOwner)
+    {
+        if (HasWeapon || (health != null && health.IsDead) || pickup == null || !pickup.IsReservedBy(reservationOwner)
+            || !(pickup.Item is WeaponItemData weapon) || !TryEquip(weapon)) return false;
+        if (!pickup.RetainReserved(reservationOwner)) { Unequip(); return false; }
+        acquiredPickup = pickup;
+        Dirty(); return true;
     }
     public void SetRangedPresentation(bool ranged)
     {
@@ -58,36 +68,63 @@ public sealed class EnemyEquipment : MonoBehaviour, IRunStateParticipant
     public void Unequip()
     {
         Cache(); initialized = true;
+        ReturnAcquiredPickup();
         ReleaseVisual(); Weapon = null; Ammo = 0; SetRangedPresentation(false); Changed?.Invoke(); Dirty();
     }
     public GameObject Drop()
     {
+        if (acquiredPickup != null)
+        {
+            var original = acquiredPickup.gameObject;
+            Unequip(); return original;
+        }
         if (!HasWeapon || Weapon.worldPrefab == null) { Unequip(); return null; }
         var prefab = Weapon.worldPrefab;
         var dropped = Instantiate(prefab, transform.position + transform.forward * .5f + Vector3.up * .15f, Quaternion.identity);
         RunWorldObject.TrackSpawn(dropped, prefab);
         Unequip(); return dropped;
     }
-    private void OnDeath() { if (dropWeaponOnDeath) Drop(); }
+    private void OnDeath() { if (acquiredPickup != null || dropWeaponOnDeath) Drop(); }
+    private void ReturnAcquiredPickup()
+    {
+        if (acquiredPickup == null) return;
+        var pickup = acquiredPickup; acquiredPickup = null;
+        pickup.ReturnToWorld(transform.position + transform.forward * .5f + Vector3.up * .15f);
+    }
     private void ReleaseVisual() { if (instance != null) { instance.gameObject.SetActive(false); Destroy(instance.gameObject); } instance = null; }
     private static void Dirty() { if (ActiveRunController.Instance != null) ActiveRunController.Instance.MarkDirty(); }
     public string RunStateKey => "enemy-equipment-v1";
-    [Serializable] private sealed class Saved { public string weapon; public int ammo; }
+    [Serializable] private sealed class Saved { public string weapon, pickupId; public int ammo; }
     public string CaptureRunState()
     {
         // Never-activated encounter children must retain their authored loadout without spawning a visual during save.
         var weapon = !initialized && !restored ? startingWeapon : HasWeapon ? Weapon : null;
-        return JsonUtility.ToJson(new Saved { weapon = RunContentCatalog.Instance.Id(weapon), ammo = !initialized && !restored && weapon != null ? weapon.magazineSize : Ammo });
+        return JsonUtility.ToJson(new Saved { weapon = RunContentCatalog.Instance.Id(weapon), pickupId = acquiredPickup != null ? acquiredPickup.GetComponent<RunWorldObject>().Id : null,
+            ammo = !initialized && !restored && weapon != null ? weapon.magazineSize : Ammo });
     }
     public void RestoreRunState(string json)
     {
         var saved = JsonUtility.FromJson<Saved>(json); restored = true;
+        // Restore is not an in-game unequip/drop. World snapshots own pickup state.
+        acquiredPickup = null;
         Unequip();
         var weapon = RunContentCatalog.Instance.Resolve<WeaponItemData>(saved.weapon);
         if (weapon != null)
         {
             if (!TryEquip(weapon)) throw new InvalidOperationException(name + ": saved enemy weapon is no longer compatible.");
             Ammo = Mathf.Clamp(saved.ammo, 0, Mathf.Max(1, weapon.magazineSize));
+            if (!string.IsNullOrEmpty(saved.pickupId))
+            {
+                var entity = ActiveRunController.Instance?.FindWorldObject(saved.pickupId);
+                // Isolated scenes/tests may use participant restore without a run controller.
+                if (ActiveRunController.Instance == null)
+                    foreach (var candidate in FindObjectsByType<RunWorldObject>(FindObjectsInactive.Include))
+                        if (candidate.Id == saved.pickupId) { entity = candidate; break; }
+                acquiredPickup = entity != null ? entity.GetComponent<PickupItem>() : null;
+                if (acquiredPickup == null || acquiredPickup.Item != weapon)
+                    throw new InvalidOperationException(name + ": saved acquired pickup is missing or incompatible.");
+                acquiredPickup.gameObject.SetActive(false);
+            }
         }
     }
 }

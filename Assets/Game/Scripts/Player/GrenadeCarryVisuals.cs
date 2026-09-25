@@ -106,42 +106,45 @@ public sealed class GrenadeCarryVisuals : MonoBehaviour
             if (grenade == null)
                 continue;
 
-            if (!skippedSelectedOccurrence && grenade == selected)
+            for (int unit = 0; unit < inventory.CountAt(i) && socketIndex < sockets.Count; unit++)
             {
-                skippedSelectedOccurrence = true;
-                continue;
-            }
-
-            if (grenade.stowedPrefab == null || sockets[socketIndex] == null)
-            {
-                socketIndex++;
-                continue;
-            }
-
-            GameObject visual = Instantiate(grenade.stowedPrefab);
-
-            HeldItemGrip grip = visual.GetComponent<HeldItemGrip>();
-
-            if (grip != null)
-            {
-                if (!grip.AttachTo(sockets[socketIndex]))
+                if (!skippedSelectedOccurrence && grenade == selected)
                 {
-                    Destroy(visual);
+                    skippedSelectedOccurrence = true;
+                    continue;
+                }
+
+                if (grenade.stowedPrefab == null || sockets[socketIndex] == null)
+                {
                     socketIndex++;
                     continue;
                 }
-            }
-            else
-            {
-                // Keep the stowed prefab's authored local transform.
-                // The carry socket decides WHERE the grenade slot is on the character;
-                // the stowed prefab decides HOW this grenade type sits in that slot.
-                visual.transform.SetParent(sockets[socketIndex], false);
-            }
 
-            spawnedVisuals.Add(visual);
+                GameObject visual = Instantiate(grenade.stowedPrefab);
 
-            socketIndex++;
+                HeldItemGrip grip = visual.GetComponent<HeldItemGrip>();
+
+                if (grip != null)
+                {
+                    if (!grip.AttachTo(sockets[socketIndex]))
+                    {
+                        Destroy(visual);
+                        socketIndex++;
+                        continue;
+                    }
+                }
+                else
+                {
+                    // Keep the stowed prefab's authored local transform.
+                    // The carry socket decides WHERE the grenade slot is on the character;
+                    // the stowed prefab decides HOW this grenade type sits in that slot.
+                    visual.transform.SetParent(sockets[socketIndex], false);
+                }
+
+                spawnedVisuals.Add(visual);
+
+                socketIndex++;
+            }
         }
     }
 

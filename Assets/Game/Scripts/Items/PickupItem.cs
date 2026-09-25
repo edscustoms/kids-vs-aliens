@@ -13,6 +13,33 @@ public class PickupItem : MonoBehaviour
     public bool IsReservedBy(MonoBehaviour owner) => !collected && isActiveAndEnabled && reservation == owner;
     public void ReleaseReservation(MonoBehaviour owner) { if (reservation == owner) reservation = null; }
     public bool ConsumeReserved(MonoBehaviour owner) { if (!IsReservedBy(owner)) return false; Consume(); return true; }
+    // Enemy acquisition transfers custody of this world object; it is not consumption.
+    public bool RetainReserved(MonoBehaviour owner)
+    {
+        if (!IsReservedBy(owner)) return false;
+        var entity = GetComponent<RunWorldObject>();
+        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        {
+            if (ActiveRunController.Instance != null)
+                RunWorldObject.TrackSpawn(gameObject, item.worldPrefab);
+            else
+            {
+                entity = entity != null ? entity : gameObject.AddComponent<RunWorldObject>();
+                entity.ConfigureIdentity(System.Guid.NewGuid().ToString("N"));
+            }
+        }
+        transform.SetParent(null, true);
+        gameObject.SetActive(false);
+        ActiveRunController.Instance?.MarkDirty();
+        return true;
+    }
+    public void ReturnToWorld(Vector3 position)
+    {
+        transform.SetPositionAndRotation(position, Quaternion.identity);
+        GetComponent<WorldItemFloat>()?.ResetAnchor();
+        gameObject.SetActive(true);
+        ActiveRunController.Instance?.MarkDirty();
+    }
     private void Consume()
     {
         collected = true; available.Remove(this); reservation = null;

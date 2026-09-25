@@ -12,6 +12,8 @@ public enum GrenadeActivationMode
 )]
 public sealed class GrenadeItemData : ItemData
 {
+    public override bool IsStackable => true;
+
     [Header("Visuals")]
     public GameObject heldPrefab;
     public GameObject stowedPrefab;

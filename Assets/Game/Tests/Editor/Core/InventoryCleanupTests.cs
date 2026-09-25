@@ -71,13 +71,11 @@ public sealed class InventoryCleanupTests
         try {
             var inventory=owner.AddComponent<PlayerInventory>();
             Assert.That(inventory.Capacity,Is.EqualTo(25));Assert.That(inventory.QuickSlotCount,Is.EqualTo(5));
-            for(int i=0;i<count;i++)Assert.That(inventory.TryAddItem(item),Is.True);
-            inventory.AssignQuickSlot(4,count-1);
-            var save=new ActiveRunSave();save.player.items=Enumerable.Repeat("fixture-item",count).ToList();save.player.quickSlots=inventory.CaptureQuickSlots();
+            var save=new ActiveRunSave();save.player.items=Enumerable.Repeat("fixture-item",count).ToList();save.player.quickSlots=new[]{-1,-1,-1,-1,count-1};
             var restored=JsonUtility.FromJson<ActiveRunSave>(JsonUtility.ToJson(save));
             inventory.RestoreSavedItems(restored.player.items.Select(_=>(ItemData)item).ToArray(),restored.player.quickSlots);
-            Assert.That(inventory.Items.Count,Is.EqualTo(count));Assert.That(inventory.QuickSlotIndex(4),Is.EqualTo(count-1));
-            if(count==25){Assert.That(inventory.TryAddItem(item,out var failure),Is.False);Assert.That(failure,Is.EqualTo(InventoryAddFailure.Full));}
+            Assert.That(inventory.Items.Count,Is.EqualTo(1));Assert.That(inventory.CountAt(0),Is.EqualTo(count));Assert.That(inventory.QuickSlotIndex(4),Is.EqualTo(0));
+            Assert.That(inventory.TryAddItem(item),Is.True);Assert.That(inventory.CountAt(0),Is.EqualTo(count+1));
         } finally { Object.DestroyImmediate(owner);Object.DestroyImmediate(item); }
     }
 }

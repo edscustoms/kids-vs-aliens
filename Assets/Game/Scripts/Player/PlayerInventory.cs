@@ -9,6 +9,7 @@ public enum InventoryAddFailure
     InvalidItem,
     Full,
     AlreadyLearned,
+    AlreadyOwned,
 }
 
 public class PlayerInventory : MonoBehaviour
@@ -28,9 +29,12 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField] private PlayerMeleeController playerMeleeController;
 
     private readonly List<ItemData> items = new();
+    private readonly List<int> counts = new();
     private StarterAssets.StarterAssetsInputs input;
 
     public IReadOnlyList<ItemData> Items => items;
+    public int CountAt(int index) => index >= 0 && index < counts.Count ? counts[index] : 0;
+    public int[] CaptureCounts() => counts.ToArray();
     // Persisted assignment tokens: nonnegative = owned item, -1 = empty,
     // -2 = the player's authored unarmed capability (ownership remains Knowledge).
     public const int CombatEntry = -2;
@@ -61,16 +65,41 @@ public class PlayerInventory : MonoBehaviour
     {
         if (from < 0 || to < 0 || from >= items.Count || to >= items.Count) return false;
         (items[from], items[to]) = (items[to], items[from]);
+        (counts[from], counts[to]) = (counts[to], counts[from]);
         for (int i = 0; i < quickSlots.Length; i++)
             if (quickSlots[i] == from) quickSlots[i] = to; else if (quickSlots[i] == to) quickSlots[i] = from;
         OnInventoryChanged?.Invoke(); return true;
     }
-    public void RestoreSavedItems(IReadOnlyList<ItemData> restored, int[] assignments)
+    public void RestoreSavedItems(IReadOnlyList<ItemData> restored, int[] assignments, IReadOnlyList<int> quantities = null)
     {
-        if (restored.Count > maxSlots || assignments == null || assignments.Length != 5) throw new ArgumentException("Saved inventory does not fit this player.");
+        if (restored == null || assignments == null || assignments.Length != 5) throw new ArgumentException("Saved inventory does not fit this player.");
         foreach (int index in assignments) if (index < CombatEntry || index >= restored.Count) throw new ArgumentException("Invalid saved quick slot.");
-        items.Clear(); foreach (var item in restored) { if (item == null) throw new ArgumentException("Missing saved item."); items.Add(item); }
+        if (quantities != null && quantities.Count != restored.Count) throw new ArgumentException("Invalid saved quantities.");
+        // Normalize legacy one-entry-per-pickup saves before changing live state.
+        var nextItems = new List<ItemData>();
+        var nextCounts = new List<int>();
+        var remap = new int[restored.Count];
+        for (int i = 0; i < restored.Count; i++)
+        {
+            var item = restored[i];
+            int count = quantities == null ? 1 : quantities[i];
+            if (item == null || count <= 0 || (!item.IsStackable && count != 1)) throw new ArgumentException("Invalid saved item quantity.");
+            int existing = item.IsStackable || item.IsUnique ? nextItems.IndexOf(item) : -1;
+            if (existing >= 0)
+            {
+                if (item.IsStackable) nextCounts[existing] = checked(nextCounts[existing] + count);
+                remap[i] = existing;
+            }
+            else
+            {
+                remap[i] = nextItems.Count; nextItems.Add(item); nextCounts.Add(count);
+            }
+        }
+        if (nextItems.Count > maxSlots) throw new ArgumentException("Saved inventory does not fit this player.");
+        items.Clear(); items.AddRange(nextItems); counts.Clear(); counts.AddRange(nextCounts);
         quickSlots = (int[])assignments.Clone();
+        for (int slot = 0; slot < quickSlots.Length; slot++)
+            if (quickSlots[slot] >= 0) quickSlots[slot] = remap[quickSlots[slot]];
         // Migrate earlier saves that stored the learned capability as a physical item.
         for (int i = items.Count - 1; i >= 0; i--)
             if (items[i] is UnarmedCombatItemData)
@@ -88,6 +117,7 @@ public class PlayerInventory : MonoBehaviour
     private void RemoveItem(int index)
     {
         items.RemoveAt(index);
+        counts.RemoveAt(index);
         for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] == index) quickSlots[i] = -1; else if (quickSlots[i] > index) quickSlots[i]--;
     }
 
@@ -100,7 +130,7 @@ public class PlayerInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
             {
                 if (items[i] is GrenadeItemData)
-                    count++;
+                    count += counts[i];
             }
 
             return count;
@@ -139,7 +169,15 @@ public class PlayerInventory : MonoBehaviour
     public bool TryAddItem(ItemData item, out InventoryAddFailure failure)
     {
         if (!CanAcceptItem(item, out failure)) return false;
+        int existing = item.IsStackable ? items.IndexOf(item) : -1;
+        if (existing >= 0)
+        {
+            counts[existing] = checked(counts[existing] + 1);
+            OnInventoryChanged?.Invoke();
+            return true;
+        }
         items.Add(item);
+        counts.Add(1);
         for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] == -1) { quickSlots[i] = items.Count - 1; break; }
         OnInventoryChanged?.Invoke();
         return true;
@@ -165,7 +203,13 @@ public class PlayerInventory : MonoBehaviour
             }
         }
 
-        if (items.Count >= maxSlots)
+        if (item.IsUnique && items.Contains(item))
+        {
+            failure = InventoryAddFailure.AlreadyOwned;
+            return false;
+        }
+
+        if (items.Count >= maxSlots && !(item.IsStackable && items.Contains(item)))
         {
             failure = InventoryAddFailure.Full;
             return false;
@@ -207,20 +251,27 @@ public class PlayerInventory : MonoBehaviour
     }
 
     public bool TryConsumeGrenade(GrenadeItemData grenade)
+        => TryConsumeItem(grenade);
+
+    public bool TryConsumeItem(ItemData item)
     {
-        if (grenade == null)
+        if (item == null)
             return false;
 
-        int index = items.IndexOf(grenade);
+        int index = items.IndexOf(item);
 
         if (index < 0)
             return false;
 
-        RemoveItem(index);
-
-        OnInventoryChanged?.Invoke();
-
+        ConsumeAt(index);
         return true;
+    }
+
+    private void ConsumeAt(int index)
+    {
+        if (counts[index] > 1) counts[index]--;
+        else RemoveItem(index);
+        OnInventoryChanged?.Invoke();
     }
 
     public void UseItem(int index)
@@ -319,7 +370,10 @@ public class PlayerInventory : MonoBehaviour
             RemoveItem(index);
         }
         else if (book.grantedItem != null && !items.Contains(book.grantedItem))
+        {
             items[index] = book.grantedItem;
+            counts[index] = 1;
+        }
         else
             RemoveItem(index);
 
@@ -343,7 +397,7 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
-        if (playerEquipment.IsEquipped(item))
+        if (playerEquipment != null && playerEquipment.IsEquipped(item))
         {
             playerEquipment.UnequipWeapon();
         }
@@ -353,9 +407,8 @@ public class PlayerInventory : MonoBehaviour
         var dropped = Instantiate(item.worldPrefab, dropPosition, Quaternion.identity);
         RunWorldObject.TrackSpawn(dropped, item.worldPrefab);
 
-        RemoveItem(index);
-
-        OnInventoryChanged?.Invoke();
+        // Drop one physical unit, retaining the stack and its quick-slot assignment.
+        ConsumeAt(index);
     }
 
     private void Update()

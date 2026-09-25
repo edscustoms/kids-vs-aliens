@@ -9,6 +9,9 @@ public enum WeaponFireMode
 [CreateAssetMenu(fileName = "NewWeapon", menuName = "Game/Items/Weapon")]
 public class WeaponItemData : ItemData
 {
+    public override bool IsStackable => false;
+    public override bool IsUnique => true;
+
     [Header("Visual")]
     public GameObject equippedPrefab;
 

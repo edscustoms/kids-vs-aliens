@@ -75,6 +75,7 @@ public sealed class ActiveRunController : MonoBehaviour
         objects[entity.Id] = entity;
     }
     public void Record(SavedWorldObject snapshot) => snapshots[snapshot.id] = snapshot;
+    public RunWorldObject FindWorldObject(string id) => objects.TryGetValue(id, out var entity) ? entity : null;
     public void MarkDirty() { if (ready) nextSave = Mathf.Min(nextSave, Time.unscaledTime + .35f); }
     private void Update()
     {
@@ -107,7 +108,7 @@ public sealed class ActiveRunController : MonoBehaviour
                     character = catalog.Id(GetComponent<PlayerCharacter>().CurrentCharacterPrefab),
                     equipped = catalog.Id(equipment.EquippedWeapon), selected = catalog.Id(inventory.SelectedItem),
                     ammo = GetComponent<PlayerShooter>().CurrentAmmo,
-                    items = inventory.Items.Select(item => catalog.Id(item)).ToList(), quickSlots = inventory.CaptureQuickSlots()
+                    items = inventory.Items.Select(item => catalog.Id(item)).ToList(), itemCounts = inventory.CaptureCounts(), quickSlots = inventory.CaptureQuickSlots()
                 }, world = snapshots.Values.ToList()
             };
             RunSaveService.ActiveStore.Write(save);
@@ -138,10 +139,12 @@ public sealed class ActiveRunController : MonoBehaviour
                 var entity = spawned.GetComponent<RunWorldObject>() ?? spawned.AddComponent<RunWorldObject>();
                 entity.ConfigureIdentity(snapshot.id); Register(entity);
             }
-            objects[snapshot.id].Restore(snapshot);
         }
+        // Allocate all identities before participants resolve cross-object ownership.
+        foreach (var snapshot in saved.world)
+            if (objects.TryGetValue(snapshot.id, out var entity) && entity != null) entity.Restore(snapshot);
         var player = saved.player;
-        inventory.RestoreSavedItems(player.items.Select(id => catalog.Resolve<ItemData>(id)).ToArray(), player.quickSlots);
+        inventory.RestoreSavedItems(player.items.Select(id => catalog.Resolve<ItemData>(id)).ToArray(), player.quickSlots, player.itemCounts);
         var controller = GetComponent<CharacterController>(); bool enabledController = controller.enabled;
         controller.enabled = false; transform.SetPositionAndRotation(player.position, player.rotation); controller.enabled = enabledController;
         GetComponent<ThirdPersonController>().RestoreRunVerticalVelocity(player.verticalVelocity);

@@ -43,17 +43,17 @@ public class PlayerInventoryGrenadeTests
     }
 
     [Test]
-    public void TryAddItem_GrenadesUseRegularInventoryCapacity()
+    public void TryAddItem_GrenadeStackUsesOneCapacitySlotWithoutAnArbitraryLimit()
     {
         Assert.That(inventory.TryAddItem(grenade), Is.True);
         Assert.That(inventory.TryAddItem(grenade), Is.True);
         Assert.That(inventory.TryAddItem(grenade), Is.True);
         Assert.That(inventory.TryAddItem(grenade), Is.True);
         Assert.That(inventory.TryAddItem(grenade), Is.True);
-        Assert.That(inventory.TryAddItem(grenade), Is.False);
+        Assert.That(inventory.TryAddItem(grenade), Is.True);
 
-        Assert.That(inventory.GrenadeCount, Is.EqualTo(5));
-        Assert.That(inventory.Items.Count, Is.EqualTo(5));
+        Assert.That(inventory.GrenadeCount, Is.EqualTo(6));
+        Assert.That(inventory.Items.Count, Is.EqualTo(1));
     }
 
     [Test]
@@ -63,11 +63,11 @@ public class PlayerInventoryGrenadeTests
         Assert.That(inventory.TryAddItem(grenade), Is.True);
         Assert.That(inventory.TryAddItem(grenade), Is.True);
         Assert.That(inventory.TryAddItem(weapon), Is.True);
-        Assert.That(inventory.TryAddItem(weapon), Is.True);
-        Assert.That(inventory.TryAddItem(grenade), Is.False);
+        Assert.That(inventory.TryAddItem(weapon), Is.False);
+        Assert.That(inventory.TryAddItem(grenade), Is.True);
 
-        Assert.That(inventory.GrenadeCount, Is.EqualTo(3));
-        Assert.That(inventory.Items.Count, Is.EqualTo(5));
+        Assert.That(inventory.GrenadeCount, Is.EqualTo(4));
+        Assert.That(inventory.Items.Count, Is.EqualTo(2));
     }
 
     [Test]

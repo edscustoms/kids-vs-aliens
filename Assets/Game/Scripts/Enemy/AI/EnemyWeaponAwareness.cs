@@ -54,7 +54,7 @@ public sealed class EnemyWeaponAwareness : MonoBehaviour
         if (reserved == null) return false;
         if (Vector3.Distance(transform.position, reserved.transform.position) <= config.pickupDistance)
         {
-            if (Visible(reserved) && reserved.IsReservedBy(this) && equipment.TryEquip(reserved.Item as WeaponItemData)) reserved.ConsumeReserved(this);
+            if (Visible(reserved)) equipment.TryAcquire(reserved, this);
             Cancel(); return false;
         }
         if (Time.time >= nextPath)

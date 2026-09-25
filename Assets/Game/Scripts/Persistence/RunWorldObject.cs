@@ -72,6 +72,7 @@ public sealed class RunWorldObject : MonoBehaviour
         bool navigating = agent != null && agent.enabled;
         if (navigating) agent.enabled = false;
         transform.SetPositionAndRotation(snapshot.position, snapshot.rotation);
+        GetComponent<WorldItemFloat>()?.ResetAnchor();
         if (navigating) agent.enabled = true;
         GetComponent<EnemyHealth>()?.RestoreRunHealth(snapshot.health);
         GetComponent<LootChest>()?.RestoreRunOpen(snapshot.chestOpen);

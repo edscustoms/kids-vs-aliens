@@ -10,8 +10,10 @@ public class WorldItemFloat : MonoBehaviour
 
     private void Start()
     {
-        startPosition = transform.localPosition;
+        ResetAnchor();
     }
+
+    public void ResetAnchor() => startPosition = transform.localPosition;
 
     private void Update()
     {

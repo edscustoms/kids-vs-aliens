@@ -33,10 +33,11 @@ public sealed class RunPersistenceTests
     [Test] public void ActiveRunRoundTripsFunctionalState()
     {
         var save=new ActiveRunSave{runId="run",elapsedSeconds=42,sceneName="ConstructionSite"};
-        save.player.position=new Vector3(3,4,5);save.player.items.Add("grenade-id");save.player.quickSlots=new[]{-1,0,-1,-1,-1};save.player.ammo=7;
+        save.player.position=new Vector3(3,4,5);save.player.items.Add("grenade-id");save.player.itemCounts=new[]{3};save.player.quickSlots=new[]{-1,0,-1,-1,-1};save.player.ammo=7;
         save.world.Add(new SavedWorldObject{id="chest",chestOpen=true});save.world.Add(new SavedWorldObject{id="pickup",removed=true});
         var store=new RecoverableJsonStore(directory,"run");store.Write(save);var restored=store.Read<ActiveRunSave>();
         Assert.That(restored.player.position,Is.EqualTo(save.player.position));Assert.That(restored.player.quickSlots[1],Is.Zero);
+        Assert.That(restored.player.itemCounts,Is.EqualTo(new[]{3}));
         Assert.That(restored.player.ammo,Is.EqualTo(7));Assert.That(restored.world[0].chestOpen,Is.True);Assert.That(restored.world[1].removed,Is.True);
     }
     [Test] public void QuickSlotReorderAndRemovalPreserveOneInventory()

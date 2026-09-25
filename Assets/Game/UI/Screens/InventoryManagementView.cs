@@ -88,13 +88,13 @@ public sealed class InventoryManagementView : MonoBehaviour
         } else {
             for(int owned=0;owned<inventory.Items.Count;owned++)backpackIndices.Add(owned);
         }
-        for(int i=0;i<quick.Length;i++)quick[i].Refresh(ItemFor(i,true),true,selectedQuick==i);
+        for(int i=0;i<quick.Length;i++)quick[i].Refresh(ItemFor(i,true),true,selectedQuick==i,quantity:inventory.CountAt(OwnedIndexFor(i,true)));
         for(int i=0;i<backpack.Length;i++){
             var item=ItemFor(i,false);bool visible=category==null||item==null||item.itemType==category;
             backpack[i].gameObject.SetActive(category!=ItemType.UnarmedCombat||item!=null);
             int entry=OwnedIndexFor(i,false), assigned=-1;
             for(int slot=0;slot<inventory.QuickSlotCount;slot++)if(entry!=-1&&inventory.QuickSlotIndex(slot)==entry){assigned=slot;break;}
-            backpack[i].Refresh(item,visible,selected!=-1&&selected==entry,assigned);
+            backpack[i].Refresh(item,visible,selected!=-1&&selected==entry,assigned,inventory.CountAt(entry));
         }
         usage.text=category==ItemType.UnarmedCombat?"LEARNED COMBAT":$"BACKPACK  {inventory.Items.Count} / {inventory.Capacity}";
         var selectedItem=inventory.EntryItem(selected);
@@ -102,7 +102,7 @@ public sealed class InventoryManagementView : MonoBehaviour
         string stats = selectedItem is WeaponItemData weapon ? $"\nDamage: {weapon.damage:g}   Range: {weapon.range:g} m\nMagazine: {weapon.magazineSize}   {weapon.fireMode}"
             : selectedItem is GrenadeItemData grenade ? $"\n{grenade.activationMode} activation\nFuse: {grenade.fuseTime:g} s"
             : selectedItem is KnowledgeBookItemData book && book.skill != null ? "\n" + book.skill.Description : "";
-        details.text=selectedItem!=null?$"{selectedItem.itemName}\n<size=70%><color=#9FAAD9>{(selectedItem is UnarmedCombatItemData ? "Combat capability" : selectedItem.itemType.ToString())}</color>\n{(selectedItem is UnarmedCombatItemData ? "Permanently learned" : "Quantity: 1")}{stats}</size>":"Select an item";
+        details.text=selectedItem!=null?$"{selectedItem.itemName}\n<size=70%><color=#9FAAD9>{(selectedItem is UnarmedCombatItemData ? "Combat capability" : selectedItem.itemType.ToString())}</color>\n{(selectedItem is UnarmedCombatItemData ? "Permanently learned" : $"Quantity: {inventory.CountAt(selected)}")}{stats}</size>":"Select an item";
     }
     private void OnDestroy(){if(inventory!=null)inventory.OnInventoryChanged-=Refresh;}
 }
@@ -134,10 +134,11 @@ public sealed class InventoryDragSlot : MonoBehaviour, IPointerClickHandler, IPo
         label=Text(transform,"Name","",new(.06f,.035f),new(.94f,.32f),20,null,TextAlignmentOptions.Center);
         number=Text(transform,"Number",(index+1).ToString(),new(.1f,.82f),new(.9f,.99f),quick?21:14,Cyan,TextAlignmentOptions.Center);
     }
-    public void Refresh(ItemData item,bool visible,bool selected,int assigned=-1)
+    public void Refresh(ItemData item,bool visible,bool selected,int assigned=-1,int quantity=1)
     {
         filtered=!visible;available=visible&&item!=null;icon.sprite=available?InterfaceIconCatalog.ForItem(item):null;icon.enabled=icon.sprite!=null;
         label.text=!visible?"—":item==null?"EMPTY":item.itemName;
+        if(available&&quantity>1)label.text+=$" x{quantity}";
         number.text=available&&assigned>=0?$"SLOT {assigned+1}":(Index+1).ToString();
         icon.color=assigned>=0?new Color(1,1,1,.55f):Color.white;
         label.color=available?Color.white:Muted;
