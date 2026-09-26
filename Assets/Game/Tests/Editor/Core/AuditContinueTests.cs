@@ -32,7 +32,9 @@ public sealed class AuditContinueTests
             root.AddComponent<RestorePeerProbe>();
             if (id == "probe-b")
             {
-                var loot = new SerializedObject(root.GetComponent<EnemyPlasmaLoot>());
+                var loot = new SerializedObject(root.AddComponent<EnemyPlasmaLoot>());
+                loot.FindProperty("plasmaPickup").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<GameObject>(CombatEconomyTests.PlasmaPrefabPath).GetComponent<PickupItem>();
                 loot.FindProperty("plasmaDropChance").floatValue = 1;
                 loot.FindProperty("plasmaDropMin").intValue = 4;
                 loot.FindProperty("plasmaDropMax").intValue = 4;

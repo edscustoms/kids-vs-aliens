@@ -39,6 +39,15 @@ an Editor used for tests. Prefer the isolated runner when checking all scene flo
 `Tools/Compile-UnityScripts.ps1` is a separate Roslyn check, not proof of Unity import,
 rendering, runtime lifecycle or full test success.
 
+For a manual run that aborts, inspect `Logs/Editor.log` for the first
+`REGRESSION FAILURE` (test name, assertion/exception and stack), and the last
+`REGRESSION START` without a result. `Internal_CallUpdateFunctions` is only the
+Editor dispatcher, not the cause. Batch and manual Editor conditions can differ;
+record pause/focus state when a failure only occurs manually. The melee encounter
+cases each simulate several minutes; their scaled waits now reject an unexpected
+pause rather than waiting indefinitely. Clock-dependent fixtures must establish
+their own time scale and restore the previous value, including after failure.
+
 Authoring/import tests use disposable asset copies or preview scenes and clean them up.
 The normal weapon geometry/reference test reads current prefabs and data and is
 self-contained. The completed historical migration/comparison helper has been retired;

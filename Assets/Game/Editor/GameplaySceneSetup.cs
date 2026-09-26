@@ -35,8 +35,7 @@ public static class GameplaySceneSetup
 
         PlayerCharacter[] players = Object
             .FindObjectsByType<PlayerCharacter>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             )
             .Where(player => player != null && player.gameObject.scene == scene)
             .ToArray();

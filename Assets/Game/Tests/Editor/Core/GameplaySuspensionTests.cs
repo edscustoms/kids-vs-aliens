@@ -16,6 +16,7 @@ public sealed class GameplaySuspensionTests
     public void SetUp()
     {
         timeScale = Time.timeScale;
+        Time.timeScale = 1;
         player = new GameObject("Suspension test player");
         input = player.AddComponent<StarterAssetsInputs>();
         suspension = player.AddComponent<GameplaySuspensionController>();
@@ -67,7 +68,7 @@ public sealed class GameplaySuspensionTests
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
             )
             .Invoke(suspension, null);
-        Assert.That(Time.timeScale, Is.EqualTo(timeScale));
+        Assert.That(Time.timeScale, Is.EqualTo(1));
         Assert.That(input.GameplayInputBlocked, Is.False);
     }
 

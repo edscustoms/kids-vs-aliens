@@ -256,6 +256,8 @@ public sealed class HapticTests
 
     [UnityTest] public IEnumerator ActualEnemyFire_WithBothWeaponProfiles_DoesNotRequestDeviceHaptics()
     {
+        SessionState.SetFloat("HapticTests.TimeScale", Time.timeScale);
+        Time.timeScale = 1;
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         yield return new EnterPlayMode();
         recorder = new Recorder(); Backend.SetValue(null, recorder); HapticSettings.Enabled = true;
@@ -297,6 +299,11 @@ public sealed class HapticTests
     [UnityTearDown] public IEnumerator ExitAfterFailure()
     {
         if (Application.isPlaying) yield return new ExitPlayMode();
+        if (SessionState.GetFloat("HapticTests.TimeScale", -1) >= 0)
+        {
+            Time.timeScale = SessionState.GetFloat("HapticTests.TimeScale", 1);
+            SessionState.EraseFloat("HapticTests.TimeScale");
+        }
     }
 
     private static T Get<T>(object target, string field) => (T)target.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);

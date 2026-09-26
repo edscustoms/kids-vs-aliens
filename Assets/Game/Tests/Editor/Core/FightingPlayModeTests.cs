@@ -26,6 +26,8 @@ public sealed class FightingPlayModeTests
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY", string.IsNullOrEmpty(previous) ? null : previous);
         SessionState.EraseBool(FixtureKey + ".Active");
         SessionState.EraseString(FixtureKey);
+        Time.timeScale = SessionState.GetFloat(FixtureKey + ".TimeScale", 1);
+        SessionState.EraseFloat(FixtureKey + ".TimeScale");
     }
 
     [UnityTest]
@@ -34,6 +36,8 @@ public sealed class FightingPlayModeTests
         string previousSaves=Environment.GetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY");
         SessionState.SetString(FixtureKey, previousSaves ?? string.Empty);
         SessionState.SetBool(FixtureKey + ".Active", true);
+        SessionState.SetFloat(FixtureKey + ".TimeScale", Time.timeScale);
+        Time.timeScale = 1;
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY",Path.GetFullPath("Logs/FightingFixture-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
         yield return new EnterPlayMode();
@@ -82,10 +86,9 @@ public sealed class FightingPlayModeTests
                 Debug.Log("Fighting review: scenario "+scenario);
                 Vector2 direction=(scenario%4) switch {1=>Vector2.left,2=>Vector2.up,3=>new Vector2(.707f,-.707f),_=>Vector2.zero};
                 input.MoveInput(Vector2.zero); yield return EditorTestFrame.Next(); input.MoveInput(direction);
-                float elapsed=0;
-                while(elapsed<.5f) {elapsed+=Time.deltaTime; yield return EditorTestFrame.Next();}
+                yield return CombatSeconds(.5f);
                 Assert.That(melee.SelectCombatItem(item),Is.True);
-                elapsed=0; while(elapsed<.4f) {elapsed+=Time.deltaTime; yield return EditorTestFrame.Next();}
+                yield return CombatSeconds(.4f);
                 requests.Clear(); impacts=0;
                 Press(input); Assert.That(requests.Count,Is.EqualTo(1),"First FIRE must start immediately.");
                 for(int step=0;step<item.attackChain.Length;step++)
@@ -111,13 +114,13 @@ public sealed class FightingPlayModeTests
                         Assert.That(checkedPlant,Is.True,"Kick planting was not sampled.");
                 }
                 ProceduralUIReview.Capture("combat-sequence-"+scenario,1280,720);
-                elapsed=0; while(elapsed<1.4f) {elapsed+=Time.deltaTime; yield return EditorTestFrame.Next();}
+                yield return CombatSeconds(1.4f);
                 Assert.That(melee.RequiresPlantedFeet,Is.False);
                 if(direction!=Vector2.zero) Assert.That(new Vector2(capsule.velocity.x,capsule.velocity.z).magnitude,Is.GreaterThan(.5f),"Held movement did not resume.");
                 Assert.That(requests.Count,Is.EqualTo(item.attackChain.Length));
                 Assert.That(character.ActiveVisual.Animator.applyRootMotion,Is.False);
                 melee.CancelCombat();
-                elapsed=0; while(elapsed<.4f) {elapsed+=Time.deltaTime; yield return EditorTestFrame.Next();}
+                yield return CombatSeconds(.4f);
                 Assert.That(melee.IsCombatStance||melee.IsWaitingForImpact||melee.HasBufferedAttack,Is.False);
                 report.Add($"PASS {scenario}: {character.ActiveVisual.name}, {requests.Count} deliberate attacks / {impacts} impacts, movement {direction}");
             }
@@ -126,6 +129,17 @@ public sealed class FightingPlayModeTests
             Directory.CreateDirectory("Logs/CombatV2");
             File.WriteAllLines("Logs/CombatV2/play-review.txt",report);
         }
+    }
+    private static IEnumerator CombatSeconds(float duration)
+    {
+        float end = Time.time + duration;
+        double deadline = EditorApplication.timeSinceStartup + duration + 5;
+        while (Time.time < end && EditorApplication.timeSinceStartup < deadline)
+            yield return EditorTestFrame.Next();
+        var suspension = Object.FindAnyObjectByType<GameplaySuspensionController>();
+        var menu = Object.FindAnyObjectByType<InGameMenuController>();
+        Assert.That(Time.time, Is.GreaterThanOrEqualTo(end),
+            $"Combat fixture stopped advancing: timeScale={Time.timeScale}, Editor paused={EditorApplication.isPaused}, suspension owners={suspension?.OwnerCount}, menu open={menu?.IsOpen}.");
     }
     private static void Press(StarterAssetsInputs input) {input.ShootInput(false);input.ShootInput(true);input.ShootInput(false);}
 }

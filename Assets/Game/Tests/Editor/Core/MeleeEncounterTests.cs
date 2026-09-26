@@ -33,8 +33,12 @@ public sealed class MeleeEncounterTests
 
     [UnityTearDown] public IEnumerator Teardown()
     {
+        if (navigation.valid) navigation.Remove();
+        if (item != null && !AssetDatabase.Contains(item)) Object.DestroyImmediate(item);
         if(EditorApplication.isPlaying) yield return new ExitPlayMode();
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY",SessionState.GetString(Key,"") is string s && s.Length>0?s:null);
+        Time.timeScale = SessionState.GetFloat(Key + ".TimeScale", 1);
+        SessionState.EraseFloat(Key + ".TimeScale");
     }
     [UnityTest, Timeout(600000)] public IEnumerator Baseline() { return Run(false); }
     [UnityTest, Timeout(600000)] public IEnumerator Refined() { return Run(true); }
@@ -42,6 +46,8 @@ public sealed class MeleeEncounterTests
     {
         directory="Logs/CombatPrecision/"+(refined?"refined":"baseline"); Directory.CreateDirectory(directory);
         SessionState.SetString(Key,Environment.GetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY")??"");
+        SessionState.SetFloat(Key + ".TimeScale", Time.timeScale);
+        Time.timeScale = 1; // The encounter owns its clock, not the open Editor's pause state.
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY",Path.GetFullPath(directory+"/Save-"+Guid.NewGuid().ToString("N")));
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
         yield return new EnterPlayMode(); Application.runInBackground=true;
@@ -49,7 +55,7 @@ public sealed class MeleeEncounterTests
         EditorSceneManager.LoadSceneInPlayMode("Assets/Game/Scenes/ConstructionSite.unity",new LoadSceneParameters(LoadSceneMode.Single));
         yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
         Object.FindAnyObjectByType<BeamTransportController>().CancelTransport();
-        var run=ActiveRunController.Instance; run.SendMessage("OnApplicationFocus",true);
+        var run=ActiveRunController.Instance; run.SendMessage("OnApplicationPause",false); run.SendMessage("OnApplicationFocus",true);
         Object.FindAnyObjectByType<InGameMenuController>().ResumeGame();
         player=Object.FindAnyObjectByType<PlayerMeleeController>();
         health=player.GetComponent<PlayerHealth>(); input=player.GetComponent<StarterAssetsInputs>(); capsule=player.GetComponent<CharacterController>();
@@ -105,7 +111,7 @@ public sealed class MeleeEncounterTests
                 if(marker){Record("marker",before-eh.CurrentHealth,enemy,animator,enemy.GetComponent<Collider>());if(scenario=="hit"||scenario=="edge"||scenario=="close")Capture(label+"-contact");marker=false;}
                 Record("sample",before-eh.CurrentHealth,enemy,animator,enemy.GetComponent<Collider>());
                 if(scenario=="hit" && t>=.12f+shot*.15f && shot<6){Capture(label+"-"+shot++);Record("pose",before-eh.CurrentHealth,enemy,animator,enemy.GetComponent<Collider>());}
-                yield return EditorTestFrame.Next();
+                yield return NextCombatFrame();
             }
             Record("result",before-eh.CurrentHealth,enemy,animator,enemy.GetComponent<Collider>());
             if(refined && (scenario=="miss"||scenario=="withdraw"||scenario=="behind"||scenario=="turn"))Assert.That(eh.CurrentHealth,Is.EqualTo(before),label);
@@ -141,7 +147,7 @@ public sealed class MeleeEncounterTests
                     if(scenario=="death")enemy.GetComponent<EnemyHealth>().TakeDamage(10000);}
                 Record("sample",before-health.CurrentHealth-health.CurrentArmor,enemy,ea,capsule);
                 if(repeat==0&&scenario=="hit"&&t>=shot*.10f&&shot<12)Capture(label+"-"+shot++);
-                yield return EditorTestFrame.Next();
+                yield return NextCombatFrame();
             }
             if(refined&&scenario!="hit"&&scenario!="slight")Assert.That(health.CurrentHealth+health.CurrentArmor,Is.EqualTo(before),label);
             if(refined&&scenario=="hit")Assert.That(health.CurrentHealth+health.CurrentArmor,Is.LessThan(before),label);
@@ -166,7 +172,7 @@ public sealed class MeleeEncounterTests
             if(t>=pressAt&&requested-comboStart<5){Press();pressAt=t+.2f;}
             if(!switched&&requested-comboStart>=2){switched=true;first.transform.position=Home+Vector3.left*1.5f;second.transform.position=Home+Vector3.forward*.7f;Physics.SyncTransforms();}
             if(!killed&&requested-comboStart>=3){killed=true;first.GetComponent<EnemyHealth>().TakeDamage(10000);}
-            yield return EditorTestFrame.Next();
+            yield return NextCombatFrame();
         }
         Assert.That(requested-comboStart,Is.EqualTo(5));Assert.That(impacts-comboMarkers,Is.EqualTo(5),"Target change/death must not corrupt the five-step chain");
         Flush();player.GetComponent<PlayerAim>().enabled=true;
@@ -181,7 +187,7 @@ public sealed class MeleeEncounterTests
                 if(t>=nextPress){Press();nextPress=t+.25f;}
                 foreach(var e in enemies)Record("fight",health.CurrentHealth+health.CurrentArmor,e,e.GetComponentInChildren<Animator>(),capsule);
                 if(t>=nextShot){camera.transform.position=player.transform.position+new Vector3(3,2.3f,-3);camera.transform.LookAt(player.transform.position+Vector3.up*.8f);Capture(label+"-"+((int)(nextShot*2)));nextShot+=.5f;}
-                yield return EditorTestFrame.Next();
+                yield return NextCombatFrame();
             }
             Debug.Log($"MELEE ENCOUNTER {count}/{repeat}: {requested-firstRequests} requests, {impacts-firstImpacts} markers");Flush();
         }
@@ -218,7 +224,15 @@ public sealed class MeleeEncounterTests
     void Press(){input.ShootInput(false);input.ShootInput(true);input.ShootInput(false);}
     static void React(GameObject e)=>e.GetComponent<EnemyHitReaction>().ReceiveHit(new HitInfo(1,e.transform.position,Vector3.back,Vector3.forward,null));
     static void Set(object target,string field,object value)=>target.GetType().GetField(field,BindingFlags.NonPublic|BindingFlags.Instance).SetValue(target,value);
-    static IEnumerator Seconds(float time){float until=Time.time+time;while(Time.time<until)yield return EditorTestFrame.Next();}
+    static IEnumerator Seconds(float time){float until=Time.time+time;while(Time.time<until)yield return NextCombatFrame();}
+    static IEnumerator NextCombatFrame()
+    {
+        // A scaled-time loop must fail and run teardown if a modal/focus loss pauses
+        // the lab; NUnit's overall timeout is not a safe coroutine cancellation path.
+        Assert.That(EditorApplication.isPaused, Is.False, "Encounter fixture was paused in the Editor.");
+        Assert.That(Time.timeScale, Is.GreaterThan(0), "Encounter fixture acquired an unexpected pause; refusing an unbounded scaled-time wait.");
+        yield return EditorTestFrame.Next();
+    }
     void Record(string kind,float damage,GameObject enemy,Animator source,Collider target)
     {
         string distances="";foreach(var bone in Limbs){var b=source.GetBoneTransform(bone);distances+=","+(b==null?-1:Vector3.Distance(b.position,target.ClosestPoint(b.position))).ToString("F3",System.Globalization.CultureInfo.InvariantCulture);}

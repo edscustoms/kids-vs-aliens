@@ -25,6 +25,9 @@ public sealed class CombatEconomyAuthoringTests
                 data.FindProperty("plasmaDropChance").floatValue = .23f;
                 data.ApplyModifiedPropertiesWithoutUndo();
                 string before = EditorJsonUtility.ToJson(loot);
+                // Exercise the current repair owner on the disposable scene copy.
+                EnemyCombatantSetup.Configure(actor.gameObject);
+                EnemyCombatantSetup.Configure(actor.gameObject);
                 Assert.That(EditorJsonUtility.ToJson(loot), Is.EqualTo(before));
                 Assert.That(actor.GetComponents<EnemyPlasmaLoot>().Length, Is.EqualTo(1));
             }

@@ -13,7 +13,7 @@ public sealed class AlienAuthoringTests
         try
         {
             var scene=EditorSceneManager.OpenScene("Assets/Game/Scenes/"+name+".unity");
-            var actors=Object.FindObjectsByType<EnemyActor>(FindObjectsInactive.Include,FindObjectsSortMode.None);
+            var actors=Object.FindObjectsByType<EnemyActor>(FindObjectsInactive.Include);
             var weapons=actors.Select(a=>new SerializedObject(a.GetComponent<EnemyEquipment>()).FindProperty("startingWeapon").objectReferenceValue).ToArray();
             int count=actors.Sum(a=>a.GetComponentsInChildren<Component>(true).Length);
             EnemyCombatantSetup.ConfigureScene(scene);EnemyCombatantSetup.ConfigureScene(scene);
@@ -60,13 +60,13 @@ public sealed class AlienAuthoringTests
         try
         {
             EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
-            var equipped=Object.FindObjectsByType<EnemyEquipment>(FindObjectsInactive.Include,FindObjectsSortMode.None)
+            var equipped=Object.FindObjectsByType<EnemyEquipment>(FindObjectsInactive.Include)
                 .Where(e=>new SerializedObject(e).FindProperty("startingWeapon").objectReferenceValue!=null).ToArray();
             Assert.That(equipped.Length,Is.EqualTo(2));
             foreach(var e in equipped)Assert.That(new SerializedObject(e).FindProperty("dropWeaponOnDeath").boolValue,Is.True);
             Assert.That(equipped.Select(e=>e.name),Is.EquivalentTo(new[]{"PF_Enemy_Melee_POC_V1 (7)","PF_Enemy_Melee_POC_V1 (8)"}));
             EditorSceneManager.OpenScene("Assets/Game/Scenes/GamePoc.unity");
-            foreach(var e in Object.FindObjectsByType<EnemyEquipment>(FindObjectsInactive.Include,FindObjectsSortMode.None))
+            foreach(var e in Object.FindObjectsByType<EnemyEquipment>(FindObjectsInactive.Include))
                 Assert.That(new SerializedObject(e).FindProperty("startingWeapon").objectReferenceValue,Is.Null);
         }
         finally

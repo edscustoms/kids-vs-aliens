@@ -67,8 +67,7 @@ public static class EnemyCombatantSetup
         var scene = EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
         var lines = UnityEngine
             .Object.FindObjectsByType<EnemyActor>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             )
             .Select(x =>
                 x.name
@@ -78,7 +77,7 @@ public static class EnemyCombatantSetup
                 + x.GetComponent<RunWorldObject>()?.Id
             )
             .ToList();
-        foreach (var t in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsSortMode.None))
+        foreach (var t in UnityEngine.Object.FindObjectsByType<Transform>())
             if (t.name.IndexOf("gate", StringComparison.OrdinalIgnoreCase) >= 0)
                 lines.Add("GATE " + t.name + " | " + t.position.ToString("F2"));
         File.WriteAllLines("Logs/AlienCombat/scene-positions.txt", lines);
@@ -90,8 +89,7 @@ public static class EnemyCombatantSetup
         EnsureAssets();
         foreach (
             var actor in UnityEngine.Object.FindObjectsByType<EnemyActor>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             )
         )
             if (actor.gameObject.scene == scene)
@@ -102,8 +100,7 @@ public static class EnemyCombatantSetup
     {
         var scene = EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
         var actors = UnityEngine.Object.FindObjectsByType<EnemyActor>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None
+            FindObjectsInactive.Include
         );
         // Explicit authored exceptions requested for the two aliens immediately below the north-east locked gate.
         string[] names = { "PF_Enemy_Melee_POC_V1 (7)", "PF_Enemy_Melee_POC_V1 (8)" };

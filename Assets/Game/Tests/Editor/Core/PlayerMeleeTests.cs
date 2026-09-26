@@ -366,7 +366,7 @@ public sealed class PlayerMeleeTests
 public sealed class MeleeImpactProbe : MonoBehaviour, IDamageable, IHitReaction
 {
     public int DamageCount, ReactionCount;
-    public HitInfo LastHit;
+    [NonSerialized] public HitInfo LastHit;
     public void ReceiveDamage(HitInfo hit) { DamageCount++; LastHit = hit; }
     public void ReceiveHit(HitInfo hit) => ReactionCount++;
 }

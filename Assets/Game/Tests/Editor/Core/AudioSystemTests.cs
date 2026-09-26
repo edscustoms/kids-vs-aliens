@@ -78,6 +78,8 @@ public sealed class AudioSystemTests
     [UnityTest]
     public IEnumerator EmitterStartsOnce_AndDisabledServiceCanBeReplaced()
     {
+        SessionState.SetFloat("AudioSystemTests.TimeScale", Time.timeScale);
+        Time.timeScale = 1;
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         yield return new EnterPlayMode();
         {
@@ -94,7 +96,7 @@ public sealed class AudioSystemTests
             Assert.That(AudioService.Instance, Is.Null, "An initially disabled service must not claim the singleton in Awake.");
             original.enabled = true;
             local.SetActive(true);
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             var source = local.GetComponent<AudioSource>();
             Assert.That(source.isPlaying, Is.True, "A duplicate initial request would stop the loop, then fail its cooldown.");
             Assert.That(source.clip, Is.SameAs(clip));
@@ -106,7 +108,7 @@ public sealed class AudioSystemTests
             Assert.That(AudioService.Instance, Is.SameAs(replacement));
             emitter.enabled = true;
             Assert.That(source.isPlaying, Is.True, "Subsequent enable plays immediately.");
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(source.isPlaying, Is.True, "Start must not replay on subsequent enables either.");
             LogAssert.Expect(LogType.Error, "Only one active AudioService is supported. Duplicate disabled.");
             original.enabled = true;
@@ -118,7 +120,7 @@ public sealed class AudioSystemTests
             Assert.That(AudioService.Instance, Is.SameAs(original));
             Assert.That(original.GetComponentsInChildren<AudioSource>().Length, Is.EqualTo(original.PoolSize), "Re-enable reuses the initialized pool.");
             Object.Destroy(replacement.gameObject); replacement = null;
-            yield return null;
+            yield return EditorTestFrame.Next();
             Assert.That(AudioService.Instance, Is.SameAs(original), "Destroying an old disabled service cannot clear the active owner.");
         }
         finally
@@ -143,6 +145,11 @@ public sealed class AudioSystemTests
     public IEnumerator ExitAfterFailure()
     {
         if (Application.isPlaying) yield return new ExitPlayMode();
+        if (SessionState.GetFloat("AudioSystemTests.TimeScale", -1) >= 0)
+        {
+            Time.timeScale = SessionState.GetFloat("AudioSystemTests.TimeScale", 1);
+            SessionState.EraseFloat("AudioSystemTests.TimeScale");
+        }
     }
     [Test]
     public void Selection_IgnoresNullAndDuplicatePreviousVariants()

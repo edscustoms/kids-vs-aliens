@@ -15,6 +15,11 @@ public sealed class RegressionProgress : ITestRunCallback
     }
     public void TestFinished(ITestResult result)
     {
-        if (!result.Test.IsSuite) Debug.Log("REGRESSION RESULT: " + result.ResultState + " " + result.FullName);
+        if (result.Test.IsSuite) return;
+        Debug.Log("REGRESSION RESULT: " + result.ResultState + " " + result.FullName);
+        // Manual runs may abort before exporting XML. Keep the actual failure,
+        // not just the runner's final Internal_CallUpdateFunctions stack frame.
+        if (result.ResultState.Status == TestStatus.Failed)
+            Debug.Log("REGRESSION FAILURE: " + result.FullName + "\n" + result.Message + "\n" + result.StackTrace);
     }
 }

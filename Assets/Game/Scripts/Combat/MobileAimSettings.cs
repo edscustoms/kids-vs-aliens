@@ -24,7 +24,7 @@ public class MobileAimSettings : ScriptableObject
     [SerializeField]
     private float greenRadius = 0.05f;
 
-    [Tooltip("Chance of selecting the Green zone.")]
+    [Tooltip("Relative weight for selecting the Green zone; weights need not total 100.")]
     [Range(0, 100)]
     [SerializeField]
     private int greenChance = 5;
@@ -43,7 +43,7 @@ public class MobileAimSettings : ScriptableObject
     [SerializeField]
     private float blueRadius = 0.35f;
 
-    [Tooltip("Chance of selecting the Blue zone.")]
+    [Tooltip("Relative weight for selecting the Blue zone; weights need not total 100.")]
     [Range(0, 100)]
     [SerializeField]
     private int blueChance = 35;
@@ -62,7 +62,7 @@ public class MobileAimSettings : ScriptableObject
     [SerializeField]
     private float yellowRadius = 0.75f;
 
-    [Tooltip("Chance of selecting the Yellow zone.")]
+    [Tooltip("Relative weight for selecting the Yellow zone; weights need not total 100.")]
     [Range(0, 100)]
     [SerializeField]
     private int yellowChance = 60;
@@ -98,9 +98,7 @@ public class MobileAimSettings : ScriptableObject
             return MobileAimZone.Yellow;
         }
 
-        // Uses the configured values as weights.
-        // So even while tweaking and temporarily sitting at
-        // 99 or 101, nothing explodes.
+        // Uses relative weights; their total need not be 100.
         int roll = Random.Range(0, total);
 
         if (roll < greenChance)
@@ -120,16 +118,6 @@ public class MobileAimSettings : ScriptableObject
         // Keep zones ordered correctly.
         blueRadius = Mathf.Max(blueRadius, greenRadius);
         yellowRadius = Mathf.Max(yellowRadius, blueRadius);
-
-        int total = TotalChance;
-
-        if (total != 100)
-        {
-            Debug.LogWarning(
-                $"{name}: Mobile aim chances currently total "
-                    + $"{total}%. They should total exactly 100%."
-            );
-        }
     }
 #endif
 }
