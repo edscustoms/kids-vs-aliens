@@ -35702,6 +35702,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7082981967215529927, guid: 1d5c7a97e4df0c6478dca49f1c4e951e, type: 3}
   m_PrefabInstance: {fileID: 1080856582}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1475692871
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -23.69
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.17632699
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -21.39
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.04788907
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.99885267
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -174.51
+      objectReference: {fileID: 0}
+    - target: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8267666534207450424, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+      propertyPath: m_Name
+      value: PF_HealingPod
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
 --- !u!1 &1481726082
 GameObject:
   m_ObjectHideFlags: 0
@@ -351350,3 +351407,4 @@ SceneRoots:
   - {fileID: 484425698}
   - {fileID: 49439446}
   - {fileID: 1052242379662514399}
+  - {fileID: 1475692871}
