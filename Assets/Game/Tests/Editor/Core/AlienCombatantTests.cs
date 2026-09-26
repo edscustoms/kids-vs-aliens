@@ -61,6 +61,16 @@ public sealed class AlienCombatantTests
         actor.GetComponentInChildren<Animator>().cullingMode = AnimatorCullingMode.AlwaysAnimate;
         actor.transform.SetParent(null); Object.Destroy(staging); actors.Add(actor); return actor;
     }
+    [UnityTest]
+    public IEnumerator LiveAimBodyCacheStaysAboveFeet()
+    {
+        var actor = Spawn();
+        for (int i = 0; i < 10; i++) yield return EditorTestFrame.Next();
+        var aimTarget = actor.GetComponent<AimTarget>();
+        TestContext.WriteLine($"Live cached body={aimTarget.BodyCenter - actor.transform.position}, radius={aimTarget.BodyRadius}");
+        Assert.That(aimTarget.BodyCenter.y - actor.transform.position.y, Is.GreaterThan(.5f));
+    }
+
     [UnityTest, Timeout(180000)] public IEnumerator SpawnWeaponsAndTransitions()
     {
         foreach (string weapon in new[] { "PlasmaPistolItem", "PlasmaRifleItem" })

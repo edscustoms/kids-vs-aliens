@@ -27,7 +27,7 @@ public sealed class MeleeEncounterTests
     readonly List<GameObject> enemies=new List<GameObject>();
     string directory, label; float began; bool marker; int requested, impacts;
     CharacterActionId action;
-    float attributedDamage, observedDamage, previousHealth;
+    float attributedDamage, observedDamage, previousHealth, playerDamage;
     readonly List<string> contactViolations=new List<string>();
     static readonly HumanBodyBones[] Limbs={HumanBodyBones.LeftHand,HumanBodyBones.RightHand,HumanBodyBones.LeftFoot,HumanBodyBones.RightFoot,HumanBodyBones.LeftMiddleProximal,HumanBodyBones.RightMiddleProximal,HumanBodyBones.RightToes};
 
@@ -58,6 +58,7 @@ public sealed class MeleeEncounterTests
         var run=ActiveRunController.Instance; run.SendMessage("OnApplicationPause",false); run.SendMessage("OnApplicationFocus",true);
         Object.FindAnyObjectByType<InGameMenuController>().ResumeGame();
         player=Object.FindAnyObjectByType<PlayerMeleeController>();
+        playerDamage = new SerializedObject(player).FindProperty("damage").floatValue;
         health=player.GetComponent<PlayerHealth>(); input=player.GetComponent<StarterAssetsInputs>(); capsule=player.GetComponent<CharacterController>();
         previousHealth=health.CurrentHealth+health.CurrentArmor;
         health.OnHealthChanged+=()=>{float now=health.CurrentHealth+health.CurrentArmor;observedDamage+=Mathf.Max(0,previousHealth-now);previousHealth=now;};
@@ -116,7 +117,7 @@ public sealed class MeleeEncounterTests
             Record("result",before-eh.CurrentHealth,enemy,animator,enemy.GetComponent<Collider>());
             if(refined && (scenario=="miss"||scenario=="withdraw"||scenario=="behind"||scenario=="turn"))Assert.That(eh.CurrentHealth,Is.EqualTo(before),label);
             if(refined && scenario=="edge")Assert.That(eh.CurrentHealth,Is.EqualTo(before),label);
-            if(refined && scenario=="close")Assert.That(eh.CurrentHealth,Is.EqualTo(before-10),label);
+            if(refined && scenario=="close")Assert.That(eh.CurrentHealth,Is.EqualTo(before-playerDamage),label);
             Assert.That(damageEvents,Is.LessThanOrEqualTo(1),"One strike cannot hit twice");
             if(refined && (scenario=="wall"||scenario=="cancel"||scenario=="targetdeath"))Assert.That(damageEvents,Is.Zero,label);
             if(wall!=null)Object.DestroyImmediate(wall);
@@ -211,7 +212,7 @@ public sealed class MeleeEncounterTests
         Set(e.GetComponent<EnemyHealth>(),"maxHealth",1000f);e.GetComponent<EnemyHealth>().RestoreRunHealth(1000);
         e.GetComponent<EnemyHealth>().OnDamaged+=()=>
         {
-            Record("player-contact",10,e,animator,e.GetComponent<Collider>());
+            Record("player-contact",playerDamage,e,animator,e.GetComponent<Collider>());
             var visual=player.GetComponent<PlayerCharacter>().ActiveVisual;
             if(!visual.AnimationActions.TryGetBinding(action,out var binding)
                 || !binding.meleeContact.TryGetCenter(animator,out var center)

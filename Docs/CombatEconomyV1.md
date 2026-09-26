@@ -42,12 +42,99 @@
 | Reload duration (unchanged) | 0.8 s | 1.6 s |
 | Duplicate pickup reward | 6 | 12 |
 | Damage / round | 18 | 8 |
-| Fire rate limit | 3/s, semi-auto | 18/s, automatic |
+| Fire rate limit | 3/s, semi-auto | 12/s, automatic |
 | Range (unchanged) | 15 m | 25 m |
 
 WeaponItemData owns these values and the plasma flag/dry-fire SoundEvent. The shared
 weapon data also supplies armed aliens' weapon stats. Pistol damage per capsule is higher;
 rifle damage per second is higher. This does not certify final TTK, encounters or difficulty.
+
+### Medium baseline first pass — 26 Sep 2026
+
+Basic enemies now have 140 HP (previously 30) in both `Enemy.prefab` and
+`PF_Enemy_Melee_POC_V1.prefab`. Rifle rate is 12/s (previously 18/s). Player melee
+damage is 30 (previously 10), authored on `PlayerMeleeController` in GamePoc,
+ConstructionSite and Level_1. Fighting.asset owns the combo, not damage; a newly
+added melee component still needs its scene damage configured for this baseline.
+No animation clips, impact markers, chain windows or recovery timings changed.
+
+| Against a fresh basic alien | Before | Medium baseline |
+|---|---:|---:|
+| Pistol solid hits | 2 | 8 |
+| Rifle solid hits | 4 | 18 |
+| Successful melee hits | 3 | 5 |
+| Ideal pistol firing-only TTK | 0.33 s | 2.33 s |
+| Ideal rifle firing-only TTK | 0.17 s | 1.42 s |
+| Pistol / rifle damage per magazine | 216 / 224 | 216 / 224 |
+| Pistol / rifle damage per Plasma | 72 / 37.33 | 72 / 37.33 |
+
+TTK starts with the first shot at t=0, assumes every shot connects and a loaded
+magazine, and excludes aiming, misses, reloads and bolt travel (distance / 35 m/s
+for the current bolt). The rifle still kills about 1.65 times faster, but spends
+about 3.86 Plasma per kill versus 2 for the pistol, amortized over full paid
+magazines. Armed-enemy loot stays 75% at 2–4, averaging 2.25 per kill: roughly
+sustainable pistol use with limited misses, deliberate rifle drain. Loot variance,
+unarmed enemies and missed shots can still exhaust ammo; melee remains the free,
+close-range fallback. This is not a proof of level-wide resource sufficiency.
+
+Player health/armor remain 100/50. Enemy melee remains 10 with a 0.9–1.2 s
+request cooldown plus animation/contact constraints. Enemy weapons share the same
+18/8 damage definitions. Pistol firing pauses remain 0.7–1.05 s; rifle bursts
+remain 4–6 shots with 0.455–0.735 s pauses, now at 12/s inside each burst. Initial
+aim delays, 2.5-degree spread, movement decisions and reload durations are unchanged.
+Three melee attackers need 15 landed blows in total (five fully connected waves);
+three pistol attackers need nine hits total and three rifle attackers need 19.
+Stationary, fully exposed trading is therefore dangerous, while movement/cover
+and interrupting/killing attackers matter. Real 1v3 difficulty still needs playtesting.
+
+Melee remains animation-limited: the first four combo clips last approximately
+0.61/0.74/0.70/0.83 s with earliest chain windows around 0.44/0.58/0.61/0.67 s;
+the fifth step is the existing kick. The ideal fifth impact is around 2.74 s from
+the first input before blending/contact/input delays. It does not outrange guns
+or bypass contact/cover. Rifle VFX still spawn per accepted shot with the same bolt
+travel and impact timing; the lower rate reduces their cadence. The rifle currently
+has no authored fire SoundEvent, so no rifle fire audio was retuned or added.
+
+Mobile aim correction: `AimTarget` was transforming skinned-mesh local bounds through
+the mesh object instead of its assigned skeleton root. A live alien probe measured
+the old cached center at -0.21 m versus the rendered center at +0.60 m above its
+feet. Bounds now use the assigned skeleton root for skinned renderers; ordinary
+renderers retain their existing transform. This corrects the cached body center/size
+without substituting fake hit geometry.
+
+`PlayerAim` also previously centered spread on whichever visible
+body sample lay closest to screen center, which could bias it toward the legs.
+It now takes the first physically visible sample, preferring the existing upper-body
+point, then center, upper side samples, and lower body as a fallback. The best visible
+screen score still ranks targets independently. All five relative sample offsets, camera/player
+visibility rays, muzzle safety, physics hit resolution, sticky/free-look behavior,
+zone weights (5/35/45 relative weights), radii and random spread remain unchanged.
+Existing Green-zone geometry assistance is unchanged; no damage guarantee was added.
+
+Validate with a fresh run (Continue intentionally preserves saved health/ammo):
+check mobile torso placement, exposed upper body behind low cover, natural misses,
+pistol/rifle feel, five successful melee contacts, and moving versus stationary
+1v3 fights. Android/iOS feel and performance are not established by Editor tests.
+
+Validation for this pass:
+
+- Roslyn compilation passed; the existing CS1701 reference warning and unused
+  `ElectricGrenadeBurstVFX.radiusScaledRoot` warning remain outside this pass.
+- Initial deterministic aim fixtures reproduced screen-framing bias (2 failures / 6).
+  The broader focused run passed 83/85; its two new prefab probes exposed an
+  inapplicable legacy-prefab assumption (no AimTarget) and the real skinned-bounds
+  defect. A subsequent live probe confirmed the latter before correction.
+- Final targeted aim/live-body run: **8/8 passed**, `Medium-AimFixed-tests.xml`.
+- Final isolated graphics-enabled Full run: **352/352 passed, 0 failed, 0 skipped**,
+  Unity exit 0. `Medium-Full-tests.xml` / `Medium-Full-unity.log` live under
+  `Logs/RepositoryAuditRemediation`. Command:
+  `Tools/Run-UnityTests.ps1 -Suite Full -ReuseCopy -ResultName Medium-Full`.
+- `git diff --check` passed. Serialized changes are one numeric line each in the
+  rifle asset, two enemy prefabs and three gameplay scenes; no importer, material,
+  animation, loot or ProjectSettings changes.
+- Regressions added in `MobileAimPlacementTests`, `AlienCombatantTests` and
+  `CombatEconomyTests`. `MeleeEncounterTests` now reads authored player damage for
+  its contact assertion/trace instead of assuming the historical 10 damage.
 
 ## Authoring and presentation
 

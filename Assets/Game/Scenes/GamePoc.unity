@@ -10303,7 +10303,7 @@ MonoBehaviour:
   exitDistance: 2.5
   inactivityTimeout: 3
   proximityInterval: 0.1
-  damage: 10
+  damage: 30
   reach: 1.35
   hitRadius: 0.3
   strikeHeight: 1

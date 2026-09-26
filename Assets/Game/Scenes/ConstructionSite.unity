@@ -43528,7 +43528,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4416926081852918490, guid: 64dce48905ffd9b4293e595fa6941544, type: 3}
       propertyPath: MoveSpeed
-      value: 3
+      value: 3.8
       objectReference: {fileID: 0}
     - target: {fileID: 4416926081852918490, guid: 64dce48905ffd9b4293e595fa6941544, type: 3}
       propertyPath: AudioFoley
@@ -43536,7 +43536,7 @@ PrefabInstance:
       objectReference: {fileID: 735668326}
     - target: {fileID: 4416926081852918490, guid: 64dce48905ffd9b4293e595fa6941544, type: 3}
       propertyPath: SprintSpeed
-      value: 4.2
+      value: 4.6
       objectReference: {fileID: 0}
     - target: {fileID: 4416926081852918490, guid: 64dce48905ffd9b4293e595fa6941544, type: 3}
       propertyPath: LandingAudio
@@ -45007,7 +45007,7 @@ MonoBehaviour:
   exitDistance: 2.5
   inactivityTimeout: 3
   proximityInterval: 0.1
-  damage: 10
+  damage: 30
   reach: 1.35
   strikeHeight: 1
   collisionMask:

@@ -75,6 +75,44 @@ public sealed class CombatEconomyTests
         owned.Clear();
     }
 
+    [TestCase("Enemy")]
+    [TestCase("PF_Enemy_Melee_POC_V1")]
+    public void MediumBaseline_WeaponHitsSpeedAndResourceTradeoff(string prefabName)
+    {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+            "Assets/Game/Prefabs/Enemies/" + prefabName + ".prefab");
+        float hp = prefab.GetComponent<EnemyHealth>().MaxHealth;
+        int pistolHits = Mathf.CeilToInt(hp / pistol.damage);
+        int rifleHits = Mathf.CeilToInt(hp / rifle.damage);
+        Assert.That(pistolHits, Is.InRange(7, 10));
+        float pistolTime = (pistolHits - 1) / pistol.fireRate;
+        float rifleTime = (rifleHits - 1) / rifle.fireRate;
+        Assert.That(rifleTime, Is.LessThan(pistolTime / 1.5f));
+        float pistolCost = pistolHits * (float)pistol.plasmaReloadCost / pistol.magazineSize;
+        float rifleCost = rifleHits * (float)rifle.plasmaReloadCost / rifle.magazineSize;
+        Assert.That(rifleCost, Is.GreaterThan(pistolCost * 1.8f));
+        Assert.That(pistolCost, Is.LessThanOrEqualTo(.75f * 3), "Perfect hits roughly sustain from armed loot.");
+    }
+
+    [TestCase("GamePoc")]
+    [TestCase("ConstructionSite")]
+    [TestCase("Level_1")]
+    public void MediumBaseline_AuthoredMeleeRemainsAUsefulFallback(string sceneName)
+    {
+        // Read authored scene tuning without running setup or saving production content.
+        var scene = EditorSceneManager.OpenPreviewScene("Assets/Game/Scenes/" + sceneName + ".unity");
+        try
+        {
+            var melee = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<PlayerMeleeController>(true)).Single();
+            float damage = new SerializedObject(melee).FindProperty("damage").floatValue;
+            float hp = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Game/Prefabs/Enemies/PF_Enemy_Melee_POC_V1.prefab").GetComponent<EnemyHealth>().MaxHealth;
+            Assert.That(Mathf.CeilToInt(hp / damage), Is.InRange(4, 6));
+        }
+        finally { EditorSceneManager.ClosePreviewScene(scene); }
+    }
+
     [TestCase("Pistol", 12, 3, 6)]
     [TestCase("Rifle", 28, 6, 12)]
     public void AuthoredWeaponsCarryEconomyAndSemanticAudio(

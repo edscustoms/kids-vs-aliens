@@ -24,7 +24,7 @@ MonoBehaviour:
   fireCameraFeedback: {fileID: 11400000, guid: 61e1770f13984291b7cc0cba61625284, type: 2}
   damage: 8
   range: 25
-  fireRate: 18
+  fireRate: 12
   magazineSize: 28
   reloadTime: 1.6
   usesPlasmaCapsules: 1

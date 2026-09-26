@@ -270,6 +270,12 @@ public class AimTarget : MonoBehaviour
 
         Vector3 max = rendererBounds.max;
 
+        // Skinned bounds are relative to the skeleton root when one is assigned,
+        // not the mesh object's transform. Using the mesh transform can put the
+        // cached body center below the feet of an otherwise correctly rendered alien.
+        Transform boundsRoot = renderer is SkinnedMeshRenderer skin && skin.rootBone != null
+            ? skin.rootBone : renderer.transform;
+
         // 8 corners of the renderer's LOCAL bounds.
         Vector3[] corners =
         {
@@ -285,10 +291,10 @@ public class AimTarget : MonoBehaviour
 
         foreach (Vector3 corner in corners)
         {
-            // Renderer local
+            // Bounds local (skeleton root for skinned renderers)
             //      ↓
             // World
-            Vector3 worldPoint = renderer.transform.TransformPoint(corner);
+            Vector3 worldPoint = boundsRoot.TransformPoint(corner);
 
             // World
             //      ↓

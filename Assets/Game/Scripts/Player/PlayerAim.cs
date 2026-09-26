@@ -761,13 +761,15 @@ public class PlayerAim : MonoBehaviour
 
             float screenDistanceSquared = screenDifference.sqrMagnitude;
 
-            if (screenDistanceSquared >= bestScreenDistanceSquared)
+            // Samples prefer upper body, then center/sides, then lower-body fallback.
+            // Screen framing ranks targets; it must not pull shot placement toward
+            // the feet when a more useful body point is also physically visible.
+            if (!foundVisiblePoint)
             {
-                continue;
+                bestVisiblePoint = samplePoint;
             }
 
-            bestVisiblePoint = samplePoint;
-            bestScreenDistanceSquared = screenDistanceSquared;
+            bestScreenDistanceSquared = Mathf.Min(bestScreenDistanceSquared, screenDistanceSquared);
 
             foundVisiblePoint = true;
         }
@@ -783,9 +785,9 @@ public class PlayerAim : MonoBehaviour
 
         Vector3 right = mainCamera != null ? mainCamera.transform.right : transform.right;
 
-        mobileVisibilitySamples[0] = center;
+        mobileVisibilitySamples[0] = center + Vector3.up * (radius * 0.60f);
 
-        mobileVisibilitySamples[1] = center + Vector3.up * (radius * 0.60f);
+        mobileVisibilitySamples[1] = center;
 
         mobileVisibilitySamples[2] =
             center + Vector3.up * (radius * 0.30f) + right * (radius * 0.45f);
