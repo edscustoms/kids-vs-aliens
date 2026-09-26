@@ -123,6 +123,7 @@ public sealed class FightingPlayModeTests
             }
             input.MoveInput(Vector2.zero);
             Object.Destroy(item); // Alternate-action fixture clone; the production asset is untouched.
+            Directory.CreateDirectory("Logs/CombatV2");
             File.WriteAllLines("Logs/CombatV2/play-review.txt",report);
         }
     }

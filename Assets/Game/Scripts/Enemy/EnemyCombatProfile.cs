@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>Only the new capabilities; existing motor/perception/melee tuning stays on its components.</summary>
-[CreateAssetMenu(menuName = "KVA/Enemies/Combat Profile")]
+[CreateAssetMenu(menuName = "Game/Enemies/Combat Profile")]
 public sealed class EnemyCombatProfile : ScriptableObject
 {
     [System.Serializable]

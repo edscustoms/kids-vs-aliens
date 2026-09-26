@@ -9,6 +9,20 @@ using UnityEngine;
 /// <summary>Explicit one-time migration, separate from ordinary repair so authored poses are never overwritten.</summary>
 public static class WeaponContractRefinement
 {
+    [MenuItem("Tools/Weapons/Verify Historical Geometry Migration")]
+    public static void VerifyHistoricalGeometryMigration()
+    {
+        string path = Evidence + "/geometry-before.json";
+        if (!File.Exists(path)) throw new System.InvalidOperationException("Historical migration evidence is unavailable. Normal regression does not require it.");
+        var before = JsonUtility.FromJson<GeometrySet>(File.ReadAllText(path));
+        foreach (var geometry in before.weapons)
+        {
+            var root = PrefabUtility.LoadPrefabContents(geometry.path);
+            try { AssertGeometry(geometry, Capture(root, geometry.path)); }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+    }
+
     public static readonly string[] WeaponPaths = {
         "Assets/Game/Prefabs/Weapons/PlasmaPistol/PlasmaPistol_Equipped.prefab",
         "Assets/Game/Prefabs/Weapons/PlasmaPistol/PlasmaPistol_Dropped.prefab",

@@ -46,6 +46,7 @@ public static class ProceduralUISetup
                 Entry(InterfaceIcon.GrenadeKnowledge, knowledge, null, "GrenadeHandling")
             };
             EditorUtility.SetDirty(catalog);
+            AssetDatabase.SaveAssetIfDirty(catalog);
         }
         var theme = AssetDatabase.LoadAssetAtPath<UITheme>(MenuUISetup.ThemePath);
         InterfaceFactory.UseTheme(theme);
@@ -60,7 +61,6 @@ public static class ProceduralUISetup
         CreatePrefab("ResourceBar", NeonShape.Button, new(420,52), theme);
         CreatePrefab("NeonDivider", NeonShape.Divider, new(500,4), theme);
         CreatePrefab("NeonBadge", NeonShape.Badge, new(36,36), theme);
-        AssetDatabase.SaveAssets();
         Debug.Log("PROCEDURAL UI ASSETS READY: shared SDF material, ten sprites, UI-only icon mappings, eleven reusable prefabs.");
     }
     private static void Folder(string path)

@@ -62,24 +62,22 @@ public sealed class BeamTransportTests
     }
 
     [Test]
-    public void Hoist_IsVerticalThenOneCurve_AndBeamStaysFixed()
+    public void Hoist_OneContinuousCurve_AfterMaterialization_AndBeamTracksHorizontally()
     {
         Vector3 origin = player.transform.position;
+        Assert.That(transport.TryBuildHoist(target, out var path), Is.True);
         Assert.That(transport.TryHoist(target), Is.True);
         Assert.That(capsule.enabled, Is.False);
         Assert.That(Time.timeScale, Is.EqualTo(1f));
-        transport.Advance(target.LiftDuration / 2);
-        Assert.That(player.transform.position.x, Is.EqualTo(origin.x));
-        Assert.That(player.transform.position.z, Is.EqualTo(origin.z));
-        transport.Advance(target.LiftDuration / 2);
-        Assert.That(player.transform.position.y, Is.GreaterThan(target.Landing.position.y));
-        transport.Advance(target.TransferDuration);
-        Assert.That(player.transform.position.x, Is.GreaterThan(origin.x).And.LessThan(target.Landing.position.x));
-        Assert.That(player.transform.position.y, Is.GreaterThan(target.Landing.position.y));
-        transport.Advance(target.LandingDuration);
-        transport.Advance(0.01f);
+        transport.Advance(.5f); // Complete stationary presentation prelude.
+        Assert.That(player.transform.position, Is.EqualTo(origin));
+        transport.Advance(path.Duration / 2);
+        Assert.That(Vector3.Distance(player.transform.position, path.Evaluate(.5f)), Is.LessThan(.003f));
+        Assert.That(player.transform.position.x, Is.GreaterThan(origin.x).And.LessThan(path.landing.x));
+        Assert.That(vfxObject.transform.position.x, Is.EqualTo(player.transform.position.x));
+        Assert.That(vfxObject.transform.position.y, Is.EqualTo(origin.y));
+        transport.Advance(path.Duration / 2 + .01f);
         Assert.That(player.transform.position, Is.EqualTo(target.Landing.position));
-        Assert.That(vfxObject.transform.position, Is.EqualTo(origin));
         Assert.That(capsule.enabled, Is.True);
         Assert.That(suspension.IsSuspended, Is.False);
     }

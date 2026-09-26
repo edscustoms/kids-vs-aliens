@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-extern "C" void KVA_PlayImpact(int style, float intensity)
+extern "C" void Kids_PlayImpact(int style, float intensity)
 {
     // Unity invokes this on its main thread. Retain one generator per style for bursts.
     if (@available(iOS 10.0, *))

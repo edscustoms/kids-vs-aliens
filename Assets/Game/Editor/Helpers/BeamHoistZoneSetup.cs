@@ -28,7 +28,7 @@ public static class BeamHoistZoneSetup
     public static void EnsureAssets()
     {
         if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null) return;
-        var shader = Shader.Find("KVA/Beam Hoist Zone");
+        var shader = Shader.Find("Game/Beam Hoist Zone");
         if (shader == null) throw new System.InvalidOperationException("Hoist zone shader missing.");
         var material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
         if (material == null) { material = new Material(shader); AssetDatabase.CreateAsset(material, MaterialPath); }

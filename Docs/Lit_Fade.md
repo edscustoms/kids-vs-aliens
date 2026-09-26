@@ -48,7 +48,7 @@ Local review evidence: `Logs/LitFade/Unity.log`, `result.txt`,
 
 The installed failing APK matched `Builds/Kids_VS_Aliens_V_0.0.24.apk`
 (SHA256 `D6750D9A19BA7D3929ED2BF53073BE8D97E07BFBE07EE4FE3D38AB82A1E8B885`).
-Its serialized `M_Weapon_Glass` referenced **KVA/Beam Lit Fade**, which exposes
+Its serialized `M_Weapon_Glass` referenced **Game/Beam Lit Fade**, which exposes
 `_BeamVisibility`, not `_Fade`. The APK did not contain Lit_Fade. The saved material
 had the same assignment; the excavator FBX's `12 - Default` material remap resolves
 to it, on renderer `12_-_Default` in `PF_Excavator_A`.

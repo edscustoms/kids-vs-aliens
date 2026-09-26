@@ -48,7 +48,9 @@ public sealed class GrenadeAnimationTests
         weapon = weaponObject.GetComponent<WeaponInstance>();
         Set(equipment, "equippedWeapon", weaponData);
         Set(equipment, "equippedWeaponInstance", weapon);
-        Set(shooter, "currentAmmo", 7); Set(shooter, "isReloading", true);
+        inventory.EnsureOwnedWeapon(weaponData);
+        shooter.EquipWeapon(weaponData, weapon.transform);
+        shooter.ActiveWeaponState.Restore(7, Time.time, 100);
         animation = player.AddComponent<PlayerAnimation>();
         Call(animation, "Awake"); Call(animation, "OnEnable");
         heldPrefab = new GameObject("Held fixture", typeof(HeldItemGrip));
@@ -111,8 +113,8 @@ public sealed class GrenadeAnimationTests
         Assert.That(weapon.gameObject.activeSelf, Is.True);
         Assert.That(equipment.EquippedWeaponInstance, Is.SameAs(weapon));
         Assert.That(equipment.EquippedWeapon, Is.SameAs(weaponData));
-        Assert.That(Get<int>(shooter, "currentAmmo"), Is.EqualTo(7));
-        Assert.That(Get<bool>(shooter, "isReloading"), Is.True);
+        Assert.That(shooter.CurrentAmmo, Is.EqualTo(7));
+        Assert.That(shooter.IsReloading, Is.True);
         Assert.That(Get<bool>(shooter, "fireBlocked"), Is.False);
         Call(grenades, "HandleAnimationEvent", CharacterAnimationEventId.GrenadeRelease);
         AdvanceThroughMarker();

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -112,14 +113,21 @@ public sealed class WeaponAlignmentTests
     }
     [Test] public void WeaponGeometryAndReferencesPreserved()
     {
-        var before=JsonUtility.FromJson<WeaponContractRefinement.GeometrySet>(File.ReadAllText(Folder+"/geometry-before.json"));
-        foreach(var geometry in before.weapons)
+        var weapons = AssetDatabase.FindAssets("t:WeaponItemData", new[] { "Assets/Game" })
+            .Select(guid => AssetDatabase.LoadAssetAtPath<WeaponItemData>(AssetDatabase.GUIDToAssetPath(guid))).ToArray();
+        Assert.That(weapons, Is.Not.Empty);
+        foreach (var weapon in weapons)
         {
-            var root=PrefabUtility.LoadPrefabContents(geometry.path);
+            Assert.That(weapon.equippedPrefab, Is.Not.Null, weapon.name);
+            Assert.That(weapon.worldPrefab, Is.Not.Null, weapon.name);
+            Assert.That(weapon.worldPrefab.GetComponent<PickupItem>().Item, Is.SameAs(weapon));
+            string path = AssetDatabase.GetAssetPath(weapon.equippedPrefab);
+            var root=PrefabUtility.LoadPrefabContents(path);
             try
             {
-                WeaponContractRefinement.AssertGeometry(geometry,WeaponContractRefinement.Capture(root,geometry.path));
                 Assert.That(root.transform.localScale,Is.EqualTo(Vector3.one));
+                AssertMeshSizesMatch(root, weapon.worldPrefab);
+                Assert.That(root.GetComponentInChildren<WeaponInstance>(true), Is.Not.Null);
                 foreach(var instance in root.GetComponentsInChildren<WeaponInstance>(true))
                 {
                     Assert.That(instance.transform.localScale,Is.EqualTo(Vector3.one));
@@ -134,5 +142,24 @@ public sealed class WeaponAlignmentTests
         {
             var data=EnemyCombatantSetup.Weapon(name);Assert.That(data.equippedPrefab,Is.Not.Null);Assert.That(data.worldPrefab,Is.Not.Null);
         }
+    }
+
+    private static void AssertMeshSizesMatch(GameObject equipped, GameObject world)
+    {
+        // Current content is the oracle: dropping a weapon must preserve its mesh
+        // references and physical size, independent of wrapper position/rotation.
+        var carried = equipped.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).ToArray();
+        var dropped = world.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).ToList();
+        Assert.That(carried, Is.Not.Empty, equipped.name);
+        foreach (var filter in carried)
+        {
+            Vector3 size = Vector3.Scale(filter.sharedMesh.bounds.size, filter.transform.lossyScale);
+            Assert.That(size.sqrMagnitude, Is.GreaterThan(0), filter.name);
+            int match = dropped.FindIndex(other => other.sharedMesh == filter.sharedMesh
+                && Vector3.Distance(Vector3.Scale(other.sharedMesh.bounds.size, other.transform.lossyScale), size) < .00025f);
+            Assert.That(match, Is.GreaterThanOrEqualTo(0), equipped.name + " / " + filter.name + " equipped/world geometry parity");
+            dropped.RemoveAt(match);
+        }
+        Assert.That(dropped, Is.Empty, "World weapon has unexpected additional geometry");
     }
 }

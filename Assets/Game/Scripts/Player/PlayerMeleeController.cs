@@ -198,7 +198,7 @@ public sealed class PlayerMeleeController : MonoBehaviour
 
     private void HandleEquipment(WeaponItemData presentation)
     {
-        // Grenades publish null presentation without unequipping the weapon.
+        // This notification represents actual equipment selection, never temporary hiding.
         if ((equipment != null && equipment.EquippedWeapon != null) || (grenades != null && grenades.IsGrenadeSelected))
             ClearSelection();
     }

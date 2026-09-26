@@ -55,8 +55,8 @@ root-coordinate migration and current authoring validation; older review results
   maximum 320 particles, size/lifetime/color ranges. Local vertical velocity is authored Down;
   `BeamTransportVFX.SetDirection` reverses it for Up.
 - `M_BeamCore` / `M_BeamMiddle`: existing material color/emission controls.
-- `M_BeamOuter`: violet volume and cyan edge-support tint/opacity, using `KVA/Beam Volume`.
-- `M_BeamSpiral` / `M_BeamMotes`: HDR emission via `KVA/Beam Energy`.
+- `M_BeamOuter`: violet volume and cyan edge-support tint/opacity, using `Game/Beam Volume`.
+- `M_BeamSpiral` / `M_BeamMotes`: HDR emission via `Game/Beam Energy`.
 - `EnergySpiral` → **LineRenderer**: color and width gradients. BeamEnergyField owns positions and
   overall width. One ribbon, shared materials, reused position/particle arrays, no realtime lights.
 

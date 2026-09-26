@@ -61,7 +61,7 @@ public sealed class UIAudioTests
         AudioService next = null;
         try
         {
-            yield return null;
+            yield return EditorTestFrame.Next();
             var pointer = new PointerEventData(eventSystem) { button = PointerEventData.InputButton.Left };
             foreach (var role in new[] { typeof(UIVirtualButton), typeof(UIVirtualJoystick), typeof(UIVirtualTouchZone), typeof(BeamHoistButton) })
             {
@@ -73,7 +73,7 @@ public sealed class UIAudioTests
                 // Simulate a hook already present on an older prefab or registered before its input role.
                 target.gameObject.AddComponent<UIAudioButton>();
                 ExecuteEvents.Execute(target.gameObject, pointer, ExecuteEvents.pointerClickHandler);
-                yield return null; yield return null;
+                yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
                 Assert.That(service.GetComponentsInChildren<AudioSource>().Any(s => s.clip != null), Is.False, role.Name + " remains silent even with an existing hook.");
             }
             var dynamicButton = new GameObject("Dynamic action", typeof(RectTransform)).AddComponent<Button>(); dynamicButton.transform.SetParent(hud.transform);
@@ -85,40 +85,40 @@ public sealed class UIAudioTests
             ExecuteEvents.Execute(dynamicButton.gameObject, pointer, ExecuteEvents.pointerDownHandler);
             ExecuteEvents.Execute(dynamicButton.gameObject, pointer, ExecuteEvents.pointerUpHandler);
             ExecuteEvents.Execute(dynamicButton.gameObject, pointer, ExecuteEvents.pointerClickHandler);
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That((presses, releases, clicks), Is.EqualTo((1, 1, 1)), "Gameplay callbacks remain intact.");
             Assert.That(service.GetComponentsInChildren<AudioSource>().Any(s => s.clip != null), Is.False, "Late-added gameplay input remains silent.");
 
             var inventory = hud.AddComponent<PlayerInventory>(); inventory.enabled = false;
             var slot = new GameObject("Quick slot").AddComponent<InventorySlotUI>(); slot.transform.SetParent(hud.transform); slot.Setup(inventory, 0);
             ExecuteEvents.Execute(slot.gameObject, pointer, ExecuteEvents.pointerClickHandler);
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(service.GetComponentsInChildren<AudioSource>().Count(s => s.clip == clickClip), Is.EqualTo(1), "Actual quick-slot selection still clicks.");
-            Clear(service); yield return null;
+            Clear(service); yield return EditorTestFrame.Next();
             var inventoryView = hud.AddComponent<InventoryManagementView>(); Set(inventoryView, "inventory", inventory);
             inventoryView.Select(0, false);
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(service.GetComponentsInChildren<AudioSource>().Count(s => s.clip == clickClip), Is.EqualTo(1), "Inventory selection still clicks.");
-            Clear(service); yield return null;
+            Clear(service); yield return EditorTestFrame.Next();
             Time.timeScale = 0; button.onClick.Invoke();
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(service.GetComponentsInChildren<AudioSource>().Count(s => s.clip == clickClip), Is.EqualTo(1), "Ordinary click works while paused.");
-            Clear(service); yield return null;
+            Clear(service); yield return EditorTestFrame.Next();
             // Generic audio listener runs BEFORE the semantic action.
             button.onClick.AddListener(() => UIAudioFeedback.ConfirmGameplay());
-            button.onClick.Invoke(); yield return null; yield return null;
+            button.onClick.Invoke(); yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(service.GetComponentsInChildren<AudioSource>().Count(s => s.clip == confirmClip), Is.EqualTo(1));
             Assert.That(service.GetComponentsInChildren<AudioSource>().Any(s => s.clip == clickClip), Is.False, "No ordinary click on final action.");
-            Clear(service); yield return null;
+            Clear(service); yield return EditorTestFrame.Next();
             button.interactable = false;
             ExecuteEvents.Execute(button.gameObject, new PointerEventData(eventSystem) { button = PointerEventData.InputButton.Left }, ExecuteEvents.pointerClickHandler);
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(service.GetComponentsInChildren<AudioSource>().Any(s => s.clip != null), Is.False, "Disabled buttons remain silent.");
             Object.Destroy(button.gameObject);
             // Semantic listener runs BEFORE the generic hook; hiding the button must not add a click.
             button = new GameObject("Final", typeof(RectTransform)).AddComponent<Button>();
             button.onClick.AddListener(() => { UIAudioFeedback.ConfirmGameplay(true); button.gameObject.SetActive(false); });
-            UIAudioButton.Ensure(button); yield return null;
+            UIAudioButton.Ensure(button); yield return EditorTestFrame.Next();
             var oldScene = service.gameObject.scene;
             button.onClick.Invoke();
             Assert.That(AudioService.Instance, Is.Null, "Old service relinquishes ownership for next scene.");
@@ -129,11 +129,11 @@ public sealed class UIAudioTests
             Assert.That(AudioService.Instance, Is.SameAs(next));
             Assert.That(service.GetComponentsInChildren<AudioSource>().Count(s => s.clip == confirmClip && s.isPlaying), Is.EqualTo(1), "Confirmation continues through scene unload.");
             Assert.That(service.GetComponentsInChildren<AudioSource>().Any(s => s.clip == clickClip), Is.False);
-            Clear(service); yield return null; yield return null;
+            Clear(service); yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(service == null, Is.True, "Retired pool cleans itself up after its UI tail finishes.");
             // Quit/reset-to-menu keep the ordinary click, not the melodic confirmation.
             UIAudioFeedback.Click(true); UIAudioFeedback.Click();
-            yield return null; yield return null;
+            yield return EditorTestFrame.Next(); yield return EditorTestFrame.Next();
             Assert.That(AudioService.Instance, Is.Null);
             Assert.That(next.GetComponentsInChildren<AudioSource>().Count(s => s.clip == clickClip && s.isPlaying), Is.EqualTo(1));
             Assert.That(next.GetComponentsInChildren<AudioSource>().Any(s => s.clip == confirmClip), Is.False);

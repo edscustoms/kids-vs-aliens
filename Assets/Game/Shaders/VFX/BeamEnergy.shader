@@ -1,4 +1,4 @@
-Shader "KVA/Beam Energy"
+Shader "Game/Beam Energy"
 {
     Properties
     {

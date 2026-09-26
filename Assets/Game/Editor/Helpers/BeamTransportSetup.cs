@@ -15,6 +15,7 @@ public static class BeamTransportSetup
 
     public static void ConfigureScene(PlayerCharacter player)
     {
+        FindLevelStart(player.gameObject.scene);
         CreateKnowledgeAssets();
         var controller = Component<BeamTransportController>(player.gameObject);
         var ability = Component<BeamHoistAbility>(player.gameObject);
@@ -23,13 +24,7 @@ public static class BeamTransportSetup
         Set(controller, "vfxPrefab", canonical);
         Scene scene = player.gameObject.scene;
         var roots = scene.GetRootGameObjects();
-        var sequences = roots.SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).ToArray();
-        if (sequences.Length > 1) throw new System.InvalidOperationException("Multiple level arrival owners; remove the unintended duplicate before repair.");
-        var candidates = sequences.Select(s => s.gameObject).Concat(roots
-            .SelectMany(r => r.GetComponentsInChildren<Transform>(true))
-            .Where(t => t.name == "LevelStart" || t.name == "PF_LevelStart").Select(t => t.gameObject)).Distinct().ToArray();
-        if (candidates.Length > 1) throw new System.InvalidOperationException("Multiple LevelStart objects; remove the unintended duplicate before repair.");
-        GameObject level = candidates.SingleOrDefault();
+        GameObject level = FindLevelStart(scene);
         if (level == null)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LevelStartPath);
@@ -57,6 +52,24 @@ public static class BeamTransportSetup
         foreach (var root in roots)
             foreach (var button in root.GetComponentsInChildren<BeamHoistButton>(true))
                 if (button.gameObject.activeSelf) { Undo.RecordObject(button.gameObject, "Retire HOIST button"); button.gameObject.SetActive(false); }
+    }
+
+    // Read-only preflight shared with the central command. Run before asset writes.
+    public static GameObject FindLevelStart(Scene scene)
+    {
+        var roots = scene.GetRootGameObjects();
+        var sequences = roots.SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).ToArray();
+        if (sequences.Length > 1) throw new System.InvalidOperationException("Multiple level arrival owners; remove the unintended duplicate before repair.");
+        var candidates = sequences.Select(s => s.gameObject).Concat(roots
+            .SelectMany(r => r.GetComponentsInChildren<Transform>(true))
+            .Where(t => t.name == "LevelStart" || t.name == "PF_LevelStart").Select(t => t.gameObject)).Distinct().ToArray();
+        if (candidates.Length > 1) throw new System.InvalidOperationException("Multiple LevelStart objects; remove the unintended duplicate before repair.");
+        var level = candidates.SingleOrDefault();
+        if (level == null && AssetDatabase.LoadAssetAtPath<GameObject>(LevelStartPath) == null)
+            throw new System.InvalidOperationException("Create PF_LevelStart with the authored LevelStart migration first.");
+        if (AssetDatabase.LoadAssetAtPath<BeamTransportVFX>(VfxPath) == null)
+            throw new System.InvalidOperationException("Canonical Beam VFX prefab is missing.");
+        return level;
     }
 
     private static void CreateKnowledgeAssets()

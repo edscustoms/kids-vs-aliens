@@ -30,6 +30,48 @@ public class PlayerInventory : MonoBehaviour
 
     private readonly List<ItemData> items = new();
     private readonly List<int> counts = new();
+    private readonly Dictionary<WeaponItemData, OwnedWeaponState> weaponStates = new();
+
+    public OwnedWeaponState GetWeaponState(WeaponItemData weapon)
+    {
+        if (weapon == null || !items.Contains(weapon)) return null;
+        if (!weaponStates.TryGetValue(weapon, out var state))
+            weaponStates.Add(weapon, state = new OwnedWeaponState(weapon));
+        return state;
+    }
+
+    public List<SavedWeaponState> CaptureWeaponStates()
+    {
+        var saved = new List<SavedWeaponState>();
+        foreach (var item in items)
+            if (item is WeaponItemData weapon)
+            {
+                var state = GetWeaponState(weapon);
+                state.FinishReload(Time.time);
+                saved.Add(new SavedWeaponState { weapon = RunContentCatalog.Instance.Id(weapon), rounds = state.Rounds,
+                    reloadRemaining = state.ReloadRemaining(Time.time), cooldownRemaining = Mathf.Max(0, state.NextFireTime - Time.time) });
+            }
+        return saved;
+    }
+
+    public void RestoreWeaponStates(IReadOnlyList<SavedWeaponState> saved, WeaponItemData legacySelected, int legacyAmmo)
+    {
+        // Old saves know only the selected magazine. Other owned weapons start full.
+        foreach (var item in items)
+            if (item is WeaponItemData weapon)
+            {
+                var state = GetWeaponState(weapon);
+                state.Restore(weapon == legacySelected ? legacyAmmo : weapon.magazineSize, Time.time);
+            }
+        if (saved == null) return;
+        foreach (var entry in saved)
+        {
+            if (entry == null || string.IsNullOrEmpty(entry.weapon)) continue;
+            var weapon = RunContentCatalog.Instance.Resolve<WeaponItemData>(entry.weapon);
+            var state = GetWeaponState(weapon);
+            if (state != null) state.Restore(entry.rounds, Time.time, entry.reloadRemaining, entry.cooldownRemaining);
+        }
+    }
     private StarterAssets.StarterAssetsInputs input;
 
     public IReadOnlyList<ItemData> Items => items;
@@ -96,6 +138,7 @@ public class PlayerInventory : MonoBehaviour
             }
         }
         if (nextItems.Count > maxSlots) throw new ArgumentException("Saved inventory does not fit this player.");
+        weaponStates.Clear();
         items.Clear(); items.AddRange(nextItems); counts.Clear(); counts.AddRange(nextCounts);
         quickSlots = (int[])assignments.Clone();
         for (int slot = 0; slot < quickSlots.Length; slot++)
@@ -116,6 +159,7 @@ public class PlayerInventory : MonoBehaviour
     }
     private void RemoveItem(int index)
     {
+        if (items[index] is WeaponItemData weapon) weaponStates.Remove(weapon);
         items.RemoveAt(index);
         counts.RemoveAt(index);
         for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] == index) quickSlots[i] = -1; else if (quickSlots[i] > index) quickSlots[i]--;

@@ -41,7 +41,7 @@ public sealed class CharacterDemoTests
                 Assert.That(style, Is.EqualTo(weapon.animationStyle));
                 WeaponInstance instance = actor.GetComponentInChildren<WeaponInstance>(true);
                 Assert.That(
-                    Vector3.Distance(instance.GripPoint.position, actor.WeaponSocket.position),
+                    Vector3.Distance(instance.GripPoint.position, actor.GetWeaponMount(weapon.animationStyle).position),
                     Is.LessThan(0.001f)
                 );
                 Object.DestroyImmediate(instance.gameObject);

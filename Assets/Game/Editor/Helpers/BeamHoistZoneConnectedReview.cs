@@ -38,9 +38,9 @@ public static class BeamHoistZoneConnectedReview
                 if (fixture.Item1 == "rectangle" && File.Exists("Logs/HoistConnected/approved-shader.txt"))
                 {
                     var oldShader = ShaderUtil.CreateShaderAsset(File.ReadAllText("Logs/HoistConnected/approved-shader.txt")
-                        .Replace("KVA/Beam Hoist Zone", "KVA/Review Original Hoist Zone").Replace("_Time.y", "0.0"));
+                        .Replace("Game/Beam Hoist Zone", "Game/Review Original Hoist Zone").Replace("_Time.y", "0.0"));
                     var currentShader = ShaderUtil.CreateShaderAsset(File.ReadAllText("Assets/Game/Shaders/VFX/BeamHoistZone.shader")
-                        .Replace("KVA/Beam Hoist Zone", "KVA/Review Current Hoist Zone").Replace("_Time.y", "0.0"));
+                        .Replace("Game/Beam Hoist Zone", "Game/Review Current Hoist Zone").Replace("_Time.y", "0.0"));
                     var renderer = effect.GetComponentInChildren<MeshRenderer>();
                     var material = new Material(renderer.sharedMaterial) { shader = oldShader };
                     var original = renderer.sharedMaterial;

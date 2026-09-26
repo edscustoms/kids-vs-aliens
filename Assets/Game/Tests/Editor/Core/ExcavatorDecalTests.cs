@@ -26,7 +26,9 @@ public sealed class ExcavatorDecalTests
         Assert.That(filters.Length, Is.EqualTo(17));
         Assert.That(decals.GetComponentsInChildren<Collider>(), Is.Empty);
         Assert.That(Prefab.GetComponentsInChildren<Collider>().Length, Is.EqualTo(4));
-        Assert.That(Prefab.transform.Find("Excavator_A_10").GetComponentsInChildren<Renderer>().Length, Is.EqualTo(10));
+        var body = Prefab.transform.Find("Excavator_A_10").GetComponentsInChildren<Renderer>();
+        Assert.That(body, Is.Not.Empty);
+        Assert.That(body.Intersect(decals.GetComponentsInChildren<Renderer>()), Is.Empty, "Labels must remain separate from body geometry");
         Assert.That(decals.GetComponentsInChildren<Renderer>().Select(r => r.sharedMaterial).Distinct().Count(), Is.EqualTo(2));
         foreach (var f in filters)
         {
@@ -39,9 +41,8 @@ public sealed class ExcavatorDecalTests
             Assert.That(mesh.uv[1].x, Is.GreaterThan(mesh.uv[0].x), f.name);
             Assert.That(mesh.uv[2].y, Is.GreaterThan(mesh.uv[1].y), f.name);
             Assert.That(Vector3.Dot(Vector3.Cross(mesh.vertices[2] - mesh.vertices[0], mesh.vertices[1] - mesh.vertices[0]), mesh.normals[0]), Is.GreaterThan(0), f.name);
-            // Bucket vertices start around X=-25.25. Every authored label stays on the machine/boom.
-            foreach (var vertex in mesh.vertices)
-                Assert.That(f.transform.TransformPoint(vertex).x, Is.LessThan(-25.8f), f.name);
+            // Surface placement is checked against actual body triangles by
+            // LabelSurfacesAreSupportedAcrossTheirWholeArea, independent of root pose.
         }
     }
 

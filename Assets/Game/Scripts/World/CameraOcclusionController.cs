@@ -142,6 +142,23 @@ public sealed class CameraOcclusionController : MonoBehaviour
     private readonly RaycastHit[] hitBuffer = new RaycastHit[HitBufferSize];
 
     public static CameraOcclusionController Active { get; private set; }
+    private static readonly List<CameraOcclusionController> enabledControllers = new();
+
+    // Most recently enabled owns the single gameplay view. Removing it falls back
+    // to the previous enabled owner; this also handles duplicate teardown.
+    private void OnEnable()
+    {
+        enabledControllers.Remove(this);
+        enabledControllers.Add(this);
+        Active = this;
+    }
+
+    private void ReleaseOwnership()
+    {
+        enabledControllers.Remove(this);
+        enabledControllers.RemoveAll(controller => controller == null || !controller.isActiveAndEnabled);
+        Active = enabledControllers.Count == 0 ? null : enabledControllers[enabledControllers.Count - 1];
+    }
 
     // =====================================================
     // LOGICAL OCCLUSION TARGET
@@ -182,8 +199,6 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
     private void Awake()
     {
-        Active = this;
-
         if (player != null)
         {
             playerController = player.GetComponent<CharacterController>();
@@ -196,14 +211,12 @@ public sealed class CameraOcclusionController : MonoBehaviour
     {
         RestoreEverything();
 
-        if (Active == this)
-        {
-            Active = null;
-        }
+        ReleaseOwnership();
     }
 
     private void OnDestroy()
     {
+        ReleaseOwnership();
         DestroyRuntimeMaterials();
     }
 

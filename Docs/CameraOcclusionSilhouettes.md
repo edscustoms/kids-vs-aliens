@@ -38,7 +38,7 @@ ConstructionSite Play Mode review used actual gameplay camera follow, normal con
 
 The final full PC-profile Play Mode review completed with exit code 0. The Mobile rendering-profile excavator review also completed with exit code 0 using D3D11. An earlier editor graphics run crashed during native shutdown after completing its captures; the final D3D11 run exited cleanly. This is Unity validation, not Android/device performance validation.
 
-Six focused Editor checks passed: unreadable mesh participation/property-block preservation/inactive exclusion, idempotent setup with ConstructionSite and GamePoc, group/decal fade coverage, zero-fade decal rendering, and shader compilation/render state. Results: `Logs/OcclusionSilhouetteFocusedTests.xml`. The broader decal suite has an unrelated stale authored-label-count expectation (10 versus the current prefab's 12); that assertion and the authored decals were left unchanged. The old group-cache fixed renderer-count assertion was changed to compare against the actual prefab renderer count.
+Six focused Editor checks passed: unreadable mesh participation/property-block preservation/inactive exclusion, idempotent setup with ConstructionSite and GamePoc, group/decal fade coverage, zero-fade decal rendering, and shader compilation/render state. Results: `Logs/OcclusionSilhouetteFocusedTests.xml`. At that validation date, the broader decal suite retained a stale body-renderer-count expectation (10 versus the current prefab's 12). Audit remediation now checks body/decal separation and real surface support without freezing body totals or world-space placement; authored decals remain unchanged. The old group-cache fixed renderer-count assertion was changed to compare against the actual prefab renderer count.
 
 ## Rendering cost
 
@@ -73,3 +73,20 @@ These are all active silhouettes in each frame, not isolated per-object draw cou
 3. Adjust line width/color/dash settings only if desired; leave gameplay sampling/fade settings intact.
 4. Run setup/repair twice and confirm one silhouette feature in each production renderer.
 5. Profile mask draws and GPU time on target hardware before setting a mobile performance budget.
+
+## Verified occlusion ownership and cache contract
+
+The gameplay camera/preset owners determine framing. `CameraOcclusionController` owns
+logical blocker fading and visibility semantics; the silhouette renderer feature consumes
+its state. Render-only camera feedback remains separate from gameplay aiming.
+
+Current detection uses ten context rays plus five Amy/body samples, with authored
+thresholds and logical groups. Collider membership, source materials and group height
+are cached at startup. Runtime-added/reparented blockers are currently unsupported;
+there is no dynamic membership refresh. Material copies are created lazily, reused and
+cleaned up on destruction; the approved visual behavior is retained.
+
+The most recently enabled controller owns `Active`. Disabling removes it; reenabling
+restores ownership; destroying a newer duplicate falls back to the previous enabled
+survivor. Normal production uses one controller. Disable restores its faded materials;
+actual render appearance still requires graphics/device verification.

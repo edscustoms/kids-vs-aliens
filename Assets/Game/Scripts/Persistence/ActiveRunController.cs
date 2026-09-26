@@ -107,7 +107,7 @@ public sealed class ActiveRunController : MonoBehaviour
                     verticalVelocity = beam != null && beam.IsTransporting ? 0 : movement.RunVerticalVelocity,
                     character = catalog.Id(GetComponent<PlayerCharacter>().CurrentCharacterPrefab),
                     equipped = catalog.Id(equipment.EquippedWeapon), selected = catalog.Id(inventory.SelectedItem),
-                    ammo = GetComponent<PlayerShooter>().CurrentAmmo,
+                    ammo = GetComponent<PlayerShooter>().CurrentAmmo, weapons = inventory.CaptureWeaponStates(),
                     items = inventory.Items.Select(item => catalog.Id(item)).ToList(), itemCounts = inventory.CaptureCounts(), quickSlots = inventory.CaptureQuickSlots()
                 }, world = snapshots.Values.ToList()
             };
@@ -153,11 +153,12 @@ public sealed class ActiveRunController : MonoBehaviour
         var weapon = catalog.Resolve<WeaponItemData>(player.equipped);
         // Compatibility for pre-ownership snapshots containing an equipped ghost weapon.
         if (!inventory.EnsureOwnedWeapon(weapon)) throw new InvalidOperationException("Saved equipped weapon does not fit the backpack.");
+        inventory.RestoreWeaponStates(player.weapons, weapon, player.ammo);
         if (weapon != null) equipment.EquipWeapon(weapon); else equipment.UnequipWeapon();
         var selected = catalog.Resolve<ItemData>(player.selected);
         if (selected is GrenadeItemData grenade) GetComponent<PlayerGrenadeController>().RestoreRunSelection(grenade);
         else if (selected is UnarmedCombatItemData melee) GetComponent<PlayerMeleeController>().RestoreRunSelection(melee);
-        GetComponent<PlayerShooter>().RestoreRunAmmo(player.ammo);
+
     }
     public bool RestartFromBeginning()
     {

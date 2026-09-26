@@ -1,4 +1,4 @@
-Shader "KVA/Beam Hoist Zone"
+Shader "Game/Beam Hoist Zone"
 {
     Properties
     {

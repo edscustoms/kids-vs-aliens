@@ -67,8 +67,8 @@ public class PlayerAnimation : MonoBehaviour
         }
         if (playerEquipment != null)
         {
-            playerEquipment.EquippedWeaponChanged += OnEquippedWeaponChanged;
-            OnEquippedWeaponChanged(playerEquipment.EquippedWeapon);
+            playerEquipment.WeaponPresentationChanged += OnWeaponPresentationChanged;
+            OnWeaponPresentationChanged(playerEquipment.PresentedWeapon);
         }
     }
 
@@ -81,7 +81,7 @@ public class PlayerAnimation : MonoBehaviour
             playerCharacter.CharacterChanged -= OnCharacterChanged;
 
         if (playerEquipment != null)
-            playerEquipment.EquippedWeaponChanged -= OnEquippedWeaponChanged;
+            playerEquipment.WeaponPresentationChanged -= OnWeaponPresentationChanged;
         InterruptMarkedAction();
         DetachRelay();
         driver = null;
@@ -103,7 +103,7 @@ public class PlayerAnimation : MonoBehaviour
         driver?.SetFloating(floating);
     }
 
-    private void OnEquippedWeaponChanged(WeaponItemData weapon)
+    private void OnWeaponPresentationChanged(WeaponItemData weapon)
     {
         currentWeaponStyle = weapon != null ? weapon.animationStyle : WeaponAnimationStyle.Unarmed;
 

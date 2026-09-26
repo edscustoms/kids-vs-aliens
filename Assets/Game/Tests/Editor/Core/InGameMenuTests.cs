@@ -9,11 +9,21 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using UnityEngine.TestTools;
 
 [TestFixture, Category("Core")]
 public sealed class InGameMenuTests
 {
+    private static void ClickVisible(GameObject target)
+    {
+        Assert.That(target.activeInHierarchy, Is.True);
+        var button = target.GetComponent<Button>();
+        Assert.That(button != null && button.IsInteractable(), Is.True);
+        button.OnPointerClick(new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left });
+    }
+
     [Test]
     public void NavigationKeepsOneLease_ResumeKeepsOtherOwners_AndTeardownClosesScreens()
     {
@@ -104,7 +114,14 @@ public sealed class InGameMenuTests
     [UnityTest]
     public IEnumerator ActualScenes_CameraOutputChangesWhilePaused_AndOnlyResumeUnblocksInput()
     {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         yield return new EnterPlayMode();
+        yield return VerifyActualScenes();
+        yield return new ExitPlayMode();
+    }
+
+    private static IEnumerator VerifyActualScenes()
+    {
         bool hadPreference = PlayerPrefs.HasKey(GameplayCameraSettings.PreferenceKey);
         int saved = PlayerPrefs.GetInt(GameplayCameraSettings.PreferenceKey);
         try
@@ -133,11 +150,11 @@ public sealed class InGameMenuTests
                         "Assets/Game/Scenes/" + name + ".unity",
                         new LoadSceneParameters(LoadSceneMode.Single)
                     );
-                    yield return null;
-                    yield return null;
+                    yield return EditorTestFrame.Next();
+                    yield return EditorTestFrame.Next();
                 }
                 finally { SceneManager.sceneLoaded -= observeStartup; }
-                if (name == "ConstructionSite") Assert.That(arrivalOwnedBeforeStart, Is.True);
+                if (name == "ConstructionSite") Assert.That(arrivalOwnedBeforeStart, Is.True, "Fresh arrival must own input before Start");
                 var menu = Object.FindAnyObjectByType<InGameMenuController>();
                 var owner = Object.FindAnyObjectByType<GameplaySuspensionController>();
                 var input = owner.GetComponent<StarterAssetsInputs>();
@@ -147,10 +164,10 @@ public sealed class InGameMenuTests
                 var camera = Camera.main;
                 Assert.That(menu, Is.Not.Null);
                 Assert.That(Time.timeScale, Is.EqualTo(1));
-                presentation
-                    .transform.Find("SafeArea/PauseButton")
-                    .GetComponent<UIButton>()
-                    .OnClick.Invoke();
+                ActiveRunController.Instance?.SendMessage("OnApplicationFocus", true);
+                var existingMenu = Object.FindAnyObjectByType<InGameMenuController>();
+                if (existingMenu.IsOpen) existingMenu.ResumeGame();
+                ClickVisible(presentation.transform.Find("SafeArea/PauseButton").gameObject);
                 Assert.That(menu.IsOpen && input.GameplayInputBlocked, Is.True);
                 Assert.That(
                     presentation.transform.Find("SuspensionInputBlocker").gameObject.activeSelf,
@@ -159,21 +176,19 @@ public sealed class InGameMenuTests
                 Assert.That(Time.timeScale, Is.Zero);
                 input.PauseInput();
                 Assert.That(menu.IsOpen, Is.True);
-                menu.transform.Find("Screen_InGameMenu/OptionsButton")
-                    .GetComponent<UIButton>()
-                    .OnClick.Invoke();
+                ClickVisible(menu.transform.Find("Screen_InGameMenu/PausePresentation/PausePanel/Settings").gameObject);
                 var options = menu.transform.Find("Screen_InGameOptions");
                 var label = options.Find("CurrentCameraModeLabel").GetComponent<TMP_Text>();
                 var previous = options.Find("PreviousCameraButton").GetComponent<UIButton>();
                 var next = options.Find("NextCameraButton").GetComponent<UIButton>();
                 GameplayCameraSettings.Mode = GameplayCameraMode.Action;
-                yield return null;
-                yield return null;
+                yield return EditorTestFrame.Next();
+                yield return EditorTestFrame.Next();
                 Vector3 actionPosition = camera.transform.position;
                 Vector3 playerPosition = owner.transform.position;
-                previous.OnClick.Invoke();
-                yield return null;
-                yield return null;
+                ClickVisible(previous.gameObject);
+                yield return EditorTestFrame.Next();
+                yield return EditorTestFrame.Next();
                 Assert.That(GameplayCameraSettings.Mode, Is.EqualTo(GameplayCameraMode.Isometric));
                 Assert.That(label.text, Is.EqualTo("ISOMETRIC"));
                 Assert.That(
@@ -185,20 +200,21 @@ public sealed class InGameMenuTests
                     Vector3.Distance(actionPosition, camera.transform.position),
                     Is.GreaterThan(1)
                 );
-                next.OnClick.Invoke();
-                yield return null;
-                yield return null;
+                ClickVisible(next.gameObject);
+                yield return EditorTestFrame.Next();
+                yield return EditorTestFrame.Next();
                 Assert.That(GameplayCameraSettings.Mode, Is.EqualTo(GameplayCameraMode.Action));
                 Assert.That(camera.orthographic, Is.False);
-                next.OnClick.Invoke();
-                yield return null;
-                yield return null;
+                ClickVisible(next.gameObject);
+                yield return EditorTestFrame.Next();
+                yield return EditorTestFrame.Next();
                 Assert.That(GameplayCameraSettings.Mode, Is.EqualTo(GameplayCameraMode.Tactical));
                 Assert.That(label.text, Is.EqualTo("TACTICAL"));
-                Assert.That(
-                    Vector3.Distance(actionPosition, camera.transform.position),
-                    Is.GreaterThan(1)
-                );
+                // Current authored Action and Tactical offsets may coincide. Verify
+                // the requested output lens rather than requiring an arbitrary move.
+                var profile = AssetDatabase.LoadAssetAtPath<GameplayCameraProfile>("Assets/Game/Data/Camera/GameplayCameraProfile.asset");
+                Assert.That(camera.fieldOfView, Is.EqualTo(profile.tactical.fieldOfView).Within(.01f));
+                Assert.That(camera.orthographic, Is.False);
                 Assert.That(
                     PlayerPrefs.GetInt(GameplayCameraSettings.PreferenceKey),
                     Is.EqualTo((int)GameplayCameraMode.Tactical)
@@ -209,15 +225,13 @@ public sealed class InGameMenuTests
                 Invoke(input, "OnApplicationFocus", false);
                 Invoke(input, "OnApplicationFocus", true);
                 Assert.That(menu.IsOpen && input.GameplayInputBlocked, Is.True);
-                options.Find("BackButton").GetComponent<UIButton>().OnClick.Invoke();
+                ClickVisible(options.Find("BackButton").gameObject);
                 Assert.That(Time.timeScale, Is.Zero);
                 Assert.That(
                     menu.transform.Find("Screen_InGameMenu").gameObject.activeSelf,
                     Is.True
                 );
-                menu.transform.Find("Screen_InGameMenu/ResumeButton")
-                    .GetComponent<UIButton>()
-                    .OnClick.Invoke();
+                ClickVisible(menu.transform.Find("Screen_InGameMenu/PausePresentation/PausePanel/Resume").gameObject);
                 Assert.That(Time.timeScale, Is.EqualTo(1));
                 Assert.That(menu.IsOpen, Is.False);
                 Assert.That(owner.IsSuspended, Is.EqualTo(arrivalActive));
@@ -229,7 +243,7 @@ public sealed class InGameMenuTests
                 // Resuming a menu cannot release a still-active arrival's lease.
                 float deadline = Time.realtimeSinceStartup + 10f;
                 while (beamTransport != null && beamTransport.IsTransporting && Time.realtimeSinceStartup < deadline)
-                    yield return null;
+                    yield return EditorTestFrame.Next();
                 Assert.That(owner.IsSuspended || input.GameplayInputBlocked, Is.False);
             }
         }
@@ -242,7 +256,11 @@ public sealed class InGameMenuTests
             PlayerPrefs.Save();
             Time.timeScale = 1;
         }
-        yield return new ExitPlayMode();
+    }
+
+    [UnityTearDown] public IEnumerator ExitAfterFailure()
+    {
+        if (Application.isPlaying) yield return new ExitPlayMode();
     }
 
     private static T[] InScene<T>(Scene scene)

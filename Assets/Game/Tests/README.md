@@ -1,98 +1,57 @@
-# 🧪 Core Regression Tests
+# Regression tests
 
-These tests intentionally protect **only reusable core contracts**.
+Run from the repository root in Windows PowerShell, with Unity closed:
 
-They are not a goal by themselves. If a test does not protect an important framework behavior, do not add it.
-
-## Run
-
-In Unity:
-
-```text
-Window
-→ General
-→ Test Runner
-→ EditMode
-→ Run All
+```powershell
+# Quick: CombatHitResolverTests, VfxPoolTests, PlayerLoadoutStateTests, OwnedWeaponStateTests
+.\Tools\Run-UnityTests.ps1 -Suite Quick -ReuseCopy
+# Partial Core category (includes scene/render checks; not the full suite)
+.\Tools\Run-UnityCoreTests.ps1
+# Full regression: every Editor test, with graphics enabled
+.\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy
+# Focused selection (overrides the suite filter)
+.\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy -TestFilter 'AuditContinueTests;AuditLifecycleTests;RepairPreservationTests'
 ```
 
-All current automated tests are tagged:
+The runner copies current tracked and untracked, nonignored Assets/Packages/ProjectSettings
+into `Logs/RepositoryAuditRemediation/TestProject`. No hard links are used. The first run
+without `-ReuseCopy` also copies the import cache, excluding Bee, ShaderCache and PramData.
+`-ReuseCopy` refreshes source in the disposable copy and retains its cache; it also works
+on first use (imports may take longer). Do not author work in this disposable project.
+Move the copy aside to start with a fresh cache. A clean checkout needs the matching
+Unity version installed and a valid license; it does not need historical migration logs.
+The runner never runs setup/migration entry points before tests.
 
-```text
-Core
-```
+Results and Unity logs have explicit absolute paths printed at launch, under
+`Logs/RepositoryAuditRemediation/<ResultName>-tests.xml` and `-unity.log`.
+Use `-ResultName MyRun` for a predictable name; existing XML is never reused.
+`KIDS_TEST_SAVE_DIRECTORY` points to a separate `<ResultName>-saves` directory.
+The copied project uses a separate company/product identity for Editor PlayerPrefs.
+A missing result, failed test, zero tests or nonzero Unity exit is a runner failure.
+Graphics are enabled in every suite: **do not add `-nographics`** to render/URP tests.
 
-So the suite can also be filtered by the `Core` category.
+In an open Editor: Window > General > Test Runner > EditMode > Run All runs full regression.
+Core is only one category; RunInterface, LoadoutIntegration, ProceduralUI, AuditRemediation
+and uncategorized fixtures also matter. Set `KIDS_TEST_SAVE_DIRECTORY` before launching
+an Editor used for tests. Prefer the isolated runner when checking all scene flows.
+`Tools/Compile-UnityScripts.ps1` is a separate Roslyn check, not proof of Unity import,
+rendering, runtime lifecycle or full test success.
 
-## Current flows
+Authoring/import tests use disposable asset copies or preview scenes and clean them up.
+The normal weapon geometry/reference test reads current prefabs and data. Historical
+before/after geometry comparison is explicitly `Tools > Weapons > Verify Historical
+Geometry Migration`; it needs the original migration evidence in ignored Logs and is
+not a clean-checkout test. Never rerun a mutating migration to create a test oracle.
 
-### 1. Loadout state
-Protects:
-- selected character + weapon initialization
-- explicit `NONE` weapon behavior
-- clearing the loadout so direct-scene defaults can work again
+## Device and manual acceptance
 
-### 2. Combat hit resolution
-Protects:
-- child collider → parent `IDamageable`
-- damage delivery
-- delayed `IHitReaction` contract
-- unsupported colliders doing nothing safely
+Editor tests do not prove subjective movement, aim, camera, grenade or combat feel,
+mobile GPU/memory cost, touch ergonomics, OS termination, native haptics or platform builds.
+Check Android touch/pause/Continue/background/lock/termination; preserve visible plasma
+travel with simultaneous damage/reaction/impact; inspect fades/silhouettes after reenable.
+The Pixel UI/rendering issue remains separate. Profile Realme X2 saves and Beam first
+reveal later. Build and verify the renamed iOS native haptics on a Mac.
 
-### 3. VFX pooling
-Protects:
-- release → reuse
-- separate prefabs stay in separate pools
-
-## Knowledge / feedback / suspension additions (5 September 2026)
-
-Core now also covers feedback dedupe/cooldown/priority, deferred Knowledge Book
-acquisition, independent manual/modal pause ownership, teardown and fresh input,
-grenade selection/charge preservation during suspension, legacy melee pause safety,
-shared menu framing, Amy/Granny demo attachments and idempotent setup/URP renderer
-assignment. See [presentation verification](../Docs/07-GAMEPLAY-PRESENTATION.md).
-
-The repository `Tools/Run-UnityCoreTests.ps1` runs this suite in the **existing**
-project when Unity is closed. Use the open Editor's Test Runner otherwise. The
-compile helper is a separate Roslyn check against this project's Unity references;
-neither helper creates another Unity project or rebuilds Library.
-
-Beam Transport V1 adds arrival ownership before the first Update, vertical-first
-hoisting, physics rejection, Knowledge gating, nested transport/pause leases,
-actual authored particle direction and ConstructionSite/GamePoc scene repair
-coverage. See [beam transport](../Docs/12-BEAM-TRANSPORT.md).
-
-## What we deliberately DO NOT automate
-
-Do not add automated tests for subjective game feel:
-
-- movement feels good
-- camera feels good
-- aim assist feels right
-- animations look right
-- enemy difficulty
-- grenade feel
-- level design
-
-Those belong in manual gameplay / device testing.
-
-## Maintenance rule
-
-Add or change a test only when:
-
-1. a tested core contract intentionally changes,
-2. a new reusable framework contract is introduced, or
-3. a real regression happens and is important enough that we never want it again.
-
-Do **not** create a test just because a new class exists.
-
-## Why these tests live under `Editor`
-
-The project currently compiles normal gameplay scripts into Unity's predefined `Assembly-CSharp` assembly.
-
-Keeping these tests inside an `Editor` folder lets them:
-- access the existing gameplay code without restructuring the whole project into asmdefs,
-- use NUnit through Unity's Editor test environment,
-- stay out of normal player builds.
-
-Do not add a test `.asmdef` here unless the runtime project is intentionally migrated to assembly definitions too.
+Tests stay in Editor folders to use the existing predefined Assembly-CSharp assemblies;
+no assembly reorganization is required. Add tests for concrete supported contracts and
+real regressions, not implementation trivia or fixed content totals.

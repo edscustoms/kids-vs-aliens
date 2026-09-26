@@ -9,18 +9,24 @@ public static class CameraFeedbackSetup
 {
     public static CameraFeedbackController ConfigureScene(PlayerCharacter player)
     {
-        var cameras = player.gameObject.scene.GetRootGameObjects()
-            .SelectMany(root => root.GetComponentsInChildren<Camera>(true))
-            .Where(camera => camera.CompareTag("MainCamera") && camera.GetComponent<CinemachineBrain>() != null).ToArray();
-        if (cameras.Length != 1)
-            throw new System.InvalidOperationException("Camera feedback requires one MainCamera with the existing CinemachineBrain.");
-        var controller = cameras[0].GetComponent<CameraFeedbackController>()
-            ?? Undo.AddComponent<CameraFeedbackController>(cameras[0].gameObject);
+        var camera = FindGameplayCamera(player);
+        var controller = camera.GetComponent<CameraFeedbackController>()
+            ?? Undo.AddComponent<CameraFeedbackController>(camera.gameObject);
         Undo.RecordObject(controller, "Wire local camera feedback");
         controller.Configure(player.GetComponent<ThirdPersonController>(), player.GetComponent<GameplaySuspensionController>());
         EditorUtility.SetDirty(controller);
         PrefabUtility.RecordPrefabInstancePropertyModifications(controller);
         return controller;
+    }
+
+    public static Camera FindGameplayCamera(PlayerCharacter player)
+    {
+        var cameras = player.gameObject.scene.GetRootGameObjects()
+            .SelectMany(root => root.GetComponentsInChildren<Camera>(true))
+            .Where(camera => camera.CompareTag("MainCamera") && camera.GetComponent<CinemachineBrain>() != null).ToArray();
+        if (cameras.Length != 1)
+            throw new System.InvalidOperationException("Camera feedback requires one MainCamera with the existing CinemachineBrain.");
+        return cameras[0];
     }
 
     // Feature-only migration; do not re-author unrelated scene content.

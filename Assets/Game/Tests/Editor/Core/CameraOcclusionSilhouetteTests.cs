@@ -54,12 +54,13 @@ public sealed class CameraOcclusionSilhouetteTests
     public void SharedRendererSetupIsIdempotentForGameplayScenes(string scenePath)
     {
         var scene=EditorSceneManager.OpenPreviewScene(scenePath);
+        using var fixture = new DisposableTestAssets();
         try
         {
-            CameraOcclusionSilhouetteSetup.Ensure();
-            var paths=new[]{"Assets/Game/Settings/Rendering/PC_Renderer.asset","Assets/Game/Settings/Rendering/Mobile_Renderer.asset"};
+            var paths=new[]{"PC", "Mobile"}.Select(name => fixture.Copy($"Assets/Game/Settings/Rendering/{name}_Renderer.asset")).ToArray();
+            foreach (var path in paths) CameraOcclusionSilhouetteSetup.Ensure(AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path));
             var before=paths.Select(p=>AssetDatabase.LoadAssetAtPath<UniversalRendererData>(p).rendererFeatures.ToArray()).ToArray();
-            CameraOcclusionSilhouetteSetup.Ensure();
+            foreach (var path in paths) CameraOcclusionSilhouetteSetup.Ensure(AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path));
             for(int i=0;i<paths.Length;i++)
             {
                 var data=AssetDatabase.LoadAssetAtPath<UniversalRendererData>(paths[i]);

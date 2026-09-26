@@ -23,10 +23,15 @@ public class PlayerEquipment : MonoBehaviour
     public bool IsEquippedWeaponVisible =>
         equippedWeaponInstance != null && equippedWeaponInstance.gameObject.activeSelf;
 
+    /// <summary>Actual selection changes only; null means unequipped.</summary>
     public event Action<WeaponItemData> EquippedWeaponChanged;
+    /// <summary>Animation/style presentation only; null means visually unarmed.</summary>
+    public event Action<WeaponItemData> WeaponPresentationChanged;
+    public WeaponItemData PresentedWeapon => IsEquippedWeaponVisible ? equippedWeapon : null;
 
     private void Awake()
     {
+        if (playerShooter == null) playerShooter = GetComponent<PlayerShooter>();
         if (playerCharacter == null)
         {
             playerCharacter = GetComponent<PlayerCharacter>();
@@ -74,6 +79,16 @@ public class PlayerEquipment : MonoBehaviour
             return;
         }
 
+        var inventory = GetComponent<PlayerInventory>();
+        if (inventory == null || !inventory.EnsureOwnedWeapon(weapon)) return;
+        if (equippedWeapon == weapon && equippedWeaponInstance != null)
+        {
+            // Rebind after an explicit inventory restore without recreating the
+            // mounted representation or changing an existing owned record.
+            playerShooter.EquipWeapon(weapon, equippedWeaponInstance.Muzzle);
+            if (!IsEquippedWeaponVisible) SetEquippedWeaponPresentationVisible(true);
+            return;
+        }
         ClearEquippedWeapon();
 
         WeaponInstance newInstance = WeaponInstance.SpawnAttached(
@@ -83,7 +98,7 @@ public class PlayerEquipment : MonoBehaviour
 
         if (newInstance == null)
         {
-            EquippedWeaponChanged?.Invoke(null);
+            PublishEquipmentChange();
             return;
         }
 
@@ -93,7 +108,7 @@ public class PlayerEquipment : MonoBehaviour
 
             Destroy(newInstance.gameObject);
 
-            EquippedWeaponChanged?.Invoke(null);
+            PublishEquipmentChange();
             return;
         }
 
@@ -103,14 +118,15 @@ public class PlayerEquipment : MonoBehaviour
 
         playerShooter.EquipWeapon(weapon, equippedWeaponInstance.Muzzle);
 
-        EquippedWeaponChanged?.Invoke(equippedWeapon);
+        PublishEquipmentChange();
     }
 
     public void UnequipWeapon()
     {
+        if (equippedWeapon == null && equippedWeaponInstance == null) return;
         ClearEquippedWeapon();
 
-        EquippedWeaponChanged?.Invoke(null);
+        PublishEquipmentChange();
     }
 
     public void SetEquippedWeaponVisible(bool visible)
@@ -121,27 +137,22 @@ public class PlayerEquipment : MonoBehaviour
         equippedWeaponInstance.gameObject.SetActive(visible);
     }
 
-    /// <summary>
-    /// Temporarily changes only the PRESENTED weapon state.
-    ///
-    /// The actual equipped weapon and WeaponInstance stay intact, so ammo,
-    /// reload state and the existing shooter state are preserved.
-    ///
-    /// Passing false publishes null through EquippedWeaponChanged so the
-    /// existing character animation path can fall back to Unarmed.
-    /// Passing true publishes the real equipped weapon again so its
-    /// animation style is restored.
-    /// </summary>
+    /// <summary>Changes appearance only, preserving selected owned state and its timers.</summary>
     public void SetEquippedWeaponPresentationVisible(bool visible)
     {
         SetEquippedWeaponVisible(visible);
+        WeaponPresentationChanged?.Invoke(PresentedWeapon);
+    }
 
-        EquippedWeaponChanged?.Invoke(visible ? equippedWeapon : null);
+    private void PublishEquipmentChange()
+    {
+        EquippedWeaponChanged?.Invoke(equippedWeapon);
+        WeaponPresentationChanged?.Invoke(PresentedWeapon);
     }
 
     private void ClearEquippedWeapon()
     {
-        playerShooter.UnequipWeapon();
+        playerShooter?.UnequipWeapon();
 
         if (equippedWeaponInstance != null)
         {

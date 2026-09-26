@@ -75,11 +75,12 @@ public sealed class HapticTests
         typeof(PlayerAim).GetProperty("HasAimPoint").SetValue(aim, true);
         var weapon = Object.Instantiate(Weapon(weaponName)); owned.Add(weapon);
         weapon.requiredSkill = null; // Other cases explicitly exercise the Knowledge gate.
+        root.AddComponent<PlayerInventory>().EnsureOwnedWeapon(weapon);
         shooter.EquipWeapon(weapon, muzzle);
         return shooter;
     }
 
-    [Test] public void AcceptedPistolShot_OneConfiguredPulse_OneRound_AndSameDamage()
+    [Test] public void AcceptedPistolShot_OneConfiguredPulse_OneRound_AndDeferredDamage()
     {
         var shooter = Shooter("Pistol", out var input, out _);
         var target = new GameObject("Target", typeof(BoxCollider), typeof(DamageableProbe));
@@ -91,8 +92,7 @@ public sealed class HapticTests
         CollectionAssert.AreEqual(new[] { Weapon("Pistol").fireCameraFeedback }, cameraRequests);
         Assert.That(shooter.CurrentAmmo, Is.EqualTo(before - 1));
         var damage = target.GetComponent<DamageableProbe>();
-        Assert.That(damage.ReceiveCount, Is.EqualTo(1));
-        Assert.That(damage.LastHit.Damage, Is.EqualTo(Weapon("Pistol").damage));
+        Assert.That(damage.ReceiveCount, Is.Zero, "Missing cosmetic prefab still preserves travel delay.");
         Invoke(shooter, "Update");
         Assert.That(recorder.pulses.Count, Is.EqualTo(1), "Held semi-auto input is not another bullet.");
     }
@@ -111,9 +111,9 @@ public sealed class HapticTests
         input.shoot = true;
         switch (reason)
         {
-            case "cooldown": Set(shooter, "nextFireTime", float.MaxValue); break;
+            case "cooldown": shooter.ActiveWeaponState.Restore(shooter.CurrentAmmo, Time.time, cooldownRemaining: 1000); break;
             case "empty": shooter.RestoreRunAmmo(0); break;
-            case "reloading": Set(shooter, "isReloading", true); break;
+            case "reloading": shooter.ActiveWeaponState.Restore(shooter.CurrentAmmo, Time.time, reloadRemaining: 1000); break;
             case "blocked": shooter.SetFireBlocked(true); break;
             case "no aim": typeof(PlayerAim).GetProperty("HasAimPoint").SetValue(aim, false); break;
             case "no muzzle": Set(shooter, "muzzle", null); break;
@@ -137,7 +137,7 @@ public sealed class HapticTests
         input.shoot = true; Invoke(shooter, "Update");
         Assert.That(recorder.pulses, Is.Empty);
         Assert.That(shooter.CurrentAmmo, Is.EqualTo(before - 1));
-        Assert.That(wall.GetComponent<DamageableProbe>().ReceiveCount, Is.EqualTo(1));
+        Assert.That(wall.GetComponent<DamageableProbe>().ReceiveCount, Is.Zero, "Obstructed impacts also wait for travel.");
         Assert.That(cameraRequests, Is.Empty);
     }
 
@@ -148,7 +148,7 @@ public sealed class HapticTests
         input.shoot = true;
         for (int i = 0; i < 5; i++)
         {
-            Set(shooter, "nextFireTime", float.NegativeInfinity);
+            shooter.ActiveWeaponState.Restore(shooter.CurrentAmmo, Time.time);
             Invoke(shooter, "Update");
             Assert.That(recorder.pulses.Count, Is.EqualTo(i + 1));
             Assert.That(recorder.pulses[i], Is.SameAs(Profile("RifleFire")));
@@ -272,7 +272,7 @@ public sealed class HapticTests
             actor.GetComponent<EnemyBrain>().enabled = false;
             Set(actor.GetComponent<EnemyEquipment>(), "startingWeapon", Weapon(name));
             actor.transform.SetParent(null);
-            yield return null;
+            yield return EditorTestFrame.Next();
             var equipment = actor.GetComponent<EnemyEquipment>();
             var presentation = actor.GetComponent<EnemyCombatPresentation>();
             var ranged = actor.GetComponent<EnemyRangedAttack>();

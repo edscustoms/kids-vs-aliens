@@ -65,13 +65,13 @@ internal sealed class AndroidHapticBackend : IHapticBackend, System.IDisposable
 internal sealed class IosHapticBackend : IHapticBackend
 {
     [System.Runtime.InteropServices.DllImport("__Internal")]
-    private static extern void KVA_PlayImpact(int style, float intensity);
+    private static extern void Kids_PlayImpact(int style, float intensity);
     private bool available = true;
 
     public void Play(HapticProfile profile)
     {
         if (!available) return;
-        try { KVA_PlayImpact(Mathf.Clamp((int)profile.impactStyle, 0, 2), Mathf.Clamp01(profile.intensity)); }
+        try { Kids_PlayImpact(Mathf.Clamp((int)profile.impactStyle, 0, 2), Mathf.Clamp01(profile.intensity)); }
         catch (System.DllNotFoundException) { available = false; }
         catch (System.EntryPointNotFoundException) { available = false; }
     }

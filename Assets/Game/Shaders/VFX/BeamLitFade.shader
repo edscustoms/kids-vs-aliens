@@ -1,4 +1,4 @@
-Shader "KVA/Beam Lit Fade"
+Shader "Game/Beam Lit Fade"
 {
     Properties
     {

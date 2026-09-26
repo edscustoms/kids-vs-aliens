@@ -101,7 +101,7 @@ public sealed class BeamHoistZoneTopologyTests
                 Assert.That(mesh.vertices, Is.EqualTo(vertices)); Assert.That(mesh.triangles, Is.EqualTo(triangles));
                 Assert.That(mesh.uv, Is.EqualTo(uv));
             }
-            Assert.That(ShaderUtil.ShaderHasError(Shader.Find("KVA/Beam Hoist Zone")), Is.False);
+            Assert.That(ShaderUtil.ShaderHasError(Shader.Find("Game/Beam Hoist Zone")), Is.False);
         }
         finally { Object.DestroyImmediate(effect.gameObject); }
     }

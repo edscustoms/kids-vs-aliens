@@ -83,7 +83,7 @@ public static class BeamPresentationSetup
             Tint("M_BeamCore",new Color(.95f,.12f,.55f,.078431375f),new Color(32,.4f,15));
             Tint("M_BeamMiddle",new Color(.18f,.36f,.95f,.055f),new Color(.015f,.12f,.23f));
             var outer=AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Materials/VFX/Beam/M_BeamOuter.mat");
-            outer.shader=Shader.Find("KVA/Beam Volume");outer.shaderKeywords=Array.Empty<string>();
+            outer.shader=Shader.Find("Game/Beam Volume");outer.shaderKeywords=Array.Empty<string>();
             outer.SetColor("_Tint",new Color(.7f,.12f,1.5f,.16f));
             outer.SetColor("_EdgeTint",new Color(.2f,.6f,1.3f,.12f));EditorUtility.SetDirty(outer);
             PrefabUtility.SaveAsPrefabAsset(root,BeamTransportSetup.VfxPath);
@@ -104,7 +104,7 @@ public static class BeamPresentationSetup
     {
         string path="Assets/Game/Materials/VFX/Beam/"+name+".mat";
         var mat=AssetDatabase.LoadAssetAtPath<Material>(path);
-        if(mat==null){mat=new Material(Shader.Find("KVA/Beam Energy"));AssetDatabase.CreateAsset(mat,path);}
+        if(mat==null){mat=new Material(Shader.Find("Game/Beam Energy"));AssetDatabase.CreateAsset(mat,path);}
         mat.SetColor("_Tint",tint);mat.SetFloat("_Round",round?1:0);EditorUtility.SetDirty(mat);return mat;
     }
     private static void Tint(string name,Color color,Color emission)

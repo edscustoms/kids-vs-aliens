@@ -258,3 +258,30 @@ reversed perspective. Both stage shaders compiled, acknowledgement callbacks
 completed, and Unity exited successfully. Captures are under
 `Logs/ProceduralUI/floor-*.png`; log: `Logs/KnowledgeFloorReview.log`.
 This focused review does not validate the unrelated inventory/book follow-up above.
+
+## Screen ownership: where to edit
+
+Paths below are relative to `Assets/Game`. Generated controls are rebuilt when entering
+Play Mode: edit their builder, not a transient runtime hierarchy. Shared geometry/color
+lives in `UI/Components/InterfaceFactory.cs`, `NeonPanel` and `UI/Themes/MenuTheme.asset`.
+
+| Screen | Human editing entry point | State/action owner |
+| --- | --- | --- |
+| Main Menu | `Scenes/Menu.unity`, `Scripts/UI/MenuController.cs`, `Editor/Helpers/MenuUISetup.cs`; preview catalogs/settings in `Scripts/UI` | MenuController, PlayerLoadoutState |
+| Active Run gate | `UI/Screens/ActiveRunMenu.cs` | RunSaveService; UIScreenRouter |
+| HUD | `UI/Screens/GameplayInterface.cs` (`CompactResourceDisplay`) | PlayerHealth |
+| Quick Slots | `Scripts/Player/InventoryUI.cs` and `InventorySlotUI.cs` | PlayerInventory assignments; no separate item storage |
+| Touch Controls | Authored gameplay canvas and Starter Assets input components; `GameplayInterface.RestyleTouchControls` for the shell | Existing input/action router; repair via GameplayPresentationSetup |
+| Pause | `GameplayInterface.BuildPause` creates visible Resume/Settings/Inventory/Quit/Restart | `UI/Screens/InGameMenuController.cs`, suspension lease |
+| Gameplay Options | `Editor/Helpers/InGameMenuSetup.cs`, `UI/Screens/OptionsScreenController.cs`, HapticsOptionView/CameraShakeOptionView | Shared camera/haptic settings |
+| Menu Options | `Editor/Helpers/MenuUISetup.cs`, OptionsScreenController | Same shared settings; separate screen |
+| Inventory | `UI/Screens/InventoryManagementView.cs` | PlayerInventory, InventoryDragSlot |
+| Knowledge | `UI/Screens/KnowledgeLogView.cs` | PlayerSkillState, PermanentProgress |
+| Tutorial | `Scripts/UI/KnowledgeAcquiredPresenter.cs`, KnowledgePreviewStage, skill tutorial data | Presenter owns modal/demo lifetime; gameplay never depends on preview |
+| Feedback | `Scripts/UI/GameplayFeedbackPresenter.cs` and presentation catalog; `GameplayInterface.ShowFeedback` for run toasts | PlayerFeedback/FeedbackScheduler or RunSaveService |
+| Restart/reset | `GameplayInterface` builds restart confirmation; `UI/Screens/ProgressResetView.cs` builds reset confirmation | InGameMenuController / ActiveRunController / RunSaveService |
+
+Legacy authored Pause buttons remain in scenes but are hidden by BuildPause. Tests and
+future UI work must target the visible generated controls. Do not wire a new feature
+by invoking hidden legacy UnityEvents. This table describes existing ownership; no UI
+framework or new screen behavior was introduced by the audit remediation.

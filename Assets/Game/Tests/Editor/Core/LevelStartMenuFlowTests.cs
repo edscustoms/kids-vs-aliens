@@ -13,7 +13,9 @@ using Object = UnityEngine.Object;
 
 public sealed class LevelStartMenuFlowTests
 {
-    private const string ScenePath = "Assets/Game/Scenes/ConstructionSite.unity";
+    private const string Folder = "Assets/LevelStartMenuFlowFixture";
+    private const string ScenePath = Folder + "/AuditLevelStart.unity";
+    [Serializable] private class BuildBackup { public string[] paths; public bool[] enabled; }
     private const string Key = "LevelStartMenuFlowTests";
     [Serializable] private class SceneDescription { public string path; public bool loaded, active; }
     [Serializable] private class SceneBackup { public SceneDescription[] scenes; }
@@ -26,9 +28,13 @@ public sealed class LevelStartMenuFlowTests
         }));
         string folder = Path.GetFullPath("Logs/LevelStartMenu/Regression-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
-        string backupPath = Path.Combine(folder, "ConstructionSite.before.unity");
-        SessionState.SetString(Key + "Backup", backupPath);
-        File.Copy(ScenePath, backupPath);
+        Assert.That(AssetDatabase.IsValidFolder(Folder), Is.False, "Stale fixture folder must be inspected before retry");
+        AssetDatabase.CreateFolder("Assets", "LevelStartMenuFlowFixture");
+        Assert.That(AssetDatabase.CopyAsset("Assets/Game/Scenes/ConstructionSite.unity", ScenePath), Is.True);
+        Assert.That(AssetDatabase.CopyAsset("Assets/Game/Scenes/Menu.unity", Folder + "/AuditMenu.unity"), Is.True);
+        SessionState.SetString(Key + "Build", JsonUtility.ToJson(new BuildBackup {
+            paths = EditorBuildSettings.scenes.Select(s => s.path).ToArray(), enabled = EditorBuildSettings.scenes.Select(s => s.enabled).ToArray() }));
+        EditorBuildSettings.scenes = EditorBuildSettings.scenes.Concat(new[] { new EditorBuildSettingsScene(ScenePath, true), new EditorBuildSettingsScene(Folder + "/AuditMenu.unity", true) }).ToArray();
         SessionState.SetString(Key + "Saves", Environment.GetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY") ?? "");
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY", Path.Combine(folder, "Saves"));
 
@@ -42,7 +48,11 @@ public sealed class LevelStartMenuFlowTests
         Assert.That(transport.IsLandingSafe(root.position), Is.False, "This regression must cover the short-support-probe rejection");
         PrefabUtility.RecordPrefabInstancePropertyModifications(root);
         EditorSceneManager.MarkSceneDirty(scene); Assert.That(EditorSceneManager.SaveScene(scene), Is.True);
-        EditorSceneManager.OpenScene("Assets/Game/Scenes/Menu.unity");
+        var menuScene = EditorSceneManager.OpenScene(Folder + "/AuditMenu.unity");
+        var menuData = new SerializedObject(Object.FindAnyObjectByType<MenuController>());
+        menuData.FindProperty("gameSceneName").stringValue = "AuditLevelStart";
+        menuData.ApplyModifiedPropertiesWithoutUndo();
+        EditorSceneManager.SaveScene(menuScene);
 
         yield return new EnterPlayMode();
         // Allocate event closures after the domain reload, not in the serialized outer enumerator.
@@ -56,11 +66,11 @@ public sealed class LevelStartMenuFlowTests
         // Existing-run fixture only triggers the real replacement UI. No saved pose
         // is applied: this test must go through New Game, not direct StartFresh/Continue.
         RunSaveService.ActiveStore.Write(new ActiveRunSave {
-            runId = "old-run-must-be-replaced", sceneName = "ConstructionSite",
+            runId = "old-run-must-be-replaced", sceneName = "AuditLevelStart",
             player = new SavedPlayer { position = new Vector3(22, 5, 18), rotation = Quaternion.Euler(0, 12, 0) }
         });
         Click("PlayButton"); yield return null;
-        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Menu"));
+        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("AuditMenu"));
         Click("NewGame"); yield return null;
 
         bool loaded = false, ended = false, fresh = false;
@@ -128,17 +138,15 @@ public sealed class LevelStartMenuFlowTests
     public IEnumerator RestoreAuthoredScene()
     {
         if (Application.isPlaying) yield return new ExitPlayMode();
-        string backupPath = SessionState.GetString(Key + "Backup", "");
-        if (!string.IsNullOrEmpty(backupPath) && File.Exists(backupPath))
-        {
-            File.Copy(backupPath, ScenePath, true);
-            AssetDatabase.ImportAsset(ScenePath);
-        }
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        AssetDatabase.DeleteAsset(Folder);
+        var build = JsonUtility.FromJson<BuildBackup>(SessionState.GetString(Key + "Build", "{}"));
+        if (build.paths != null) EditorBuildSettings.scenes = build.paths.Select((path, i) => new EditorBuildSettingsScene(path, build.enabled[i])).ToArray();
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY", SessionState.GetString(Key + "Saves", ""));
         var previous = JsonUtility.FromJson<SceneBackup>(SessionState.GetString(Key + "Scenes", "{}"));
         if (previous.scenes != null && previous.scenes.Length > 0 && previous.scenes.All(s => !string.IsNullOrEmpty(s.path)))
             EditorSceneManager.RestoreSceneManagerSetup(previous.scenes.Select(s => new SceneSetup { path = s.path, isLoaded = s.loaded, isActive = s.active }).ToArray());
         else EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        SessionState.EraseString(Key + "Backup"); SessionState.EraseString(Key + "Saves"); SessionState.EraseString(Key + "Scenes");
+        SessionState.EraseString(Key + "Build"); SessionState.EraseString(Key + "Saves"); SessionState.EraseString(Key + "Scenes");
     }
 }

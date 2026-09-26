@@ -351,21 +351,25 @@ public sealed class EnemyPerception : MonoBehaviour
                 lineOfSightMask,
                 QueryTriggerInteraction.Ignore);
 
-        if (hitCount == 0)
-            return true;
+        return AreSightHitsClear(targetTransform, lineOfSightHits, hitCount);
+    }
+
+    // Kept separate so ordering can be tested deterministically with real hits.
+    private bool AreSightHitsClear(Transform targetTransform, RaycastHit[] hits, int hitCount)
+    {
+        if (hitCount == 0) return true;
 
         float closestBlockingDistance =
             float.PositiveInfinity;
 
-        bool targetHitBeforeBlocker =
-            false;
+        float closestTargetDistance = float.PositiveInfinity;
 
         for (int i = 0;
              i < hitCount;
              i++)
         {
             RaycastHit hit =
-                lineOfSightHits[i];
+                hits[i];
 
             Collider collider =
                 hit.collider;
@@ -392,12 +396,7 @@ public sealed class EnemyPerception : MonoBehaviour
                     collider,
                     targetTransform))
             {
-                if (hit.distance <
-                    closestBlockingDistance)
-                {
-                    targetHitBeforeBlocker =
-                        true;
-                }
+                closestTargetDistance = Mathf.Min(closestTargetDistance, hit.distance);
 
                 continue;
             }
@@ -408,8 +407,6 @@ public sealed class EnemyPerception : MonoBehaviour
                 closestBlockingDistance =
                     hit.distance;
 
-                targetHitBeforeBlocker =
-                    false;
             }
         }
 
@@ -422,7 +419,7 @@ public sealed class EnemyPerception : MonoBehaviour
             return true;
         }
 
-        return targetHitBeforeBlocker;
+        return closestTargetDistance < closestBlockingDistance;
     }
 
     private bool IsOwnCollider(

@@ -6,7 +6,9 @@ public class PlasmaBoltVFX : MonoBehaviour
 {
     [Header("Bolt")]
     [SerializeField]
-    private float speed = 35f;
+    private float speed = DefaultSpeed;
+    public const float DefaultSpeed = 35f;
+    public float TravelSpeed => speed > 0 && float.IsFinite(speed) ? speed : DefaultSpeed;
 
     [SerializeField]
     private float boltLength = 0.35f;
@@ -26,6 +28,9 @@ public class PlasmaBoltVFX : MonoBehaviour
     private Action onArrive;
     private bool activeBolt;
     private bool useUnscaledTime;
+    private float? scheduledArrival;
+    private float departureTime;
+    private Vector3 startPoint;
 
     private void Awake()
     {
@@ -42,7 +47,8 @@ public class PlasmaBoltVFX : MonoBehaviour
         Vector3 end,
         Color? auraColor = null,
         Action onArrive = null,
-        bool useUnscaledTime = false
+        bool useUnscaledTime = false,
+        float? arrivalTime = null
     )
     {
         direction =
@@ -58,6 +64,9 @@ public class PlasmaBoltVFX : MonoBehaviour
             );
 
         travelled = 0f;
+        scheduledArrival = arrivalTime;
+        departureTime = Time.time;
+        startPoint = start;
 
         transform.position =
             start;
@@ -91,8 +100,12 @@ public class PlasmaBoltVFX : MonoBehaviour
         float movement =
             speed * (useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
 
-        travelled +=
-            movement;
+        travelled += movement;
+        if (scheduledArrival.HasValue)
+        {
+            float duration = scheduledArrival.Value - departureTime;
+            travelled = duration <= 0 ? totalDistance : totalDistance * Mathf.Clamp01((Time.time - departureTime) / duration);
+        }
 
         if (travelled >= totalDistance)
         {
@@ -105,8 +118,7 @@ public class PlasmaBoltVFX : MonoBehaviour
             return;
         }
 
-        transform.position +=
-            direction * movement;
+        transform.position = startPoint + direction * travelled;
 
         UpdateLine();
     }
@@ -183,6 +195,7 @@ public class PlasmaBoltVFX : MonoBehaviour
     private void OnDisable()
     {
         activeBolt = false;
+        scheduledArrival = null;
         useUnscaledTime = false;
         onArrive = null;
     }

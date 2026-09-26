@@ -24,6 +24,32 @@ The default periodic interval is **10 seconds**, configurable on the player's `A
 
 Missing content, incompatible snapshots and restore errors preserve the existing save. A failed restore stays suspended and offers return to menu without overwriting the snapshot.
 
+## Participant and owned-weapon contract (audit remediation)
+
+`PlayerInventory` owns one `OwnedWeaponState` per unique owned weapon definition.
+Equipment selects it; the mounted `WeaponInstance` is presentation. Reselection and
+pistol/rifle swaps retain rounds, reload deadline and fire cooldown. Reload time continues
+on the scaled gameplay clock while stowed; pause freezes it. Active Run saves all owned
+magazines plus remaining reload/cooldown times. Legacy snapshots retain selected `ammo`;
+missing other weapon records start full. Removing a weapon ends that inventory record;
+physical dropped-magazine economy is outside this change. This is pre-release compatibility,
+not a released-save migration framework.
+
+`IRunStateParticipant` implementers must read its XML contract. Keys are stable and unique
+on each `RunWorldObject`; cross-object references store stable world IDs, never hierarchy
+names or scene-instance IDs. Capture describes absolute state. Restore must be idempotent:
+never grant rewards, consume resources, replay completion events or invoke incremental
+commands merely because a completed state was loaded.
+
+Continue acquires suspension, initializes/registers scene identities, allocates missing
+dynamic objects, restores world state, restores the player, waits another frame, then
+restores nonremoved world participants **a second time** before declaring readiness.
+`OnEnable` can run before saved state is applied. A first restore can see peers' default
+state. Defer peer-dependent decisions until `ActiveRunController.IsReady`; resolve them
+through `FindWorldObject(stableId)`. Do not depend on participant iteration order. The
+`AuditContinueTests` fixture exercises actual Save/Continue with A referencing B, two
+restores, no duplicate reward/event and all owned magazines preserved.
+
 ## Authoring and extension
 
 Run **Tools → Setup → Setup or Repair Active Gameplay Scene** for gameplay scenes. Run **Tools → UI → Setup or Repair Active Menu** for the menu. `RunInterfaceSetup` is also available as a feature-specific repair. Setup is idempotent and assigns stable identities to relevant authored objects, reuses presentation roots, and generates the GUID-based `RunContentCatalog` resource.
@@ -32,11 +58,13 @@ Run **Tools → Setup → Setup or Repair Active Gameplay Scene** for gameplay s
 
 Shared palette, optional font, panel radius and border glow are tunable in `Assets/Game/UI/Themes/MenuTheme.asset`. `GameplayInterface`, `ActiveRunMenu` and `InterfaceFactory` build the additional views once per scene. Existing main-menu layout and preview rendering remain authored. The tutorial floor is `TutorialFloor.mat` using the lightweight `Presentation/Tutorial Floor` shader.
 
+Current regression commands and isolation: [Tests README](../Assets/Game/Tests/README.md).
+
 ## Validation entry points
 
 - `Tools/Compile-UnityScripts.ps1`: runtime/editor C# compile.
 - Unity EditMode category `RunInterface`: recoverable writes, checksum rejection, discard, state roundtrip, inventory assignment/removal, pause ownership and inventory Back.
-- `RunInterfaceSetup.RepairExistingScenes`: repeat setup and identity checks on Menu, GamePoc and ConstructionSite.
+- `RunInterfaceSetup.RepairExistingScenes`: explicit authoring command that saves Menu, GamePoc and ConstructionSite; not an ordinary test.
 - `RunInterfaceValidation.Run`: isolated Play Mode flow test with screenshots under `Logs/RunInterfaceShots`. Test saves use a separate directory; player saves are not touched.
 - `RunInterfaceValidation.BuildAndroid`: development APK under `Builds/RunInterface`.
 
@@ -153,3 +181,19 @@ New Unity assets/components include their corresponding .meta files; existing GU
 - TODO.md
 
 - Docs/RunInterface.md: architecture, tuning, validation evidence and this file inventory.
+
+## Equipment and delayed-hit ownership
+
+`EquippedWeaponChanged` reports actual selection/unequip only. Temporary grenade/melee
+appearance uses `WeaponPresentationChanged`; PlayerAnimation listens there. Hiding a gun
+does not remove its inventory record or reset reload/cooldown. Grenade selection continues
+to block fire through the existing input/action path.
+
+Player shooting resolves physics immediately, then PlayerShooter owns the accepted hit
+until its scheduled arrival. The bolt receives the same arrival time calculated from its
+configured speed; damage, reaction and impact stay together at arrival. Releasing,
+disabling or destroying the visual cannot cancel damage. Missing presentation uses an
+explicit fallback travel speed, never instant damage. This remains resolved-ray combat,
+not physical projectiles. Its pending-hit coroutine continues while Beam transport disables
+the shooting input consumer; a world pause stops both travel and damage through scaled
+time. Pending shots are transient across scene teardown/Continue.

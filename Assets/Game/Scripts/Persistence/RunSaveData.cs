@@ -24,11 +24,18 @@ using UnityEngine;
     public Quaternion rotation;
     public float health, armor, verticalVelocity;
     public string character, equipped, selected;
-    public int ammo;
+    public int ammo; // Legacy selected-magazine fallback.
+    public List<SavedWeaponState> weapons; // Null in pre-owned-magazine saves.
     public List<string> items = new();
     // Null in older saves: each item entry then represents one unit.
     public int[] itemCounts;
     public int[] quickSlots;
+}
+[Serializable] public sealed class SavedWeaponState
+{
+    public string weapon;
+    public int rounds;
+    public float reloadRemaining, cooldownRemaining;
 }
 [Serializable] public sealed class SavedWorldObject
 {
@@ -43,7 +50,15 @@ using UnityEngine;
 }
 [Serializable] public sealed class SavedRunPart { public string key, json; }
 
-// Future doors, mission interactables and set-pieces implement this without changing the save format.
+/// <summary>
+/// Absolute saved state on a RunWorldObject. Keys must be stable and unique per object.
+/// RestoreRunState currently runs twice: before player restore, then after one frame
+/// of normal Start. OnEnable can run before either call. Both calls must be idempotent:
+/// never award rewards, consume resources or replay completion events during restore.
+/// Resolve peers by stable RunWorldObject identity; a peer may still have default state
+/// on the first pass. Defer peer-dependent decisions until ActiveRunController.IsReady.
+/// See Docs/RunInterface.md for the complete lifecycle and compatibility policy.
+/// </summary>
 public interface IRunStateParticipant
 {
     string RunStateKey { get; }

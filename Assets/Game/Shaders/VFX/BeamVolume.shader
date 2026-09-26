@@ -1,4 +1,4 @@
-Shader "KVA/Beam Volume"
+Shader "Game/Beam Volume"
 {
     Properties
     {

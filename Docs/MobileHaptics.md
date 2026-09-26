@@ -43,7 +43,7 @@ Added (with Unity metadata):
 - `Assets/Game/Scripts/Haptics/HapticService.cs`
 - `Assets/Game/Scripts/Haptics/MobileHapticBackends.cs`
 - `Assets/Game/Resources/Haptics/{PistolFire,RifleFire,PlayerDamage}.asset`
-- `Assets/Plugins/iOS/KVAHaptics.mm`
+- `Assets/Plugins/iOS/MobileHaptics.mm`
 - `Assets/Game/Editor/HapticAndroidBuild.cs`
 - `Assets/Game/UI/Screens/HapticsOptionView.cs`
 - `Assets/Game/Tests/Editor/Core/HapticTests.cs`
@@ -72,3 +72,5 @@ Changed:
 3. Toggle OFF, shoot both weapons and take damage, then relaunch/Continue and confirm OFF remains. Re-enable and confirm feedback returns.
 4. Check rejected/empty/cooldown/muzzle-blocked fire and Jump/Sprint/Aim/Hoist controls stay silent. Enemy fire stays silent unless it actually damages the player.
 5. Review both Options layouts on the phone, including safe areas and progress-reset confirmation blocking. Check sustained automatic fire remains discrete and comfortable; tune only profile assets initially.
+
+Audit remediation: the iOS C binding is now `Kids_PlayImpact` in both the native declaration and C# import/caller. The file retains its .meta GUID. Windows source checks do not prove an iOS build: Mac/Xcode compile and on-device haptics remain required.

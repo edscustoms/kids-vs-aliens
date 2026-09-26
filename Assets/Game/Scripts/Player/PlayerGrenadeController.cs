@@ -50,13 +50,6 @@ public sealed class PlayerGrenadeController : MonoBehaviour
     private bool weaponWasVisible;
     private bool isCommittingThrow;
 
-    // Grenade mode temporarily publishes a presentation-only
-    // EquippedWeaponChanged notification so the existing animation path
-    // can switch to Unarmed without actually unequipping the gun.
-    //
-    // Ignore our own notification here; real weapon changes must still
-    // cancel grenade mode normally.
-    private bool isChangingWeaponPresentation;
     private StarterAssets.StarterAssetsInputs input;
 
     public bool IsGrenadeSelected => state != GrenadeState.Idle;
@@ -473,19 +466,15 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void HandleEquippedWeaponChanged(WeaponItemData weapon)
     {
-        // Do not let our temporary animation/presentation notification
-        // cancel the grenade we just selected.
-        if (isChangingWeaponPresentation)
-            return;
-
+        // Only real equipment changes reach this event; hiding a gun for
+        // grenade presentation has its own notification.
         if (!IsGrenadeSelected)
             return;
 
         ExitGrenadeMode(false);
 
-        // This is a REAL equipment change. The equipment system already
-        // published the new weapon for animation, so only ensure its visual
-        // is visible here.
+        // Equipment publishes animation/style after selection listeners return.
+        // Make the newly selected visual visible before that notification.
         equipment?.SetEquippedWeaponVisible(true);
     }
 
@@ -501,19 +490,7 @@ public sealed class PlayerGrenadeController : MonoBehaviour
 
     private void SetWeaponPresentationVisible(bool visible)
     {
-        if (equipment == null)
-            return;
-
-        isChangingWeaponPresentation = true;
-
-        try
-        {
-            equipment.SetEquippedWeaponPresentationVisible(visible);
-        }
-        finally
-        {
-            isChangingWeaponPresentation = false;
-        }
+        equipment?.SetEquippedWeaponPresentationVisible(visible);
     }
 
     private void CacheReferences()

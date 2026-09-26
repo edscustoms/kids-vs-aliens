@@ -9,21 +9,23 @@ public sealed class KnowledgePreviewRendererTests
     [Test]
     public void PreviewRepairAndGameplayFeatureSetupRemainSeparateAndIdempotent()
     {
-        var preview = GameplayPresentationSetup.EnsurePreviewRenderer();
+        using var fixture = new DisposableTestAssets();
+        var preview = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(fixture.Copy(GameplayPresentationSetup.LightweightRendererPath));
         var pipelines = new[] { "Mobile", "PC" }.Select(name =>
             AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(
-                $"Assets/Game/Settings/Rendering/{name}_RPAsset.asset")).ToArray();
+                fixture.Copy($"Assets/Game/Settings/Rendering/{name}_RPAsset.asset"))).ToArray();
+        GameplayPresentationSetup.EnsurePreviewRenderer(preview, pipelines);
         var lists = pipelines.Select(p => p.rendererDataList.ToArray()).ToArray();
         var gameplayFeatures = pipelines.Select(p => p.rendererDataList[0].rendererFeatures.ToArray()).ToArray();
 
         // Reproduce accidental gameplay-feature contamination, without creating
         // or destroying a shared feature. Repair must only detach it from preview.
         preview.rendererFeatures.Add(gameplayFeatures[0].OfType<CameraOcclusionSilhouetteFeature>().Single());
-        Assert.That(GameplayPresentationSetup.EnsurePreviewRenderer(), Is.SameAs(preview));
+        Assert.That(GameplayPresentationSetup.EnsurePreviewRenderer(preview, pipelines), Is.SameAs(preview));
         for (int repeat = 0; repeat < 2; repeat++)
         {
-            CameraOcclusionSilhouetteSetup.Ensure();
-            Assert.That(GameplayPresentationSetup.EnsurePreviewRenderer(), Is.SameAs(preview));
+            // Gameplay features are borrowed read-only; only disposable preview/pipelines are repaired.
+            Assert.That(GameplayPresentationSetup.EnsurePreviewRenderer(preview, pipelines), Is.SameAs(preview));
             Assert.That(preview.rendererFeatures, Is.Empty);
             for (int i = 0; i < pipelines.Length; i++)
             {

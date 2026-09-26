@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>Replace motions with an AnimatorOverrideController while retaining the semantic contract.</summary>
-[CreateAssetMenu(menuName = "KVA/Enemies/Animation Profile")]
+[CreateAssetMenu(menuName = "Game/Enemies/Animation Profile")]
 public sealed class EnemyAnimationProfile : ScriptableObject
 {
     public RuntimeAnimatorController controller;

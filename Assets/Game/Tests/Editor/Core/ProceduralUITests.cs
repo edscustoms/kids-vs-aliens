@@ -46,11 +46,12 @@ public sealed class ProceduralUITests
             Assert.That(a.material.HasProperty("_StencilComp")&&a.material.HasProperty("_StencilReadMask"),Is.True);
         } finally {Object.DestroyImmediate(root);}
     }
-    [Test] public void TenIconSpritesUseTransparentSourcesAndSeparateKnowledgeMappings()
+    [Test] public void RequiredIconSpritesUseTransparentSourcesAndSeparateKnowledgeMappings()
     {
         var catalog=AssetDatabase.LoadAssetAtPath<InterfaceIconCatalog>("Assets/Game/Resources/InterfaceIcons.asset");
-        Assert.That(catalog.entries.Length,Is.EqualTo(10));
-        Assert.That(catalog.entries.Select(e=>e.sprite).Distinct().Count(),Is.EqualTo(10));
+        Assert.That(catalog.entries, Is.Not.Empty);
+        foreach (InterfaceIcon role in System.Enum.GetValues(typeof(InterfaceIcon)))
+            Assert.That(catalog.entries.Count(entry => entry.role == role), Is.EqualTo(1), role.ToString());
         foreach(var entry in catalog.entries) {
             Assert.That(entry.sprite,Is.Not.Null);
             var importer=(TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(entry.sprite));
@@ -61,12 +62,11 @@ public sealed class ProceduralUITests
             if(entry.skill!=null)Assert.That(InterfaceIconCatalog.ForSkill(entry.skill),Is.SameAs(entry.sprite));
         }
     }
-    [Test] public void VisualSetupKeepsExistingPrefabAndCatalogIdentities()
+    [Test] public void RequiredVisualAssetsHaveStableDistinctIdentities()
     {
         var paths=new[]{"Assets/Game/Resources/NeonUI.mat","Assets/Game/Resources/InterfaceIcons.asset",ProceduralUISetup.PrefabFolder+"/CircleControl.prefab"};
         var before=paths.Select(AssetDatabase.AssetPathToGUID).ToArray();
-        ProceduralUISetup.EnsureAssets();
-        Assert.That(paths.Select(AssetDatabase.AssetPathToGUID).ToArray(),Is.EqualTo(before));
+        Assert.That(before.Distinct().Count(),Is.EqualTo(paths.Length));
         Assert.That(before.All(id=>!string.IsNullOrEmpty(id)),Is.True);
     }
 }

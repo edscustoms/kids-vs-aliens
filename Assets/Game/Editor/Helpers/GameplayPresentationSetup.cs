@@ -528,16 +528,6 @@ public static class GameplayPresentationSetup
             renderer.name = "KnowledgePreview_Renderer";
             AssetDatabase.CreateAsset(renderer, LightweightRendererPath);
         }
-        if (renderer.rendererFeatures.Count != 0)
-        {
-            renderer.rendererFeatures.Clear();
-            renderer.SetDirty();
-            EditorUtility.SetDirty(renderer);
-        }
-        var rendererData = new SerializedObject(renderer);
-        rendererData.FindProperty("m_RendererFeatureMap").arraySize = 0;
-        rendererData.ApplyModifiedPropertiesWithoutUndo();
-        AssetDatabase.SaveAssetIfDirty(renderer);
         var pipelines = new HashSet<UniversalRenderPipelineAsset>();
         if (GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset defaultPipeline)
             pipelines.Add(defaultPipeline);
@@ -546,6 +536,22 @@ public static class GameplayPresentationSetup
                 QualitySettings.GetRenderPipelineAssetAt(i) is UniversalRenderPipelineAsset pipeline
             )
                 pipelines.Add(pipeline);
+        return EnsurePreviewRenderer(renderer, pipelines);
+    }
+
+    public static ScriptableRendererData EnsurePreviewRenderer(UniversalRendererData renderer, IEnumerable<UniversalRenderPipelineAsset> pipelines)
+    {
+        bool changed = renderer.rendererFeatures.Count != 0;
+        if (changed)
+        {
+            renderer.rendererFeatures.Clear();
+            renderer.SetDirty();
+            EditorUtility.SetDirty(renderer);
+        }
+        var rendererData = new SerializedObject(renderer);
+        rendererData.FindProperty("m_RendererFeatureMap").arraySize = 0;
+        changed |= rendererData.ApplyModifiedPropertiesWithoutUndo();
+        if (changed) AssetDatabase.SaveAssetIfDirty(renderer);
         foreach (var pipeline in pipelines)
         {
             var serialized = new SerializedObject(pipeline);
@@ -866,9 +872,19 @@ public static class GameplayPresentationSetup
     {
         var serialized = new SerializedObject(target);
         var array = serialized.FindProperty(property);
-        array.arraySize = values.Length;
-        for (int i = 0; i < values.Length; i++)
-            array.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+        // Preserve authored order and additions. Remove nulls/duplicates, append
+        // only missing standard dependencies; repair is not a list replacement.
+        var merged = new System.Collections.Generic.List<UnityEngine.Object>();
+        for (int i = 0; i < array.arraySize; i++)
+        {
+            var value = array.GetArrayElementAtIndex(i).objectReferenceValue;
+            if (value != null && !merged.Contains(value)) merged.Add(value);
+        }
+        foreach (var value in values)
+            if (value != null && !merged.Contains(value)) merged.Add(value);
+        array.arraySize = merged.Count;
+        for (int i = 0; i < merged.Count; i++)
+            array.GetArrayElementAtIndex(i).objectReferenceValue = merged[i];
         serialized.ApplyModifiedProperties();
     }
 

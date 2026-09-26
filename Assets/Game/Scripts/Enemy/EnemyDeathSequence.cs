@@ -64,6 +64,14 @@ public sealed class EnemyDeathSequence : MonoBehaviour
     private bool hideWorldSpaceCanvasesOnDeath = true;
 
     private bool sequenceStarted;
+    private readonly List<Material> ownedFadeMaterials = new();
+
+    private void OnDestroy()
+    {
+        foreach (var material in ownedFadeMaterials)
+            if (material != null) Destroy(material);
+        ownedFadeMaterials.Clear();
+    }
 
     private readonly List<MaterialFadeState>
         fadeMaterials = new();
@@ -313,10 +321,16 @@ public sealed class EnemyDeathSequence : MonoBehaviour
             if (renderer == null)
                 continue;
 
-            // renderer.materials creates per-enemy runtime instances.
-            // That is intentional: only the dying enemy should fade.
-            Material[] materials =
-                renderer.materials;
+            // Clone explicitly: shared assets and other components' instances are
+            // borrowed; only these copies belong to this death presentation.
+            Material[] materials = renderer.sharedMaterials;
+            for (int i = 0; i < materials.Length; i++)
+            {
+                if (materials[i] == null) continue;
+                materials[i] = new Material(materials[i]);
+                ownedFadeMaterials.Add(materials[i]);
+            }
+            renderer.sharedMaterials = materials;
 
             foreach (Material material
                      in materials)

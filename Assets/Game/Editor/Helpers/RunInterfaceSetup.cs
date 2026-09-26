@@ -78,7 +78,7 @@ public static class RunInterfaceSetup
         }
         var sorted=entries.OrderBy(e=>e.id).ToArray();
         if(catalog.entries.Length!=sorted.Length||catalog.entries.Where((entry,i)=>i>=sorted.Length||entry.id!=sorted[i].id||entry.asset!=sorted[i].asset).Any())
-        {catalog.entries=sorted;EditorUtility.SetDirty(catalog);}
+        {catalog.entries=sorted;EditorUtility.SetDirty(catalog);AssetDatabase.SaveAssetIfDirty(catalog);}
     }
     [MenuItem("Tools/UI/Repair Run Interface in Current Scene")]
     public static void RepairActive()
@@ -102,12 +102,11 @@ public static class RunInterfaceSetup
             if(count!=scene.GetRootGameObjects().Sum(root=>root.GetComponentsInChildren<Component>(true).Length))throw new InvalidOperationException("Repair duplicated components.");
             EditorSceneManager.SaveScene(scene);Debug.Log("RUN INTERFACE REPAIRED: "+name+"; world identities="+ids.Length);
         }
-        AssetDatabase.SaveAssets();
     }
 }
 
 public sealed class RunCatalogBuildProcessor : IPreprocessBuildWithReport
 {
     public int callbackOrder=>0;
-    public void OnPreprocessBuild(BuildReport report){RunInterfaceSetup.EnsureCatalog();AssetDatabase.SaveAssets();}
+    public void OnPreprocessBuild(BuildReport report){RunInterfaceSetup.EnsureCatalog();}
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using StarterAssets;
 using UnityEngine;
 
@@ -23,6 +24,30 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField]
     private PlasmaBoltVFX plasmaBoltPrefab;
 
+    [Tooltip("Travel speed if the bolt presentation asset is unavailable; damage still waits for arrival.")]
+    [SerializeField, Min(.01f)] private float missingBoltSpeed = PlasmaBoltVFX.DefaultSpeed;
+    private readonly List<PendingImpact> pendingImpacts = new();
+    private bool processingImpacts;
+    private struct PendingImpact { public float arrival; public System.Action commit; }
+
+    private IEnumerator CommitPendingImpacts()
+    {
+        // A coroutine keeps accepted shots alive when Beam transport disables
+        // this input consumer. Scaled time still pauses damage and visuals together.
+        while (pendingImpacts.Count != 0)
+        {
+            yield return null;
+            for (int i = 0; i < pendingImpacts.Count;)
+            {
+                var impact = pendingImpacts[i];
+                if (Time.time < impact.arrival) { i++; continue; }
+                pendingImpacts.RemoveAt(i);
+                impact.commit();
+            }
+        }
+        processingImpacts = false;
+    }
+
     [SerializeField]
     private PlasmaMuzzleVFX plasmaMuzzlePrefab;
 
@@ -43,11 +68,11 @@ public class PlayerShooter : MonoBehaviour
     private CharacterController characterController;
     private PlayerPrimaryActionRouter primaryActionRouter;
 
-    private float nextFireTime;
-    private int currentAmmo;
-    public int CurrentAmmo => currentAmmo;
-    public void RestoreRunAmmo(int ammo) { currentAmmo = equippedWeapon != null ? Mathf.Clamp(ammo, 0, equippedWeapon.magazineSize) : 0; }
-    private bool isReloading;
+    private OwnedWeaponState weaponState;
+    public OwnedWeaponState ActiveWeaponState => weaponState;
+    public int CurrentAmmo => weaponState != null ? weaponState.Rounds : 0;
+    public bool IsReloading => weaponState != null && weaponState.IsReloading;
+    public void RestoreRunAmmo(int ammo) => weaponState?.Restore(ammo, Time.time);
     private bool triggerHeld;
     private bool shootWasPressed;
     private bool fireBlocked;
@@ -99,6 +124,7 @@ public class PlayerShooter : MonoBehaviour
 
     private void Update()
     {
+        if (weaponState != null && weaponState.FinishReload(Time.time)) ActiveRunController.Instance?.MarkDirty();
         bool shootPressed =
             primaryActionRouter != null && primaryActionRouter.isActiveAndEnabled
                 ? triggerHeld
@@ -119,7 +145,7 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
-        if (isReloading)
+        if (IsReloading)
             return;
 
         bool wantsToShoot;
@@ -155,12 +181,12 @@ public class PlayerShooter : MonoBehaviour
 
         reportedMissingSkill = null;
 
-        if (Time.time < nextFireTime)
+        if (weaponState == null || Time.time < weaponState.NextFireTime)
             return;
 
-        if (currentAmmo <= 0)
+        if (CurrentAmmo <= 0)
         {
-            StartCoroutine(Reload());
+            BeginReload();
 
             return;
         }
@@ -195,9 +221,8 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
-        currentAmmo--;
-
-        nextFireTime = Time.time + 1f / equippedWeapon.fireRate;
+        if (weaponState == null || !weaponState.TrySpendRound(Time.time)) return;
+        ActiveRunController.Instance?.MarkDirty();
 
         Vector3 direction = (shotAimPoint - muzzle.position).normalized;
 
@@ -311,9 +336,9 @@ public class PlayerShooter : MonoBehaviour
 
         SpawnShotVFX(muzzle.position, endPoint, auraColor, onArrive);
 
-        if (currentAmmo <= 0)
+        if (CurrentAmmo <= 0)
         {
-            StartCoroutine(Reload());
+            BeginReload();
         }
     }
 
@@ -460,22 +485,23 @@ public class PlayerShooter : MonoBehaviour
 
     private void SpawnShotVFX(Vector3 start, Vector3 end, Color? auraColor, System.Action onArrive)
     {
-        if (plasmaBoltPrefab == null)
+        float speed = plasmaBoltPrefab != null ? plasmaBoltPrefab.TravelSpeed
+            : missingBoltSpeed > 0 && float.IsFinite(missingBoltSpeed) ? missingBoltSpeed : PlasmaBoltVFX.DefaultSpeed;
+        float distance = Vector3.Distance(start, end);
+        float arrival = Time.time + (distance <= .001f ? 0 : distance / speed);
+        if (onArrive != null && arrival <= Time.time) onArrive();
+        else if (onArrive != null)
         {
-            // No VFX should never block gameplay.
-            onArrive?.Invoke();
-            return;
+            pendingImpacts.Add(new PendingImpact { arrival = arrival, commit = onArrive });
+            if (!processingImpacts)
+            {
+                processingImpacts = true;
+                StartCoroutine(CommitPendingImpacts());
+            }
         }
-
-        PlasmaBoltVFX bolt = VfxPool.Spawn(plasmaBoltPrefab, start, Quaternion.identity);
-
-        if (bolt == null)
-        {
-            onArrive?.Invoke();
-            return;
-        }
-
-        bolt.Initialize(start, end, auraColor, onArrive);
+        if (plasmaBoltPrefab == null) return;
+        var bolt = VfxPool.Spawn(plasmaBoltPrefab, start, Quaternion.identity);
+        if (bolt != null) bolt.Initialize(start, end, auraColor, arrivalTime: arrival);
     }
 
     private void SpawnMuzzleVFX(Vector3 position, Vector3 direction, Color? auraColor)
@@ -530,18 +556,10 @@ public class PlayerShooter : MonoBehaviour
     // RELOAD
     // =====================================================
 
-    private IEnumerator Reload()
+    private void BeginReload()
     {
-        if (isReloading)
-            yield break;
-
-        isReloading = true;
-
-        yield return new WaitForSeconds(equippedWeapon.reloadTime);
-
-        currentAmmo = equippedWeapon.magazineSize;
-
-        isReloading = false;
+        weaponState?.BeginReload(Time.time);
+        ActiveRunController.Instance?.MarkDirty();
     }
 
     // =====================================================
@@ -568,34 +586,22 @@ public class PlayerShooter : MonoBehaviour
 
     public void EquipWeapon(WeaponItemData weapon, Transform weaponMuzzle)
     {
+        var inventory = GetComponent<PlayerInventory>();
+        var state = inventory != null ? inventory.GetWeaponState(weapon) : null;
+        if (state == null) throw new System.InvalidOperationException("Equip requires an inventory-owned weapon.");
         reportedMissingSkill = null;
-        StopAllCoroutines();
-
         equippedWeapon = weapon;
-
         muzzle = weaponMuzzle;
-
-        currentAmmo = weapon.magazineSize;
-
-        isReloading = false;
-
-        nextFireTime = 0f;
+        weaponState = state;
+        weaponState.FinishReload(Time.time);
     }
 
     public void UnequipWeapon()
     {
-        StopAllCoroutines();
-
         equippedWeapon = null;
-
         muzzle = null;
-
-        currentAmmo = 0;
-
-        isReloading = false;
-
+        weaponState = null;
         triggerHeld = false;
-
         shootWasPressed = false;
     }
 }

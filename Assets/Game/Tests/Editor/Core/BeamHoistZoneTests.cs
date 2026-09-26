@@ -97,6 +97,11 @@ public sealed class BeamHoistZoneTests
             Tick(); Assert.That(player.transform.position, Is.EqualTo(position));
             input.JumpInput(true); Assert.That(transport.IsTransporting, Is.True); Assert.That(input.jump, Is.False);
             Tick(1); Assert.That(Effect.Opacity, Is.Zero);
+            // The ability chooses the best candidate, not necessarily the first
+            // preview-valid cell. The stationary VFX prelude is not curve time.
+            path = (BeamHoistPath)typeof(BeamTransportController).GetField("hoistPath", Private).GetValue(transport);
+            transport.Advance(.5f);
+            Assert.That(player.transform.position, Is.EqualTo(position));
             float elapsed = 0;
             for (int i = 1; i <= 24; i++)
             {
@@ -218,7 +223,7 @@ public sealed class BeamHoistZoneTests
         Assert.That(effect.GetComponentsInChildren<Light>(true), Is.Empty);
         var before = Random.state; effect.Present(BeamHoistZoneState.Active, 1, 0, 0);
         Assert.That(JsonUtility.ToJson(Random.state), Is.EqualTo(JsonUtility.ToJson(before)));
-        Assert.That(ShaderUtil.ShaderHasError(Shader.Find("KVA/Beam Hoist Zone")), Is.False);
+        Assert.That(ShaderUtil.ShaderHasError(Shader.Find("Game/Beam Hoist Zone")), Is.False);
     }
 
     [Test]

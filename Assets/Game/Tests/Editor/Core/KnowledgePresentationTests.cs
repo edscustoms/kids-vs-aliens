@@ -118,13 +118,8 @@ public sealed class KnowledgePresentationTests
             manual.Dispose();
             Assert.That(Time.timeScale, Is.EqualTo(previousTimeScale));
             yield return EditorTestFrame.Next();
-            Assert.That(inventory.TryAddItem(book), Is.True);
-            inventory.UseItem(0);
-            Assert.That(
-                inventory.Items.Count,
-                Is.EqualTo(1),
-                "Already-known books are not consumed."
-            );
+            Assert.That(inventory.TryAddItem(book), Is.False, "Learned books are rejected before entering inventory.");
+            Assert.That(inventory.Items, Is.Empty);
             Assert.That(presenter.PendingCount, Is.Zero);
             Assert.That(new KnowledgePresentationQueue().Count, Is.Zero);
         }

@@ -62,6 +62,10 @@ public static class GameplaySceneSetup
             return;
         }
 
+        // Known fatal ambiguities are checked before any scene/shared-asset writes.
+        BeamTransportSetup.FindLevelStart(scene);
+        CameraFeedbackSetup.FindGameplayCamera(player);
+        Undo.IncrementCurrentGroup();
         int undoGroup = Undo.GetCurrentGroup();
         Undo.SetCurrentGroupName("Setup / Repair Gameplay Scene");
 
@@ -118,7 +122,8 @@ public static class GameplaySceneSetup
             Debug.Log(
                 $"gameplay setup repaired in '{scene.name}'. "
                     + "Save the scene, then Play test a Knowledge Book and Fighting. "
-                    + "No manual player wiring should be required.",
+                    + "Scene edits use Undo where recorded; shared asset creation/saves are not scene Undo. "
+                    + "See Docs/RepositoryAuditRemediation.md for repair scope.",
                 presentation != null ? presentation : player.gameObject
             );
         }

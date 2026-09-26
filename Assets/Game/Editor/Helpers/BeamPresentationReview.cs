@@ -267,7 +267,7 @@ public static class BeamPresentationReview
             try {
                 foreach(var renderer in hoist.GetComponentsInChildren<Renderer>()){
                     var original=renderer.sharedMaterial;
-                    if(original.shader.name!="KVA/Beam Lit Fade")continue;
+                    if(original.shader.name!="Game/Beam Lit Fade")continue;
                     var temporary=new Material(original){shader=Shader.Find("Universal Render Pipeline/Lit")};
                     renderer.sharedMaterial=temporary;swaps.Add((renderer,original,temporary));
                 }

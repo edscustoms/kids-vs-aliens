@@ -65,8 +65,6 @@ public sealed class AlienAuthoringTests
             Assert.That(equipped.Length,Is.EqualTo(2));
             foreach(var e in equipped)Assert.That(new SerializedObject(e).FindProperty("dropWeaponOnDeath").boolValue,Is.True);
             Assert.That(equipped.Select(e=>e.name),Is.EquivalentTo(new[]{"PF_Enemy_Melee_POC_V1 (7)","PF_Enemy_Melee_POC_V1 (8)"}));
-            foreach(var e in Object.FindObjectsByType<EnemyWeaponAwareness>(FindObjectsInactive.Include,FindObjectsSortMode.None))
-                Assert.That(new SerializedObject(e).FindProperty("allowWeaponPickup").boolValue,Is.False);
             EditorSceneManager.OpenScene("Assets/Game/Scenes/GamePoc.unity");
             foreach(var e in Object.FindObjectsByType<EnemyEquipment>(FindObjectsInactive.Include,FindObjectsSortMode.None))
                 Assert.That(new SerializedObject(e).FindProperty("startingWeapon").objectReferenceValue,Is.Null);

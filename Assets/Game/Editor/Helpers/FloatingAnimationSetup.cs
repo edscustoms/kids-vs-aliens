@@ -11,19 +11,14 @@ public static class FloatingAnimationSetup
     [MenuItem("Tools/Setup/Repair Floating Animation Presentation")]
     public static void Ensure()
     {
-        var importer = (ModelImporter)AssetImporter.GetAtPath(ClipPath);
-        var clips = importer.clipAnimations.Length > 0 ? importer.clipAnimations : importer.defaultClipAnimations;
-        bool changed = importer.animationType != ModelImporterAnimationType.Human || importer.clipAnimations.Length == 0;
-        importer.animationType = ModelImporterAnimationType.Human;
-        foreach (var clip in clips)
-        {
-            changed |= !clip.loopTime || !clip.loopPose || !clip.lockRootRotation || !clip.lockRootHeightY || !clip.lockRootPositionXZ;
-            clip.loopTime = clip.loopPose = true;
-            clip.lockRootRotation = clip.lockRootHeightY = clip.lockRootPositionXZ = true;
-        }
-        if (changed) { importer.clipAnimations = clips; importer.SaveAndReimport(); }
-
+        // Import tuning is authored data. Routine repair never reimports/retunes it.
         var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(CharacterAnimationSetup.ControllerPath);
+        var clip = AssetDatabase.LoadAllAssetsAtPath(ClipPath).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview__"));
+        Ensure(controller, clip);
+    }
+
+    public static void Ensure(AnimatorController controller, AnimationClip clip)
+    {
         bool controllerChanged = false;
         if (!controller.parameters.Any(p => p.name == "Floating"))
         { controller.AddParameter("Floating", AnimatorControllerParameterType.Bool); controllerChanged = true; }
@@ -37,7 +32,7 @@ public static class FloatingAnimationSetup
             AssetDatabase.AddObjectToAsset(mask, controller);
             var empty = machine.AddState("Empty"); empty.writeDefaultValues = false;
             var floating = machine.AddState("Floating"); floating.writeDefaultValues = false;
-            floating.motion = AssetDatabase.LoadAllAssetsAtPath(ClipPath).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview__"));
+            floating.motion = clip;
             machine.defaultState = empty;
             var enter = empty.AddTransition(floating);
             enter.hasExitTime = false; enter.hasFixedDuration = true; enter.duration = .1f;
