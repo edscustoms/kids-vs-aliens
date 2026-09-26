@@ -1,5 +1,7 @@
 # Loadout, Fighting access, reset and modal integration ? 19 September 2026
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 ## Changes
 
 - Fighting is an assignable **learned combat capability** in Inventory > Combat. Availability reads the existing PlayerSkillState and PlayerMeleeController.defaultCombatItem. It never enters the 25-item backpack. The existing Fighting icon catalog mapping supplies the category, details and quick-slot/HUD icons.

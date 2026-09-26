@@ -250,12 +250,29 @@ public sealed class BeamHoistZoneTests
         {
             var character = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<PlayerCharacter>(true)).Single();
             var arrivals = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).ToArray();
-            string[] before = arrivals.Select(a => BeamTransportV2Review.Describe(a.gameObject)).ToArray();
+            string[] before = arrivals.Select(a => DescribeArrival(a.gameObject)).ToArray();
             BeamHoistZoneSetup.ConfigureScene(character); BeamHoistZoneSetup.ConfigureScene(character);
             Assert.That(character.GetComponents<BeamHoistZonePresentation>().Length, Is.EqualTo(1));
-            for (int i = 0; i < arrivals.Length; i++) Assert.That(BeamTransportV2Review.Describe(arrivals[i].gameObject), Is.EqualTo(before[i]));
+            for (int i = 0; i < arrivals.Length; i++) Assert.That(DescribeArrival(arrivals[i].gameObject), Is.EqualTo(before[i]));
             Assert.That(scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<BeamHoistZoneVFX>(true)), Is.Empty);
         }
         finally { EditorSceneManager.ClosePreviewScene(scene); }
+    }
+    private static string DescribeArrival(GameObject root)
+    {
+        var report = new System.Text.StringBuilder();
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+        {
+            string path = AnimationUtility.CalculateTransformPath(t, root.transform);
+            report.AppendLine($"{path}: local={t.localPosition:R}; rotation={t.localRotation:R}; scale={t.localScale:R}; world={t.position:R}; active={t.gameObject.activeSelf}");
+            foreach (var component in t.GetComponents<Component>())
+            {
+                if (component is Transform) continue;
+                report.AppendLine(component.GetType().Name + ": " + EditorJsonUtility.ToJson(component));
+                if (component is Renderer renderer)
+                    report.AppendLine("materials=" + string.Join(",", renderer.sharedMaterials.Select(AssetDatabase.GetAssetPath)));
+            }
+        }
+        return report.ToString();
     }
 }

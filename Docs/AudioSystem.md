@@ -123,8 +123,10 @@ and the locomotion controller already has unrelated local edits. New gameplay au
 Both project C# assemblies compiled against Unity 6000.5.6f1. Isolated Unity Play Mode smoke
 review passed immediate playback, pooled identities, shared voice caps, cooldown, variant
 replacement, mixer/2D/3D assignment, pause/resume and disable cleanup. A warmed 100-shot loop
-allocated **0 managed bytes**. Run via `-executeMethod AudioRuntimeReview.Run` in an isolated
-batch Editor (without `-quit`); it exits with pass/fail. Review uses generated silent test clips.
+allocated **0 managed bytes** in that historical review with generated silent clips.
+The one-off review runner has been retired. Run current AudioSystemTests, AudioSceneSetupTests
+and UIAudioTests through the [Tests README](../Assets/Game/Tests/README.md); the old allocation
+measurement is historical evidence, not a claim that these tests repeat that measurement.
 
 All three `AudioSystemTests`, both `AudioSceneSetupTests` (GamePoc/ConstructionSite), and
 the extended Beam audio-phase assertion passed in the full project's Test Runner.

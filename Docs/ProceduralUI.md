@@ -1,5 +1,7 @@
 # Procedural UI foundation
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 Presentation pass, September 2026. The five supplied design sheets guide the visual
 language. Only the two icon sheets are imported; panels/buttons contain no raster
 shells or baked text. Existing gameplay, saves, pause ownership, inventory operations,
@@ -124,9 +126,10 @@ The focused Editor test process exited normally with all four tests passing.
   faint peripheral tech lines. Floor-only edge fading accommodates existing close
   preview framing. No character, animation, camera or lighting settings changed.
   Tune Platform Radius, Tech Line Strength and Rim Glow on `TutorialFloor.mat`.
-- The existing `ProceduralUIReview` harness includes all five Knowledge stages and
-  their original acknowledge buttons, plus HUD/Inventory/Knowledge captures. It
-  uses isolated fixture progression, without changing production unlock logic.
+- The historical scripted walkthrough covered all five Knowledge stages and their
+  acknowledge buttons, plus HUD/Inventory/Knowledge captures. That walkthrough is
+  retired. `ProceduralUIReview` now provides only **Tools > UI > Open Procedural Visual
+  Gallery** and the capture utility used by FightingPlayModeTests.
 
 This cleanup changes the five presentation C# files listed above (including
 `InventoryManagementView` for Inventory spacing), the floor shader and the review

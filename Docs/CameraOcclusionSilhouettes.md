@@ -1,5 +1,7 @@
 # Camera occlusion silhouettes — 20 September 2026
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 ## Scope and cause
 
 Only the line representation changed. CameraOcclusionController's sample generation, collider/group resolution, blocked-sample thresholds, fade state updates, hidden visibility, and material handling are unchanged. CameraOcclusionAuthoring, its MaterialPropertyBlock `_Fade` path, SG_EnvironmentSurface, gameplay cameras, colliders, and production scenes were not edited.

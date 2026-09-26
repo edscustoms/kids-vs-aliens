@@ -1,5 +1,7 @@
 # LevelStart root authoring
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 ## Contract and workflow
 
 Select **LevelStart** in ConstructionSite. Move its root to the desired final **player-root position** and rotate Y for player facing. Press Play, or start a fresh run. No child movement, coordinate copying, or setup command is needed after moving it.
@@ -81,7 +83,7 @@ Unity 6000.5.6f1, isolated save directory; no device testing or production test 
 - Hard Restart and confirmed New Game each discarded the prior snapshot and completed another exact arrival at the currently authored C pose/yaw.
 - The Play Mode assertions and result artifact completed successfully. The graphics-enabled Unity batch process returned Windows access-violation exit code `0xC0000005` during shutdown after `Cleanup mono`, as in the preceding Beam review. The focused Editor test process exited successfully. This shutdown issue is not claimed fixed by this authoring change.
 
-Detailed evidence: `Logs/LevelStart/audit.log`, `migrate.log`, `tests.xml`, and `play.log`. `LevelStartAuthoringReview.Run` repeats the integration checks with unsaved editor placements; Unity reloads those Play Mode scene copies during the review. `LevelStartAuthoringReview.Migrate` is the explicit one-time migration, not routine repair.
+Historical evidence: `Logs/LevelStart/audit.log`, `migrate.log`, `tests.xml`, and `play.log`. The one-time migration and scripted review are retired; their authored root placement remains. Use canonical gameplay scene repair and the current LevelStartAuthoringTests/LevelStartMenuFlowTests through the Tests README.
 
 ## Changed files
 

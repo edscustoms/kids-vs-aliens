@@ -25,7 +25,7 @@ public sealed class UnarmedCombatContentTests
             for(int i=0;i<120;i++) {driver.SetMovement(Vector2.zero,1f/60);actor.Animator.Update(1f/60);}
             reference.Animator.runtimeAnimatorController=null;
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-            var playable=AnimationClipPlayable.Create(graph,FightingAnimationAuthoring.Clip("Guard"));
+            var playable=AnimationClipPlayable.Create(graph,AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Animations/Combat_v2/Fighting/Guard.anim"));
             playable.SetApplyFootIK(true);
             AnimationPlayableOutput.Create(graph,"Reference guard",reference.Animator).SetSourcePlayable(playable);
             graph.Play(); playable.SetTime(2); graph.Evaluate(0);

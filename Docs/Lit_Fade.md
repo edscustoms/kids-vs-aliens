@@ -1,5 +1,7 @@
 # Lit_Fade
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 Shader: `Universal Render Pipeline/Lit_Fade`
 
 Asset: `Assets/Game/Shaders/Lit_Fade.shader`
@@ -23,13 +25,14 @@ under the included Unity Companion License notice. Fragment adapters call the
 installed stock Lit pass implementations; they do not replace the lighting model.
 The Editor inspector delegates to Unity's stock Lit inspector and adds one slider.
 When upgrading URP, compare `Lit.shader` and `LitInput.hlsl` with these copies and
-rerun the review; the inspector currently resolves URP's internal `LitShader` type.
+check the shader Inspector and render regression tests; the inspector currently resolves URP's internal `LitShader` type.
 
 ## Validation — Unity 6000.5.6f1, D3D11 Editor Play Mode
 
-`Lit_FadeReview.Run` creates an unsaved empty scene and temporary material copies.
-Run from a disposable/batch Editor session (it exits the Editor on completion).
-It does not save production scenes, materials or rendering-profile assets.
+The historical one-off render review used an unsaved empty scene and temporary material
+copies, without saving production scenes, materials or rendering-profile assets. That
+helper is retired. Use graphics-enabled full regression for current automated checks;
+visually inspect the shader/Inspector when changing shader or URP behavior.
 
 - Existing `M_Weapon_Glass`: reproduced stock Lit ignoring MPB `_Fade = 0`.
 - Temporary replacement: compared stock Lit with Fade 1, 0.5 and 0 through MPB.

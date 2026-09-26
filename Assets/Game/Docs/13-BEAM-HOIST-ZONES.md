@@ -1,5 +1,7 @@
 Beam Hoist fixed start-zone presentation
 
+Historical helper/file lists below are records of earlier passes, not current commands. See [helper cleanup](../../../Docs/LegacyHelperCleanup.md) for retired tooling; canonical scene repair and surface baking remain supported.
+
 Authoring
 - Add BeamHoistSurface to an upright platform/container in a gameplay scene.
 - The scene's player BeamHoistAbility is the single source for maximum lateral reach,
@@ -118,9 +120,9 @@ Verification artifacts
   and their active-state versions: inspected GPU renders.
 - Logs/HoistConnected/protected-before.json: gameplay, bake, presenter, scene, prefab
   and material preservation hashes, all unchanged after verification.
-- For batch reproduction, export the approved shader revision to
-  Logs/HoistConnected/approved-shader.txt, then execute
-  BeamHoistZoneConnectedReview.Capture. It never saves or replaces an interactive scene.
+- The one-off connected-zone capture tool is retired; its captures remain historical
+  evidence. Run BeamHoistZoneTests and BeamHoistZoneTopologyTests through the
+  [Tests README](../Tests/README.md), then inspect the approved effect in normal play.
 
 Device follow-up: check the building example in normal play, walking/fading/re-entering
 and hoisting. Verify atlas/fill performance on Android/iOS; device testing is not claimed.

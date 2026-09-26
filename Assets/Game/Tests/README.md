@@ -38,10 +38,10 @@ an Editor used for tests. Prefer the isolated runner when checking all scene flo
 rendering, runtime lifecycle or full test success.
 
 Authoring/import tests use disposable asset copies or preview scenes and clean them up.
-The normal weapon geometry/reference test reads current prefabs and data. Historical
-before/after geometry comparison is explicitly `Tools > Weapons > Verify Historical
-Geometry Migration`; it needs the original migration evidence in ignored Logs and is
-not a clean-checkout test. Never rerun a mutating migration to create a test oracle.
+The normal weapon geometry/reference test reads current prefabs and data and is
+self-contained. The completed historical migration/comparison helper has been retired;
+old before/after logs are historical evidence, not a test prerequisite. Never rerun a
+mutating migration to create a test oracle.
 
 ## Device and manual acceptance
 

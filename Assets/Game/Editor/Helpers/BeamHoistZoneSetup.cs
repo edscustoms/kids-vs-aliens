@@ -1,7 +1,4 @@
-using System.IO;
-using System.Linq;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -70,20 +67,4 @@ public static class BeamHoistZoneSetup
         finally { Object.DestroyImmediate(root); }
     }
 
-    // Explicit batch/Editor migration: only add the observer. Never run broad scene repair here.
-    [MenuItem("Tools/Setup/Add Hoist Zone Presentation to ConstructionSite")]
-    public static void InstallConstructionSite()
-    {
-        EnsureAssets();
-        var scene = EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
-        var player = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<PlayerCharacter>(true)).Single();
-        var sequence = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<PlayerBeamInSequence>(true)).Single();
-        string before = BeamTransportV2Review.Describe(sequence.gameObject);
-        ConfigureScene(player); ConfigureScene(player);
-        BeamHoistSurfaceBaker.BakeScene(scene, true);
-        if (before != BeamTransportV2Review.Describe(sequence.gameObject)) throw new System.InvalidOperationException("Arrival presentation changed.");
-        Directory.CreateDirectory("Logs/HoistZone");
-        File.WriteAllText("Logs/HoistZone/arrival-preservation.txt", "PASS: LevelStart hierarchy, components, transforms and serialized settings unchanged by zone installation.");
-        EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
-    }
 }

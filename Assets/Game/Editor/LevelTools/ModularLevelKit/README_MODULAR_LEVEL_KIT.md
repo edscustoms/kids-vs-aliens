@@ -1,5 +1,10 @@
 # Kids VS Aliens — Modular Level Kit V3
 
+**Archived workflow — retired.** The modular generator, alignment and snap tools were
+removed after dependency validation. The menu commands and authoring steps below are
+historical records, not supported instructions. Existing runtime components and authored
+assets remain unchanged. See [helper cleanup](../../../../../Docs/LegacyHelperCleanup.md).
+
 V3 changes the wall strategy after testing V2 in Unity.
 
 ## Wall decision: sharp mitered turns

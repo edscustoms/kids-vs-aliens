@@ -1,113 +1,16 @@
-using System;
 using System.IO;
 using System.Linq;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using static InterfaceFactory;
 
-// Visual-only harness. Fixture state uses a disposable save directory; no restore,
-// lifecycle or device tests. Production callbacks and scene flow are not rewritten.
-[InitializeOnLoad]
+// Reusable visual gallery and capture utility. Historical scripted walkthroughs are retired.
 public static class ProceduralUIReview
 {
-    private const string Key="ProceduralUIReview.Running";
-    private static GameObject gallery;
-    private static int step;
-    private static double next,deadline;
-    private static bool failed;
-    static ProceduralUIReview() { EditorApplication.playModeStateChanged+=OnMode; }
-    public static void Run()
-    {
-        ProceduralUISetup.EnsureAssets();
-        Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY",Path.GetFullPath("Logs/UIVisualFixture-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
-        Directory.CreateDirectory("Logs/ProceduralUI");
-        File.WriteAllText("Logs/ProceduralUI/errors.txt",string.Empty);
-        SessionState.SetBool(Key,true);
-        UICleanupReview.Begin(EditorApplication.EnterPlaymode);
-    }
-    private static void OnMode(PlayModeStateChange state)
-    {
-        if(!SessionState.GetBool(Key,false))return;
-        if(state==PlayModeStateChange.EnteredPlayMode) { step=0;next=EditorApplication.timeSinceStartup+3;deadline=next+150;failed=false;EditorApplication.update+=Tick;Application.logMessageReceived+=OnLog; }
-        if(state==PlayModeStateChange.EnteredEditMode) { SessionState.SetBool(Key,false);UICleanupReview.Finish(failed); }
-    }
-    private static void OnLog(string message,string trace,LogType type)
-    {
-        if(type==LogType.Exception||type==LogType.Error) { failed=true;File.AppendAllText("Logs/ProceduralUI/errors.txt",message+"\n"+trace+"\n"); }
-    }
-    private static T Find<T>() where T:Object => Object.FindAnyObjectByType<T>(FindObjectsInactive.Include);
-    private static void Check(bool condition,string message) { if(!condition)throw new InvalidOperationException("UI VISUAL CHECK: "+message); }
-    private static void Click(string name) => Object.FindObjectsByType<Button>(FindObjectsInactive.Exclude).Single(b=>b.name==name).onClick.Invoke();
-    private static void Tick()
-    {
-        if(EditorApplication.timeSinceStartup>deadline) { Fail(new TimeoutException("Visual check timed out at step "+step));return; }
-        if(!EditorApplication.isPlaying||EditorApplication.timeSinceStartup<next)return;
-        next=EditorApplication.timeSinceStartup+1.5;
-        try {
-            var menu=Find<InGameMenuController>();
-            switch(step) {
-                case 0: gallery=BuildGallery();break;
-                case 1: Capture("01-primitives-1080",1920,1080);Capture("02-primitives-720",1280,720);Capture("03-primitives-tablet",2048,1536);Object.Destroy(gallery);break;
-                case 2: UICleanupReview.CheckMenuParity();Capture("04-menu",1920,1080);
-                    var flow=Find<ActiveRunMenu>();flow.GetComponent<UIScreenRouter>().HideScreens();
-                    var active=flow.transform.Find("Screen_ActiveRun");active.gameObject.SetActive(true);
-                    active.Find("RunPanel/Metadata").GetComponent<TMP_Text>().text="Construction Site   /   00:12:04";
-                    break;
-                case 3: Capture("05-active-run",1920,1080);SceneManager.LoadScene("ConstructionSite");break;
-                case 4:
-                    if(ActiveRunController.Instance==null||!ActiveRunController.Instance.IsReady||Find<BeamTransportController>().IsTransporting)return;
-                    var inventory=Find<PlayerInventory>();
-                    foreach(var entry in InterfaceIconCatalog.Current.entries.Where(e=>e.item!=null))inventory.TryAddItem(entry.item);
-                    inventory.TryAddItem(AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Game/Data/Items/KnowledgeBooks/BeamHoistBook.asset"));
-                    var grenade=AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Game/Data/Items/ElectricGrenade.asset");
-                    if(grenade==null)grenade=inventory.Items.First(i=>i is GrenadeItemData);
-                    while(inventory.Items.Count<25)Check(inventory.TryAddItem(grenade),"Could not fill backpack");
-                    break;
-                case 5:
-                    var quick=Find<InventoryUI>();
-                    var labels=new SerializedObject(quick).FindProperty("slotTexts");
-                    for(int i=0;i<labels.arraySize;i++)Check(!((TMP_Text)labels.GetArrayElementAtIndex(i).objectReferenceValue).enabled,"Quick-bar item name still visible");
-                    Check(quick.GetComponentsInChildren<TMP_Text>().Any(t=>t.name=="Quantity"&&t.enabled&&t.text.Length>0),"Quick-bar quantities missing");
-                    foreach(var icon in quick.GetComponentsInChildren<Image>().Where(i=>i.name=="ItemIcon"))Check(icon.preserveAspect&&!icon.raycastTarget,"HUD icon aspect/hit behavior changed");
-                    Capture("06-hud",1920,1080);Capture("06-hud-720",1280,720);menu.OpenMenu();break;
-                case 6: Capture("07-pause",1920,1080);Click("Inventory");break;
-                case 7: UICleanupReview.CheckInventory();Find<InventoryManagementView>().Select(1,false);Capture("08-inventory",1920,1080);Capture("08-inventory-720",1280,720);Capture("08-inventory-tablet",2048,1536);Click("Back");Check(menu.IsOpen&&Time.timeScale==0,"Inventory Back changed pause");
-                    Click("Resume");Check(!menu.IsOpen,"Resume did not close menu");
-                    break;
-                case 8:
-                    if(!Find<PlayerSkillState>().HasSkill(AssetDatabase.LoadAssetAtPath<SkillData>("Assets/Game/Data/Progression/BeamHoist.asset"))){UICleanupReview.LearnFirstBook();return;}
-                    Capture("09-knowledge-acquired",1920,1080);Capture("09-knowledge-acquired-720",1280,720);Click("Acknowledge");break;
-                case 9: Click("LearnButton");Click("Entry0");break;
-                case 10: Capture("10-knowledge-log",1920,1080);Find<KnowledgeLogView>().Close();menu.OpenMenu();menu.ShowRestart();break;
-                case 11: Capture("11-danger",1920,1080);menu.ShowMenu();
-                    Check(!ShaderUtil.GetShaderMessages(Shader.Find("UI/Neon Surface")).Any(m=>m.severity==UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error),"surface shader compile error");
-                    Check(!ShaderUtil.GetShaderMessages(Shader.Find("Presentation/Tutorial Floor")).Any(m=>m.severity==UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error),"floor shader compile error");
-                    Click("Resume");UnlockFixture("UnarmedCombat");break;
-                case 12: Capture("12-fighting-stage",1920,1080);Click("Acknowledge");break;
-                case 13: if(!UICleanupReview.CheckFirstPistolPickup())return;break;
-                case 14: Capture("14-pistol-stage",1920,1080);Click("Acknowledge");break;
-                case 15: if(!UICleanupReview.CheckDuplicatePistolPickup())return;UnlockFixture("RifleHandling");break;
-                case 16: Capture("16-rifle-stage",1920,1080);Click("Acknowledge");break;
-                case 17: UnlockFixture("GrenadeHandling");break;
-                case 18: Capture("18-grenade-stage",1920,1080);Click("Acknowledge");break;
-                case 19: Click("LearnButton");break;
-                case 20: Click("Entry0");break;
-                case 21: Capture("20-knowledge-list-720",1280,720);Capture("20-knowledge-list-tablet",2048,1536);Find<KnowledgeLogView>().Close();
-                    Debug.Log("PROCEDURAL UI PLAY REVIEW PASSED: gallery/screens at three resolutions, icon-only HUD with quantities, inventory/back/resume, all five Knowledge stages and acknowledgement buttons. No lifecycle/restore/device test.");
-                    Finish();return;
-            }
-            step++;
-        } catch(Exception error) { Fail(error); }
-    }
-    private static void UnlockFixture(string name) => Find<PlayerSkillState>().UnlockSkill(AssetDatabase.LoadAssetAtPath<SkillData>("Assets/Game/Data/Progression/"+name+".asset"));
-    private static void Fail(Exception error) { failed=true;Debug.LogException(error);Finish(); }
-    private static void Finish() { EditorApplication.update-=Tick;Application.logMessageReceived-=OnLog;EditorApplication.ExitPlaymode(); }
-
     [MenuItem("Tools/UI/Open Procedural Visual Gallery")]
     public static void OpenGallery()
     {

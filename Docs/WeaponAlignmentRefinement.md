@@ -29,9 +29,9 @@
 - Open Amy, SportyGranny, or the CharacterVisual inside `PF_Enemy_Melee_POC_V1.prefab`; edit its referenced Pistol/Rifle transforms under RightHand/WeaponMounts. Normal setup/repair preserves these authored transforms.
 - New alien: Humanoid visual + CharacterVisual + compatible EnemyAnimationProfile, then author/calibrate style mounts on that visual. Reuse the same WeaponItemData/equipped prefabs. No AI change or per-alien weapon copy is required.
 - Edit shared weapon geometry/grip/muzzle only on the weapon prefab. Menu previews inherit equipped-prefab changes. Dropped variants retain their existing pickup components and physics dimensions.
-- `WeaponContractRefinement` is an explicit one-time editor migration/calibration utility, not normal scene repair. Calibration exports are review artifacts; do not rerun migration to repair an ordinary scene.
+- The completed weapon migration/calibration utility is retired; see [helper cleanup](LegacyHelperCleanup.md). Calibration exports are historical review artifacts. Edit authored mounts/prefabs for future tuning and run the self-contained WeaponAlignmentTests through the [Tests README](../Assets/Game/Tests/README.md).
 
-## Files changed by this follow-up
+## Historical files changed by this follow-up
 
 Runtime: `Scripts/Player/CharacterVisual.cs`, `Scripts/Items/WeaponInstance.cs`, `Scripts/Enemy/EnemyEquipment.cs`, `EnemyCombatPresentation.cs`, `EnemyCombatProfile.cs`, `Scripts/Enemy/AI/EnemyRangedAttack.cs` (under Assets/Game).
 

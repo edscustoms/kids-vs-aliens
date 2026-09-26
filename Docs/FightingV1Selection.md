@@ -1,5 +1,7 @@
 # Fighting V1 — Motifect selection and validation
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 19 September 2026. Implementation and Unity validation report.
 
 The production chain is **left jab → right cross → linked hook → heavy rising strike → front kick**. Each step still requires a deliberate FIRE press. The hook and heavy strike are separate derivatives of one authored combination, split at a shared linking pose. The complete 40-FBX source pack remains in `Assets/Game/Animations/Combat_v2/`; no source binary was moved, deleted or edited.
@@ -8,7 +10,7 @@ This is an implemented, tested animation candidate, not a certification of finis
 
 ## Selected content and timing
 
-All times are seconds. Contact is an authored typed `MeleeImpact` event in the derivative clip. Recovery is a separate normalized animation binding value. Source ranges and speed are reproducible in `FightingAnimationAuthoring.Attacks`.
+All times are seconds. Contact is an authored typed `MeleeImpact` event in the derivative clip. Recovery is a separate normalized animation binding value. The table below records source ranges and speed; the resulting clips live in `Assets/Game/Animations/Combat_v2/Fighting/`.
 
 | Source | Derivative / semantic role | Source range | Playback speed | Contact after start | Earliest next step |
 |---|---|---:|---:|---:|---:|
@@ -78,9 +80,9 @@ Amy and SportyGranny use the same controller, mappings and semantic actions. No 
 
 ## Review tools and validation
 
-**Tools → Animation → Fighting Review** opens an isolated preview using the real controller. It loops exploration → guard → the complete five-step chain → guard → exploration at 1×, with pause and 1/60 s stepping. Choose a character prefab and standing/forward/backward/strafe/diagonal movement. An optional clip field auditions any source separately. Preview movement is in place; physical movement is covered by the Play Mode fixture.
+The historical animation audition window has been retired. Review the authored clips and `HumanoidShooter.controller` in Unity, then exercise the complete chain in normal Play Mode on Amy and SportyGranny. `FightingPlayModeTests` retains the real-controller/input sequence regression.
 
-`FightingAnimationAuthoring.ApplyProduction` regenerates selected derivatives and animation mappings, preserving the derivative asset GUIDs. This is an authoring operation, not something required each scene load. Existing canonical player setup already supplies melee, animation and primary-action wiring; no new per-scene dependency was added.
+The selected derivatives, typed impact events and animation mappings are already authored; the one-time generator is retired. Edit those assets for future animation work, using the timing table above as the historical recipe. Canonical player setup still supplies melee, animation and primary-action wiring.
 
 Validation artifacts:
 
@@ -92,7 +94,7 @@ Final combined Unity run: **51 passed, 0 failed**. The native Play Mode fixture 
 - `Logs/CombatV2/diagnostics.txt`: retargeted source hand and foot samples used to locate contact.
 - `Logs/ProceduralUI/combat-sequence-*.png`: Play Mode captures through the existing gameplay camera.
 
-The captures were visually inspected; automated checks establish sequencing, state recovery, movement and event behavior. They do **not** certify the subjective “production-worthy / seamless at normal speed” acceptance criterion. The review window supports that final live art review. No Android/device test was performed. A pre-existing MobileAimSettings warning about chances totalling 85% remains unrelated to this work.
+The captures were visually inspected; automated checks establish sequencing, state recovery, movement and event behavior. They do **not** certify the subjective “production-worthy / seamless at normal speed” acceptance criterion. Final live art acceptance requires normal Play Mode review. No Android/device test was performed. A pre-existing MobileAimSettings warning about chances totalling 85% remains unrelated to this work.
 
 Final acceptance checklist: watch the three requested full sequences at 1×; check the hook/finisher junction, kick support foot, idle/guard foot placement and moving upper-body silhouette; repeat with target/facing changes in the actual level. Reaction/knockdown acceptance remains open for the reasons above.
 

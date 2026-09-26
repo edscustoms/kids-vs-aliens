@@ -714,9 +714,8 @@ pooled/reused runtime VFX architecture
 
 Final cleanup removed the obsolete Ionized Mist path.
 
-Current setup command:
-
-Tools > Setup > Electric Grenade VFX V5
+The completed V5 generator was retired in the helper cleanup pass. Its authored
+prefab/material output remains; edit those assets for any future approved polish.
 
 Do not continue polishing Electric Grenade VFX until the broader game V1 polish pass unless a real gameplay/readability problem appears.
 

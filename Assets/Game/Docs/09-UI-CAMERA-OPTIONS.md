@@ -1,5 +1,7 @@
 # Reusable UI, Options and gameplay cameras
 
+Historical helper/file lists below record earlier implementation passes. Some one-off tools are now retired; see [helper cleanup](../../../Docs/LegacyHelperCleanup.md). Use the [Tests README](../Tests/README.md) for current validation commands.
+
 Implemented 15 September 2026 in Unity 6000.5.6f1 / Cinemachine 2.10.7.
 
 ## UI architecture

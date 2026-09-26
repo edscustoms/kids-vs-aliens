@@ -1,5 +1,7 @@
 # Knowledge ability demonstrations
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 `SkillDemoPlayer` still resolves `PlayerCharacter.CurrentCharacterPrefab`, which is
 populated from the selected loadout (or the scene's existing fallback). It clones
 that visual, its Animator, action bindings and aura; it never animates the live
@@ -49,12 +51,12 @@ Changed production files: `SkillDemoPlayer.cs`, `SkillTutorialData.cs`,
 
 ## Unity validation
 
-`KnowledgeAbilityReview.Run` uses isolated fixture saves and the actual Knowledge
-presenter in ConstructionSite. Its checks cover three complete cycles per ability,
+The retired one-off ability review used isolated fixture saves and the actual Knowledge
+presenter in ConstructionSite. Its historical checks covered three complete cycles per ability,
 non-empty grenade inventory remaining unchanged, a stationary real player, authored
 release counts, exact beam returns, endpoint framing, requested rest intervals,
 repeated Review/Got It, alternate selected character and disable cleanup. Captures
-are written to `Logs/ProceduralUI/ability-*.png`; the Unity log is
+were written to `Logs/ProceduralUI/ability-*.png`; the Unity log was
 `Logs/KnowledgeAbilityReview.log`. No Android/device validation is involved.
 
 Result: passed in Unity 6000.5.6f1 Play Mode using Direct3D 11, with a successful

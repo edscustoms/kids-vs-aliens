@@ -88,9 +88,10 @@ The 12.06-second reactor and 5.58-second charge use **SFX_Loop_3D** for compress
 playback with synchronous preload. Neither preset implies a runtime loop; these are unused
 candidates. No timing-critical clip streams; original WAV content was not edited.
 
-`StarterAudioPackSetup.Apply` is the repeatable **Tools > Audio > Organize and Assign Starter
-Pack** command. It preserves already-assigned SoundEvent variants on rerun. Its explicit
-batch-only `ApplyAndWireScenes` entry also saves audio wiring in the three scenes.
+The starter-pack assignment and scene wiring are already authored. The one-off pack
+organizer has been retired. Edit SoundEvent assignments through **Tools > Audio > Audio
+Library**, then use **Tools > Audio > Validate Library**. Canonical gameplay/menu repair
+maintains required scene wiring; it does not reassign the pack.
 
 Library validation: **one intentional warning**, missing Beam_Loop. No avoidable clip,
 index, mixer or importer warnings. Both assemblies compile.

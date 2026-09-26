@@ -1,5 +1,7 @@
 Beam Transport V2
 
+Historical helper/file lists below record earlier implementation passes. Some one-off tools are now retired; see [helper cleanup](../../../Docs/LegacyHelperCleanup.md). Use the [Tests README](../Tests/README.md) for current validation commands.
+
 BeamTransportController is the single owner of beam movement, the
 GameplaySuspensionController transport lease, CharacterController handoff, route
 validation, reusable runtime VFX and transport teardown.

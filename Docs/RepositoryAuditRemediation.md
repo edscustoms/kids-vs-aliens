@@ -1,5 +1,7 @@
 # Repository audit remediation
 
+This report records the completed remediation baseline. Its historical file list and migration-verification command describe that pass, not today's supported tooling. The later [helper cleanup](LegacyHelperCleanup.md) retires completed migration/review helpers while preserving production regression tests.
+
 Pass 1 discovery completed. Pass 2 adversarial verification completed and is authoritative.
 Pass 2 verified **no Critical or High architecture problems**. This pass addresses its
 concrete Medium findings and test/documentation/naming debt without redesigning systems.

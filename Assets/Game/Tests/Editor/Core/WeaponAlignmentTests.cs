@@ -13,7 +13,13 @@ using Object = UnityEngine.Object;
 
 public sealed class WeaponAlignmentTests
 {
-    const string Folder = WeaponContractRefinement.Evidence;
+    const string Folder = "Logs/WeaponRefinement";
+    private static readonly string[] ActorPaths = {
+        "Assets/Game/Prefabs/Player/Characters/Amy.prefab",
+        "Assets/Game/Prefabs/Player/Characters/SportyGranny.prefab", EnemyCombatantSetup.PrefabPath
+    };
+    [System.Serializable] private sealed class MountPose { public int actor; public int style; public Vector3 position; public Quaternion rotation; }
+    [System.Serializable] private sealed class MountPoses { public List<MountPose> poses = new(); }
     [UnityTest, Timeout(300000)] public IEnumerator CalibrateMounts() => Review(true);
     [UnityTest, Timeout(300000)] public IEnumerator AuthoredAlignment() => Review(false);
     [UnityTest, Timeout(300000)] public IEnumerator RifleGripAudition() => Review(false,true);
@@ -34,11 +40,11 @@ public sealed class WeaponAlignmentTests
         fill.type = LightType.Directional; fill.intensity = 1.5f; fill.transform.rotation = Quaternion.Euler(20,140,0);
         var camera = new GameObject("Review camera",typeof(Camera)).GetComponent<Camera>();
         camera.enabled = false; camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.12f,.14f,.18f); camera.fieldOfView = 32;
-        var poses = new WeaponContractRefinement.MountPoses(); var report = new List<string>();
-        for(int actor=0; actor<WeaponContractRefinement.ActorPaths.Length; actor++)
+        var poses = new MountPoses(); var report = new List<string>();
+        for(int actor=0; actor<ActorPaths.Length; actor++)
         for(int style=audition?2:1;style<=2;style++)
         {
-            var source = AssetDatabase.LoadAssetAtPath<GameObject>(WeaponContractRefinement.ActorPaths[actor]);
+            var source = AssetDatabase.LoadAssetAtPath<GameObject>(ActorPaths[actor]);
             Assert.That(source, Is.Not.Null);
             var visual = Object.Instantiate(source.GetComponentInChildren<CharacterVisual>(true));
             visual.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
@@ -61,14 +67,14 @@ public sealed class WeaponAlignmentTests
                 instance.GripPoint.localPosition=new Vector3(.0009f,-.03f,-.05f);
                 mount.position+=visual.transform.right*(actor==2?.035f:actor==0?.025f:.015f);
                 instance.AttachTo(visual,(WeaponAnimationStyle)style);
-                poses.poses.Add(new WeaponContractRefinement.MountPose{actor=actor,style=style,position=mount.localPosition,rotation=mount.localRotation});
+                poses.poses.Add(new MountPose{actor=actor,style=style,position=mount.localPosition,rotation=mount.localRotation});
             }
             if(calibrate)
             {
                 // Evaluate the actual retargeted ready pose. Weapon +Z is the real barrel axis.
                 mount.SetPositionAndRotation(Vector3.Lerp(hand.position,finger.position,.45f),Quaternion.LookRotation(visual.transform.forward,visual.transform.up));
                 instance.AttachTo(visual,(WeaponAnimationStyle)style);
-                poses.poses.Add(new WeaponContractRefinement.MountPose{actor=actor,style=style,position=mount.localPosition,rotation=mount.localRotation});
+                poses.poses.Add(new MountPose{actor=actor,style=style,position=mount.localPosition,rotation=mount.localRotation});
             }
             var head=animator.GetBoneTransform(HumanBodyBones.Head);
             var left=animator.GetBoneTransform(HumanBodyBones.LeftHand);

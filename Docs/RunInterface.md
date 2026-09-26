@@ -1,5 +1,7 @@
 # Interface and active-run persistence
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 The interface uses the existing uGUI/TMP, inventory, tutorial and suspension systems. Gameplay movement, Beam Hoist paths, camera modes and action bindings retain their existing owners.
 
 ## Player flow
@@ -65,8 +67,8 @@ Current regression commands and isolation: [Tests README](../Assets/Game/Tests/R
 - `Tools/Compile-UnityScripts.ps1`: runtime/editor C# compile.
 - Unity EditMode category `RunInterface`: recoverable writes, checksum rejection, discard, state roundtrip, inventory assignment/removal, pause ownership and inventory Back.
 - `RunInterfaceSetup.RepairExistingScenes`: explicit authoring command that saves Menu, GamePoc and ConstructionSite; not an ordinary test.
-- `RunInterfaceValidation.Run`: isolated Play Mode flow test with screenshots under `Logs/RunInterfaceShots`. Test saves use a separate directory; player saves are not touched.
-- `RunInterfaceValidation.BuildAndroid`: development APK under `Builds/RunInterface`.
+- `Tools/Run-UnityTests.ps1 -Suite Full -ReuseCopy`: current automated regression, including run, loadout, menu and lifecycle fixtures, in an isolated project/save directory.
+- Android builds: use Unity Build Profiles and the intended Android profile. The historical walkthrough/APK helper is retired; device acceptance remains manual.
 
 Device acceptance: test touch drag/drop, joystick/action input, pause/settings/Knowledge ownership, safe quit and Continue, background/foreground, screen lock, extended backgrounding and process termination. Incoming-call and real low-memory OS termination checks require the corresponding device conditions; a force-stop/relaunch test is recorded separately.
 

@@ -34,9 +34,9 @@ clip. These Animator details live in animation data/facade, never grenade gamepl
 The optional clip/state metadata is needed only for actions that wait for markers;
 ordinary existing `TryPlayAction(action)` calls remain supported.
 
-The marker is authored at the generator's forward-release key, currently 0.54 s
-(`GenerateGrenadeThrowAnimation.ReleaseTime`). This value exists only in Editor
-authoring. Replacing/retiming the clip means moving its authored event and updating
+The marker is authored at the forward-release key, currently 0.54 s in
+`Assets/Game/Animations/Grenade/GrenadeThrow_Unarmed.anim`. The completed generator
+is retired. Replacing/retiming the clip means moving its authored event and updating
 its action binding. There is no
 `WaitForSeconds` or hardcoded release delay in grenade gameplay.
 
@@ -66,10 +66,12 @@ selection survives and charging is cancelled to Held, requiring fresh FIRE.
 
 ## Editor setup
 
-Run **Tools → Helpers → Wire Grenade Throw Animation** to repair
-the marker/mapping and relays without regenerating poses or saving gameplay scenes.
-The existing **Generate Grenade Throw Animation** command includes the same wiring.
-Both existing compatible character prefabs (Amy and SportyGranny) share the mapping.
+The throw clip, typed release marker and shared action mapping are already authored;
+the one-time generation/wiring commands are retired. Edit the clip's event and the
+shared CharacterAnimationActions binding when replacing or retiming it. Amy and
+SportyGranny share that mapping; current GrenadeAnimationTests and
+GrenadeThrowMotionTests validate the contract. Canonical scene repair maintains
+required player components and references.
 `CharacterSetupHelper` configures the relay and default compatible mapping when
 creating future characters. Existing authored custom mappings are preserved.
 

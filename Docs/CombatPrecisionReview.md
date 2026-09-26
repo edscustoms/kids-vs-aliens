@@ -1,5 +1,7 @@
 # Combat V2 encounter review
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 ## Baseline (Unity, before runtime changes)
 
 The disposable Play Mode lab uses the scene's real player/input/animation components and `PF_Enemy_Melee_POC_V1`. No scene asset is saved. Its floor/NavMesh is isolated at (1000, 0, 1000), saves use a disposable directory, and off-screen Animators explicitly evaluate their poses. CSV traces and sequential captures are under `Logs/CombatPrecision/baseline`.

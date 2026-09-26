@@ -1,5 +1,7 @@
 # Shared beam presentation and fresh arrival authoring
 
+Historical validation results and changed-file lists below describe their original passes. Some one-off helpers have since been retired; see [helper cleanup](LegacyHelperCleanup.md). Current automated validation uses the [Tests README](../Assets/Game/Tests/README.md).
+
 Both automatic arrival and manual Hoist use `Assets/Game/Prefabs/PF_BeamTransportVFX.prefab`.
 The cone/core/middle/ground meshes, vertex data, dimensions and mesh transforms are preserved.
 Hoist paths, follow behavior, travel timing and validation are unchanged.
@@ -65,9 +67,9 @@ the reference art preset. Routine gameplay repair does **not** invoke this comma
 
 ## Unity review
 
-`BeamPresentationReview.Run` uses isolated temporary saves and unsaved marker edits for two fresh
-arrival poses, three contextual Hoists and a real Quit/Continue cycle. It produces HDR captures in
-`Logs/BeamRefinement`. `BeamPresentationTests` checks directional particle containment/cleanup and
+The retired one-off review used isolated temporary saves and unsaved marker edits for two fresh
+arrival poses, three contextual Hoists and a real Quit/Continue cycle. Its historical HDR captures
+are in `Logs/BeamRefinement`. Current `BeamPresentationTests` checks directional particle containment/cleanup and
 marker repair in ConstructionSite and GamePoc. The existing arrival regression also checks two poses.
 No device validation is part of this pass.
 
