@@ -1,638 +1,291 @@
-AGENTS.md — Kids VS Aliens
-
-This file defines how Codex and other repo-aware coding agents should work in this repository.
-
-Read PROJECT_CONTEXT.md and TODO.md before substantial implementation work.
-
-Inspect Before Editing
-
-Before changing code:
-
-Inspect the actual relevant scripts, prefabs, ScriptableObjects, scenes, and references.
-
-Trace how the existing system currently works.
-
-Reuse existing architecture where practical.
-
-Do not guess class names, serialized fields, prefab names, enum values, or folder structure.
-
-If repository state conflicts with PROJECT_CONTEXT.md, treat the repository as source of truth for implementation details and report the discrepancy.
-
-Do not propose or implement a clean-slate rewrite unless explicitly requested or the existing architecture demonstrably requires it.
-
-Preserve Working Systems
-
-Working systems should be considered production-sensitive.
-
-Before changing shared code, check what depends on it.
-
-Especially avoid regressions in:
-
-player movement
-
-mobile input
-
-desktop input
-
-auto aim / target switching
-
-shooting
-
-muzzle safety
-
-combat hit resolution
-
-pistol
-
-rifle
-
-inventory
-
-Knowledge Books
-
-skill gating
-
-menu/catalog previews
-
-enemy perception
-
-LOS
-
-wall fading
-
-Android behavior
-
-Prefer the smallest generic change that solves the actual problem.
-
-Unity / Project Assumptions
-
-Project:
-
-Unity 6.5
-
-URP
-
-mobile-first
-
-Android/iOS are first-class targets
-
-desktop remains supported for development/testing
-
-Do not introduce desktop-only assumptions into gameplay systems.
-
-Avoid unnecessary per-frame allocations, expensive scene searches, uncontrolled Instantiate/Destroy loops, and other patterns that are obviously hostile to mobile performance.
-
-Do not prematurely micro-optimize code that is not on a measured hot path.
-
-Architecture Style
-
-General rule:
-
-Composition describes what something can do.
-Inheritance describes what something is.
-
-Prefer reusable components/services for shared capabilities such as:
-
-damage
-
-hit reactions
-
-targeting
-
-LOS
-
-perception
-
-shooting
-
-status effects
-
-item behavior
-
-Avoid duplicating slightly different versions of the same combat/LOS/targeting logic across multiple enemy or weapon classes.
-
-Do not build giant universal managers when a small reusable component is sufficient.
-
-Data-Driven Configuration
-
-Prefer existing ScriptableObject/data architecture for:
-
-weapon stats
-
-item references
-
-prefab references
-
-required skills
-
-grenade/effect configuration
-
-progression configuration
-
-Avoid hardcoded prefab mappings or magic values when the project already has a suitable data layer.
-
-Serialized Inspector values may intentionally differ from C# defaults.
-
-Do not overwrite tuned Inspector values merely because the code default is different.
-
-Physics Is Authoritative
-
-Real Unity physics/world collision should remain authoritative for:
-
-hits
-
-cover
-
-LOS
-
-projectile interception
-
-muzzle obstruction
-
-grenade collision
-
-Do not fake hits through walls or bypass real geometry unless an explicit gameplay rule requires it.
-
-Camera Occlusion Fade
-
-Current V2 direction is logical occluder-group fading rather than treating every
-renderer as an independent blocker.
-
-When working on this system:
-
-preserve exact camera → player ray-based detection; avoid broad casts that create
-false positives
-
-resolve collider hits to a logical occluder group containing one or more renderers
-
-use MaterialPropertyBlock or the existing equivalent; do not instantiate materials
-per renderer
-
-keep physics/colliders authoritative and active
-
-preserve the existing aim/visibility semantics for camera-faded blockers
-
-avoid one-time-only scene scans if runtime-added occluders must be supported
-
-authoring/setup helpers must be idempotent
-
-if the feature becomes a standard scene dependency, extend GameplaySceneSetup in
-the same task
-
-Do not automatically make every environment object fade. Focus on genuine large camera
-blockers.
-
-Beam Hoist / Beam Transport
-
-The reusable Beam Hoist system is now working and is production-sensitive.
-
-Manual upward Beam Hoist rules:
-
-normal Jump activates the hoist when the existing gameplay conditions are satisfied
-
-Beam Hoist Knowledge remains required
-
-movement is one continuous cubic Bézier from the true start position directly to landing
-
-release/control1/control2 only shape the path
-
-do not reintroduce a separate vertical phase, second curve, reset-to-start or teleport
-
-presentation must observe movement, not drive it
-
-Automatic level-start Beam arrival is a separate use. Do not attach the manual
-hoist-start holographic pad to PlayerBeamInSequence / BeamInSpawn.
-
-BeamHoistSurface + BeamHoistSurfaceBaker authoring:
-
-BeamHoistAbility limits are the source of truth for bake reach constraints
-
-do not add an independent approach-width setting that can drift from gameplay
-
-the baked valid lower approach/start cells are shared by gameplay and presentation
-
-no runtime baker should reshape the authored area around Amy
-
-runtime player movement may only affect visibility/fade and idle-vs-active presentation,
-not the fixed world-space footprint
-
-disconnected valid pockets may remain separate
-
-contiguous valid regions may be merged for presentation only when the union remains
-exactly gameplay-valid; never fill a real invalid gap/hole merely to make a rectangle
-
-The approved hoist-start glow and active flicker are presentation-sensitive. Do not
-redesign them during unrelated gameplay work.
-
-Floating/long-fall animation presentation must remain semantic/swappable. Do not make
-Beam Hoist gameplay depend on Mixamo clip names or Animator state names.
-
-Known independent follow-ups must not be "fixed" by rewriting Beam Hoist:
-
-automatic LevelStart/BeamInSpawn placement + lingering-beam issue
-
-pre-existing desktop Space/Jump lock
-
-final tutorial demonstrations
-
-final device regression
-
-Weapons
-
-Use the existing generic weapon pipeline.
-
-Expected concepts include:
-
-WeaponItemData
-
-equipped prefab
-
-dropped/world prefab
-
-WeaponInstance
-
-GripPoint
-
-Muzzle
-
-required skill
-
-fire mode
-
-animation style
-
-Do not add weapon-specific logic to generic equipment/spawn systems unless there is no cleaner extension point.
-
-The rifle's LeftGripPoint is currently parked for future support-hand IK. Do not implement/tune it unless explicitly requested.
-
-PlasmaCore
-
-The shared PlasmaCore system is already used by working weapons.
-
-Do not modify shared PlasmaCore code merely to tune one weapon.
-
-Prefer:
-
-serialized config
-
-prefab overrides
-
-weapon-specific configuration
-
-Only change the shared implementation when the change is genuinely reusable and safe for existing pistol/rifle usage.
-
-Combat
-
-Reuse the existing combat abstractions where relevant, including concepts such as:
-
-HitInfo
-
-CombatHitResolver
-
-IDamageable
-
-IHitReaction
-
-Do not create parallel damage pipelines without first proving the existing one cannot support the feature.
-
-Skills / Knowledge
-
-Knowledge Books unlock capabilities.
-
-Respect existing:
-
-KnowledgeBookItemData
-
-SkillData
-
-PlayerSkillState
-
-weapon required-skill gating
-
-CURRENT DESIGN DIRECTION:
-
-Knowledge / learned capabilities persist permanently.
-
-Skill XP / proficiency is also currently intended to persist across deaths and
-story-level retries.
-
-Exact XP curves, anti-grind caps/diminishing returns and save implementation are not
-locked yet.
-
-Training/GamePoc progression must remain extremely slow or zero so it cannot become
-the optimal persistent grind path.
-
-This supersedes the older "proficiency primarily resets per run/story level" direction.
-
-Do not redesign progression unless explicitly asked.
-Do not implement a heavy save/meta-progression framework merely because this direction
-is documented; first follow the live TODO and the explicit task.
-
-Run / Replay / Persistence
-
-The current campaign design is built around large handcrafted story levels, not
-procedurally generated rooms.
-
-Working retry rule:
-
-death
-→ restart the current large story level
-→ permanent Knowledge + skill XP/proficiency remain
-
-Mobile lifecycle interruption is a separate concern:
-
-pausing, backgrounding, locking the phone or closing/reopening the app must not be
-treated as gameplay death
-
-when active-run persistence is implemented, suspend/resume must preserve the attempt
-safely
-
-keep meta progression, active-run state and platform suspend/resume conceptually
-separate
-
-CURRENT PERSISTENCE CLARIFICATION — 18 Sep 2026
-
-Normal manual quit, incoming calls, app backgrounding, phone lock, app close/reopen and
-recoverable OS termination all belong to suspend/resume and must not count as death.
-
-Continue after relaunch must restore the same functional active run/place/state.
-
-Only player death or an explicit confirmed Hard Restart from the in-game menu may
-intentionally discard the active-run save and restart the current large story level.
-
-Ordinary Quit preserves the active run.
-
-Hard Restart should be a deliberate menu action near Options/Settings and must not be
-silently triggered by ordinary app exit.
-
-The active-run persistence architecture must be capable of restoring meaningful
-functional state such as player transform/state, objective progress, mission items,
-changed interactables/doors/gates, meaningful enemy/encounter state and set-piece
-progress. It does not need frame-perfect persistence of transient particles, projectiles
-or animation frames.
-
-The current player may remain effectively invulnerable during development, but save
-architecture must still reserve death as an explicit active-run discard/reset path.
-
-Run-reset candidates include enemies, ammo, consumables, temporary buffs and most local
-world state.
-
-Physical gun/inventory persistence is intentionally NOT locked. Do not hardcode one
-model into generic systems without an explicit task. The current design recommendation
-to test first is permanent weapon Knowledge/progression plus run-specific physical
-acquisition/loadout opportunities.
-
-Avoid failure loops where death removes so much power that the next attempt becomes
-materially harder.
-
-Replay Variation
-
-Do not introduce procedural geometry simply to create replayability.
-
-Prefer lightweight authored variation such as:
-
-different enemy compositions
-
-elite/variant appearances
-
-limited loot/reward variation
-
-optional side encounters
-
-route mastery / alternate routes where authored
-
-possible earned shortcuts only if playtesting supports them
-
-Post-Game Difficulty / World Tiers
-
-After the full campaign is completed, the design requires an optional harder full-game
-tier (working name: Invasion Tier 2 / New Game+).
-
-If/when implemented:
-
-reuse the same authored levels/scenes
-
-use a data-driven global difficulty/tier profile
-
-keep Tier 1 selectable
-
-prefer encounter/behavior/variant changes in addition to numeric scaling
-
-do not duplicate campaign scenes per tier
-
-do not make the system only HP/damage multipliers if cleaner reusable hooks exist
-
-Tier-exclusive enemies/rewards and Tier 3+ are optional later additions, not baseline
-implementation requirements.
-
-Grenades
-
-The reusable grenade foundation and Electric VFX V1 already exist. Future grenade families or grenade polish should follow the live TODO or an explicit task prompt.
-
-When working on grenades:
-
-inspect existing inventory/item/combat/input systems first
-
-prefer one reusable grenade architecture
-
-keep effect behavior extensible
-
-keep VFX pool-friendly
-
-keep mobile performance in mind
-
-do gameplay/physics first, polish second
-
-Do not create one entirely separate architecture per grenade type unless behavior truly demands it.
-
-Enemies
-
-Reuse the existing enemy foundation:
-
-NavMesh navigation
-
-perception
-
-FOV
-
-LOS
-
-investigation
-
-hit/death handling
-
-Role-specific behavior should remain modular.
-
-A ranged enemy should be a new combat role on the existing enemy foundation, not a second enemy framework.
-
-Animations
-
-Animation work is currently provisional in several systems.
-
-Do not over-engineer animation-layer/IK solutions before final animation assets exist.
-
-Gameplay decides WHAT happens. Animation/presentation data decides HOW it looks.
-
-Keep gameplay code independent from concrete clip names, Animator state names and authored frame timings where the existing semantic animation-action/event architecture can express the behavior.
-
-When animation assets are replaced, prefer changing action mappings, Animator motions, Avatar Masks and authored animation events rather than rewriting gameplay/input/combat flow.
-
-Where animation-facing issues are asset/import problems, prefer fixing them at the animation/FBX/import level rather than adding runtime rotation hacks.
-
-Grenade release and player melee impact timing use authored typed animation events through the shared PlayerAnimation / CharacterAnimatorDriver / CharacterAnimationActions / CharacterAnimationEventRelay path.
-
-Do not replace those authored markers with gameplay-side magic delays.
-
-If blending becomes fragile, keep gameplay working and park visual polish.
-
-Menus / Preview Prefabs
-
-Menu preview presentation should not force gameplay-prefab changes.
-
-Prefer menu-preview-specific wrappers/settings for:
-
-framing
-
-scale
-
-rotation
-
-camera presentation
-
-Keep catalog/menu entries data-driven.
-
-Art / Large Assets
-
-Do not modify files under large Art/model/texture areas unless the task explicitly requires it.
-
-Do not regenerate or replace production assets casually.
-
-Large binary assets may use Git LFS.
-
-Keep Unity .meta files intact and tracked.
-
-If an LFS-managed Unity asset appears corrupt/unreadable, first verify that the actual binary was pulled rather than only an LFS pointer.
-
-Scene / Prefab Safety
-
-When editing Unity YAML or serialized assets directly:
-
-be conservative
-
-preserve GUIDs
-
-preserve references
-
-do not mass-rewrite unrelated serialized data
-
-prefer editor-safe/script-based changes when manual YAML editing is risky
-
-If a task depends on Inspector-only state that cannot be safely inferred from text files, say so and specify what must be checked in Unity.
-
-Canonical Gameplay Scene Setup / Repair
-
-The canonical setup/repair path for gameplay scenes is:
-
-Tools > Setup > Setup or Repair Active Gameplay Scene
-
-The central helper is responsible for making old and new gameplay scenes receive the standard shared player/presentation wiring without level designers remembering manual Inspector steps.
-
-Whenever a feature adds a required gameplay-scene or player dependency, shared controller, presentation root, reference, or required component, extend the central GameplaySceneSetup helper in the SAME task.
-
-Rules:
-
-the helper must remain idempotent and safe to rerun
-
-reuse existing objects/components and repair references rather than creating duplicates
-
-preserve intentional/tuned scene content wherever possible
-
-reuse feature-specific setup helpers from the central helper instead of duplicating their setup logic
-
-existing gameplay scenes must be repairable by rerunning the central helper
-
-new gameplay scenes must not require undocumented manual wiring for standard systems
-
-do not leave a required per-scene setup step outside the helper unless it is intentionally level-specific content
-
-when practical, verify the helper on GamePoc and at least one other gameplay scene after changing standard scene requirements
-
-Testing Expectations
-
-After implementation, provide a short test checklist.
-
-Prefer:
-
-smallest relevant Editor test
-
-regression test for affected existing systems
-
-Android/device test when the change is mobile-sensitive
-
-Do not claim a Unity behavior is verified if it has only been inferred from code.
-
-Clearly distinguish:
-
-implemented
-
-code-reviewed
-
-needs Unity test
-
-needs device test
-
-Scope Discipline
-
-Do not expand the task into unrelated cleanup.
-
-Do not refactor unrelated systems just because they could be cleaner.
-
-If you notice a useful unrelated improvement:
-
-mention it briefly
-
-do not implement it unless it is required or explicitly requested
-
-The project follows:
-
-small working V1
-→ test
-→ fix root cause
-→ polish
-→ expand
-
-Communication Style
-
-Be concise and implementation-focused.
-
-When reporting work:
-
-state what changed
-
-state which files changed
-
-state any architectural decision that matters
-
-state what must be tested in Unity
-
-Avoid long generic tutorials unless asked.
-
-If there are multiple valid implementations, recommend one and explain the tradeoff briefly.
-
-Do not pretend certainty when repository state is ambiguous.
-
-Source of Truth Priority
-
-When sources conflict, use this priority:
-
-explicit current task prompt
-
-actual repository code/assets
-
-TODO.md
-
-current-status overrides in PROJECT_CONTEXT.md
-
-older/historical design context inside PROJECT_CONTEXT.md
-
-Do not silently follow outdated roadmap text when newer status overrides exist.
+# AGENTS.md - Kids VS Aliens
+
+These rules apply to all repository work. Human readability and obvious ownership are
+first-class architecture requirements. A competent Unity developer should be able to
+find the owner, understand the behavior, add content and identify the relevant tests
+without reconstructing the project through an AI.
+
+## Engineering philosophy
+
+Build simple, readable, obvious code: boring where possible, easy to debug, extend and
+onboard into, with shallow indirection and explicit state ownership. Prefer a
+straightforward component, clear data and prefab/configuration plus small isolated
+behavior over a chain of frameworks, adapters, factories and events.
+
+- Use composition for shared capabilities. Reuse existing combat, perception, item and
+  presentation systems before adding another implementation.
+- Avoid unnecessary DI frameworks, deep inheritance, excessive interfaces, factories
+  without a concrete need, reflection-heavy runtime systems, invisible event chains,
+  generalized managers and speculative abstractions.
+- An abstraction must solve a real repeated problem. Explain its concrete benefit;
+  SOLID or design-pattern terminology alone is not justification.
+- Human complexity is architecture debt. A correct action that requires tracing eight
+  classes, five events and hidden reflection can still be a maintainability regression.
+  Before adding indirection, ask whether it makes the next developer's job easier.
+  Prefer direct dependencies when ownership is clear.
+- Fix root causes with the smallest clear change. Do not silently redesign neighboring
+  systems, add unrelated cleanup or build architecture for hypothetical requirements.
+
+## Sources and accepted baseline
+
+Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) and [TODO.md](TODO.md) before substantial
+implementation. [RepositoryAuditRemediation.md](Docs/RepositoryAuditRemediation.md)
+is the authoritative post-audit baseline: no verified Critical/High architecture
+problems, requested remediation complete, Full Editor regression **318/318 passed**.
+That is recorded baseline evidence, not a permanent test-count requirement or proof
+that later changes are correct.
+
+The explicit current task takes precedence. Inspect current code/assets for implementation
+facts; use the remediation report for accepted post-audit contracts. Report discrepancies
+rather than silently following stale documentation or treating an accidental behavior as
+intent. TODO governs priority, current PROJECT_CONTEXT overrides supersede its historical
+notes, and historical plans are not evidence that a system exists.
+
+The project uses Unity 6.5 and URP; `ProjectSettings/ProjectVersion.txt` supplies the exact
+Editor version. Android/iOS are first-class targets; desktop remains supported.
+
+## Ownership before code
+
+Determine who owns the state before implementing behavior. There should normally be one
+obvious owner. Do not copy logical state into another system without an explicit, necessary
+synchronization contract. If two systems appear to own it, stop and inspect before adding
+another copy.
+
+| Concept | Current owner and extension entry point |
+| --- | --- |
+| Inventory | `PlayerInventory`: possession, quantities/stacks, quick-slot assignments, unique weapons and one run-specific `OwnedWeaponState` per owned weapon definition, including magazine/reload/cooldown state. |
+| Equipment | `PlayerEquipment`: selected owned weapon and mounted presentation. `WeaponInstance` represents the mounted weapon; it does not own its logical magazine. |
+| Firing/combat | `PlayerShooter` operates on active owned state and owns accepted delayed player hits. Reuse `HitInfo`, `CombatHitResolver`, `IDamageable` and `IHitReaction`. |
+| Enemies | `EnemyActor`, `EnemyBrain` and shared movement/perception/combat components; `EnemyEquipment` owns enemy equipment. Compose prefabs with combat/animation profiles and loadout data, independently of the replaceable visual model. |
+| Beam | `BeamHoistSurface`/baker own authored valid cells; `BeamHoistAbility` supplies reach constraints; transport gameplay validates and moves; presentation observes. |
+| Camera | `GameplayCameraController`/presets own framing; `CameraOcclusionController` owns fade/visibility state; silhouettes consume it; camera-feedback service/profiles own render-only feedback. |
+| Audio | Gameplay requests a semantic `SoundEvent`, not arbitrary clip references; event/library configuration owns clip variants and `AudioService` owns playback. Weapon fire sound belongs in weapon data where appropriate. |
+| Haptics | `HapticService`, profiles and platform backends. Local-player feedback must not fire merely because an enemy shoots. |
+| Knowledge/permanent data | Books/`SkillData` define capability unlocks; `PlayerSkillState` exposes player skills; `PermanentProgress` persists learned Knowledge, XP and acknowledgement state. |
+| Active Run | `ActiveRunController` coordinates the current attempt/world/player snapshot with `RunSaveService`. `RunWorldObject` supplies stable identity; participants own their component state. |
+| Suspension | `GameplaySuspensionController` owns suspension leases and world-pause policy. Consumers acquire/release leases rather than independently restoring global pause state. |
+| UI/previews | Edit the actual screen owner/runtime builder. See the [screen ownership map](Docs/ProceduralUI.md#screen-ownership-where-to-edit); generated controls and hidden legacy scene controls are not interchangeable. Preview wrappers/settings must not force gameplay-prefab changes. |
+
+Do not create a second system for a concept the repository already owns. If a requested
+feature conflicts with an established boundary, pause the affected implementation,
+report the conflict and propose the smallest options before proceeding.
+
+## Approved behavior that must survive changes
+
+Distinguish a bug from unusual but intentional design. Inspect docs/tests/history when
+intent is unclear. Movement, touch/desktop input, aim/target switching, muzzle safety,
+weapons, grenades, Knowledge gating, previews, enemy perception/LOS and fading are
+production-sensitive; inspect their consumers before changing shared code.
+
+### Weapons and delayed plasma hits
+
+- Use `WeaponItemData`, equipped/world prefabs, `WeaponInstance`, GripPoint/Muzzle,
+  required skill, fire mode and animation style. Inspect inventory stack/uniqueness
+  rules before changing acquisition, quantities or consumption.
+- Reselection and swaps must not refill magazines, recreate owned state, cancel reload
+  or reset cooldown. Active Run preserves all owned magazines/timers, not just selected
+  ammo. Retain the documented legacy/missing-record fallback without a migration framework.
+- `EquippedWeaponChanged` means actual selection/unequip. Temporary hiding/style uses
+  `WeaponPresentationChanged`; never overload equipment-change signals for visibility.
+- Approved player plasma flow: **accept shot -> resolve physics target/point -> gameplay
+  owns pending hit -> visual travels -> scheduled arrival commits damage, reaction and
+  impact together**. Share travel timing with the visual. Releasing/disabling/destroying
+  cosmetic VFX must not cancel accepted damage; missing VFX must not cause instant damage.
+  Preserve world-pause and Beam input-suspension timing. Do not convert this into instant
+  hits or physical-projectile gameplay merely to simplify ownership.
+- Physics remains authoritative for hits, cover, LOS, muzzle obstruction, projectile
+  interception and grenade collision. Query ordering is unspecified; preserve nearest
+  eligible target/blocker rules, masks, body samples, low-cover and intervening-alien rules.
+- Tune one weapon through its data/prefab overrides; do not change shared `PlasmaCore`
+  just for that weapon. Reuse the grenade foundation and pool-friendly effects.
+
+### Beam, animation and camera
+
+- Manual hoist uses Jump with Knowledge and gameplay eligibility. Preserve materialization
+  and one continuous cubic Bezier from the true start to landing. Control points shape
+  that curve; do not add a vertical phase, second curve, reset or teleport. Preserve the
+  established beam following, glow/flicker and separation of automatic level arrival
+  from the manual hoist-start pad.
+- Gameplay and presentation share baked valid cells. Preserve exact footprints, holes
+  and disconnected pockets; merging visuals must not fill invalid space. No runtime
+  baker reshapes the area around the player. Movement changes visibility/state, not the
+  authored footprint. Reach constraints come from `BeamHoistAbility`.
+- Gameplay decides what happens; semantic animation actions/mappings decide how it looks.
+  Grenade release and melee impact use the existing typed authored animation markers,
+  not magic gameplay delays. Keep floating/transport logic independent of concrete clip
+  or Animator state names. Prefer import/mapping fixes over runtime rotation hacks.
+- Keep framing, occlusion, silhouettes and render-only feedback separate. Feedback/recoil
+  must not alter gameplay aim/raycast transforms.
+- Preserve current occlusion: ten context rays plus five body samples, authored thresholds
+  and logical groups, active authoritative colliders, and existing faded-blocker aim/LOS
+  semantics. Membership/material/group-height caches are built at startup; runtime-added
+  or reparented blockers are unsupported. Do not document dynamic support as implemented.
+- Occlusion material copies are lazy, reused and cleaned up; do not replace this with a
+  blanket prohibition on copies or introduce per-frame instantiation. `Active` ownership
+  must survive reenable and fall back to a surviving enabled controller after duplicate
+  teardown. For any runtime material copies, make ownership/cleanup explicit;
+  `EnemyDeathSequence` destroys only its own copies, never shared project materials.
+
+## Persistence: mandatory participant contract
+
+Keep Active Run and Permanent Progress separate. Run-specific inventory/world/player
+state belongs to the attempt; learned Knowledge, XP and acknowledgement persist across
+run resets. Ordinary Quit, backgrounding, calls, lock/unlock and recoverable termination
+are suspend/resume, not death. Continue restores functional state and returns paused.
+Death, confirmed Hard Restart and confirmed New Game replacement discard active state;
+permanent reset is a separate explicit action. Transient projectiles/animation frames
+need not be reconstructed.
+
+Current restoration intentionally applies world state twice, with player restoration
+and another frame between passes. Every new `IRunStateParticipant` must:
+
+- Use a stable key unique within its `RunWorldObject` and stable identities for peers.
+- Treat `RestoreRunState` as absolute, idempotent state assignment; assume two calls.
+- Never grant rewards, consume resources because an action was already completed, or
+  replay objective-completion effects during restore.
+- Expect `OnEnable` before restored state and peer identities before peers have final state.
+- Defer peer-dependent decisions until restoration completes / `ActiveRunController.IsReady`;
+  do not depend on iteration order.
+
+These rules apply to future objectives, doors, machinery, excavator repair, set pieces
+and persistent spawns. Read the interface XML and [persistence contract](Docs/RunInterface.md).
+Test a real Save/Continue flow, including cross-object state and absence of duplicate
+side effects when relevant. Do not add a restore dependency graph or released-save
+migration framework without a demonstrated need; current compatibility is pre-release.
+
+## Extension rule: how do I add the next one?
+
+Known growth should normally mean data + configured prefab + authored content, with one
+small isolated behavior when genuinely unique. It should not require five central edits,
+new switch statements, unrelated UI changes and manual persistence patches.
+
+Inspect the existing owner first: `SoundEvent`/`WeaponItemData` for weapon sound,
+`PlayerInventory`/`OwnedWeaponState` for weapon state or quantities, `PlayerEquipment`
+for selection, camera-feedback profiles/service for impacts, modern enemy components
+and profiles for AI, and Active Run/`RunWorldObject`/`IRunStateParticipant` for world saves.
+Use the UI ownership map before editing a screen.
+
+Prefer ScriptableObjects/profiles/prefabs/serialized configuration for weapons, enemy
+archetypes, animation sets, sounds, haptics, camera feedback, items, grenades and loot.
+Use the same principle for difficulty configuration when that system exists. Do not
+force genuinely behavioral logic into data just to avoid writing a small component.
+
+Keep blast radius related to the feature. Grenade stacking can touch inventory,
+consumption, quick slots, count UI and persistence; it should not unexpectedly require
+Beam, camera, navigation or scene-loading changes. Investigate before spreading a small
+feature across unrelated systems.
+
+## Scene, asset and repair safety
+
+Prefer explicit serialized references or established authoring contracts over hardcoded
+scene names, arbitrary hierarchy names, broad Find calls, hidden scene scans and child
+ordering. Scene names are acceptable when scene identity itself is intended data.
+Preserve documented UI/authoring name contracts without spreading them elsewhere.
+
+The canonical command is **Tools > Setup > Setup or Repair Active Gameplay Scene**.
+When adding a required shared scene/player dependency, extend `GameplaySceneSetup` in
+that same task, reusing feature helpers. Standard dependencies must not rely on
+undocumented manual wiring; level-specific content remains explicit authoring.
+
+- Repair ensures required dependencies, preserves valid extra references/order and
+  authored tuning, deduplicates entries, and remains idempotent. Inspector values may
+  intentionally differ from C# defaults. Routine repair must not retune import settings.
+- Preflight known fatal ambiguities before mutation where practical. Shared asset/import
+  writes are not scene Undo; errors do not guarantee rollback. Prefer saving the specific
+  changed assets over broad `AssetDatabase.SaveAssets()`. Separate explicit migrations
+  from routine repair; do not build a transaction framework.
+- Test preservation and a second repair run using disposable fixtures/copies. When
+  changing shared wiring, check GamePoc and another gameplay scene where practical.
+  The audited GamePoc/ConstructionSite repeat-repair baseline had no file churn.
+- Preserve uncommitted work, Unity GUIDs, metadata and serialized references. Review
+  every changed scene, prefab, ScriptableObject, importer, renderer and ProjectSettings
+  file for intentional changes. Avoid mass YAML normalization; use Editor-safe changes
+  when text editing is risky. State Inspector-only uncertainty instead of guessing.
+- Change large art/models/textures only when the task requires it. Keep `.meta` files intact and
+  tracked; verify LFS binaries rather than mistaking pointer files for corrupt assets.
+
+## Testing and evidence
+
+Use the [Tests README](Assets/Game/Tests/README.md) for supported commands and isolation.
+From the repository root in PowerShell with Unity closed:
+
+```powershell
+.\Tools\Run-UnityTests.ps1 -Suite Quick -ReuseCopy
+.\Tools\Run-UnityCoreTests.ps1
+.\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy
+# Focused selection overrides the suite filter:
+.\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy -TestFilter 'OwnedWeaponStateTests;AuditContinueTests'
+```
+
+Quick runs fast focused contracts; Core is a **partial category**, never full regression.
+Full runs every Editor test with graphics enabled. Do not use `-nographics` for render/URP
+verification. The runner uses a physical isolated project copy, isolated saves/PlayerPrefs
+and explicit XML/log paths under `Logs/RepositoryAuditRemediation`; `-ResultName` selects
+a unique output name. Never substitute a historical test count for current results.
+
+- Run appropriate focused tests during iteration and Full at meaningful integration
+  checkpoints; do not demand the longest suite for every tiny edit. Compile code changes;
+  a Roslyn check alone does not prove Unity import, rendering or lifecycle behavior.
+- Tests must work from a clean checkout without ignored migration logs as oracles.
+  Ordinary tests must not mutate production assets; authoring/import tests use disposable
+  fixtures with deterministic cleanup and isolated saves/output.
+- Assert required membership, uniqueness, exclusions and mappings instead of arbitrary
+  content totals. Keep legitimate scene-specific count/name acceptance tests separate
+  from reusable architecture assumptions. UI tests target visible, interactable controls.
+- Classify failures: pass-caused regression, pre-existing production failure, stale test,
+  or environment/runner failure. Fix regressions; never alter correct gameplay just to
+  satisfy an obsolete test. Report failures and limitations rather than hiding them.
+
+## Mobile-first implementation
+
+Consider touch, screen space/readability, Android/iOS backgrounding, calls, lock/unlock,
+OS termination, thermal limits, allocations and GPU cost. Avoid desktop-only gameplay
+assumptions, unnecessary Update work/allocations, repeated broad searches/loads and
+uncontrolled Instantiate/Destroy loops. Profile before speculative optimization.
+
+Editor tests do not prove device lifecycle, touch feel, native behavior, performance or
+GPU-driver rendering parity. Current follow-ups remain Android lifecycle/input, the
+separate Pixel rendering issue, Realme X2 save/Beam profiling, and Mac/iOS build/haptics
+validation. Report those as pending, not as covered by Editor results.
+
+## Naming, placement and legacy code
+
+No `KVA` prefix in public classes, tools, shaders, materials, menu paths, namespaces or
+filenames. Use descriptive names; rename declarations, callers and lookups atomically,
+preserving serialized/native bindings. Do not make unrelated mass renames.
+
+Put new code with its logical system, Editor-only code under Editor, tests in the
+established test tree, and data/assets in the nearest established content area. Historical
+folder inconsistency does not justify a mass move. Consider a small safe move during
+related work only when discoverability materially improves without unnecessary churn.
+
+Never infer dead code from V1/old/legacy names, a missing obvious caller or one GUID search.
+Before deletion inspect scenes, prefabs, tools, reflection, build preprocessing, catalogs,
+tests, migrations, development sandboxes and relevant old-save implications. Dead-code
+removal is deliberate, separately scoped and independently validated.
+
+## Working discipline and documentation
+
+Before editing: understand the request, identify owners, inspect actual scripts/data/
+references/tests, trace consumers, reuse existing capabilities and identify persistence/
+device implications. Do not guess class names, fields, assets or enums. Keep the requested
+scope and authored decisions intact. If the work becomes substantially larger because
+an ownership boundary cannot support it, stop the affected implementation, explain the
+problem and propose the smallest options; do not quietly build a framework.
+
+After implementation: compile and test as appropriate, review the entire diff for unrelated
+changes, run `git diff --check`, and report changed files, ownership decisions, exact test
+results and remaining manual/device checks. Distinguish implemented, code-reviewed,
+Unity-tested and device-tested. Give a short relevant checklist, not generic assurances.
+Documentation-only work needs document/diff validation, not a claimed new Unity test run.
+
+Keep docs small: ownership, non-obvious lifecycle reasons, extension workflows, dangerous
+tool behavior and supported commands. Prefer updating the existing relevant document
+and comments explaining reasons/contracts over duplicated status documents, obvious C#
+commentary or sprawling architecture essays.
+
+Combat Economy, Difficulty/Madness, future missions and Bike systems are upcoming work,
+not current architecture. Implement them only within an explicit task; apply these same
+ownership/readability rules and update this file with durable contracts when established.
+Keep temporary balance values, feature TODOs, animation/IK wish lists and roadmap history
+in their existing design/workflow documents rather than expanding this constitution.
