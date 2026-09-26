@@ -10,6 +10,16 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+IMPLEMENTED — Combat Economy V1 — 26 Sep 2026
+
+Shared Plasma Capsules fund empty-magazine auto reloads; Armor Capsules have separate
+storage/pickups without a consumption mechanic yet. Duplicate plasma weapons convert
+through world pickup acquisition, and equipped plasma aliens can roll capsule loot
+without changing scavenged-weapon custody. The existing HUD shows magazine/resources/
+reload state. Active Run preserves quantities, all magazines and paid reload timers.
+Starting values, test evidence and the manual checklist: Docs/CombatEconomyV1.md.
+Final combat balance, armor consumption and device acceptance remain separate work.
+
 CURRENT FOCUS — NEXT ~2 WEEKS
 
 CURRENT STATUS UPDATE — 18 Sep 2026
@@ -20,7 +30,8 @@ SoundEvent/AudioLibrary, pooled AudioService, local AudioEmitter, Audio Library 
 MainAudioMixer, opt-in mobile import presets and validator are implemented. Pistol fire,
 confirmed melee contact and Beam phases are wired. Starter audio now supplies six live
 Placeholder events and twelve unused Candidates; only Beam_Loop remains Missing.
-Runtime manifest contains only seven wired events; unused Candidates remain Editor-only.
+Combat Economy adds a separate placeholder dry-trigger event, bringing the runtime
+manifest to eight wired events; unused Candidates remain Editor-only.
 Shared UI_Click/UI_PlayConfirm obey the final-launch rule, with pooled transition tails.
 Central UI audio excludes gameplay action inputs; navigation and inventory/quick slots still click.
 Gameplay and menu scene repair include audio. See Docs/StarterAudioPack.md and

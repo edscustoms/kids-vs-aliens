@@ -134,9 +134,8 @@ public sealed class InventoryPickupStackTests
         Collect(first, player); Collect(duplicate, player); Collect(different, player);
         yield return EditorTestFrame.Next();
         Assert.That(first == null && different == null, Is.True);
-        Assert.That(duplicate != null && duplicate.activeSelf, Is.True);
-        Assert.That(duplicate.GetComponent<RunWorldObject>(), Is.Not.Null);
-        Assert.That(duplicate.GetComponent<RunWorldObject>().Capture().removed, Is.False);
+        Assert.That(duplicate == null, Is.True, "Duplicate plasma pickup converts and is consumed.");
+        Assert.That(inventory.PlasmaCapsules, Is.EqualTo(pistol.duplicatePlasmaReward));
         Assert.That(inventory.Items, Is.EqualTo(new[] { pistol, rifle }));
         var a = Spawn(grenade); var b = Spawn(grenade); Collect(a, player); Collect(b, player);
         Assert.That(inventory.Items.Count, Is.EqualTo(3)); Assert.That(inventory.CountAt(2), Is.EqualTo(2));

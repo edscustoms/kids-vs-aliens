@@ -17,6 +17,7 @@ public class WeaponItemData : ItemData
 
     [Header("Audio")]
     public SoundEvent fireSound;
+    public SoundEvent dryFireSound;
 
     [Header("Haptics")]
     [Tooltip("Per emitted bullet, played only by the local player shooting path.")]
@@ -33,6 +34,9 @@ public class WeaponItemData : ItemData
     [Header("Ammo")]
     public int magazineSize = 8;
     public float reloadTime = 1.2f;
+    public bool usesPlasmaCapsules;
+    [Min(1)] public int plasmaReloadCost = 3;
+    [Min(0)] public int duplicatePlasmaReward;
 
     [Header("Fire Mode")]
     public WeaponFireMode fireMode = WeaponFireMode.SemiAuto;

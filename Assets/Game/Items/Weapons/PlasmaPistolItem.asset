@@ -15,16 +15,21 @@ MonoBehaviour:
   itemName: Pistol
   itemType: 0
   icon: {fileID: 0}
+  stackable: 0
   worldPrefab: {fileID: 1481942915625970157, guid: 43840967887f2114b9e93f016d3174dd, type: 3}
   equippedPrefab: {fileID: 1481942915625970157, guid: 3d228c1b716e9d749873401854e2dabe, type: 3}
-  damage: 10
+  fireSound: {fileID: 11400000, guid: fd201790f296a67418e6a7e3927d3324, type: 2}
+  dryFireSound: {fileID: 11400000, guid: 483673f50333c7a45bb1aaf36304309e, type: 2}
+  fireHaptic: {fileID: 11400000, guid: c8b399e476ad480bb7495bdf040a836b, type: 2}
+  fireCameraFeedback: {fileID: 11400000, guid: 3853713a00de416db74daf2ee0ef0f9d, type: 2}
+  damage: 18
   range: 15
-  fireRate: 10
-  magazineSize: 16
+  fireRate: 3
+  magazineSize: 12
   reloadTime: 0.8
+  usesPlasmaCapsules: 1
+  plasmaReloadCost: 3
+  duplicatePlasmaReward: 6
   fireMode: 0
   animationStyle: 1
   requiredSkill: {fileID: 11400000, guid: 43103a442e5f3e149b2a468065a892c7, type: 2}
-  fireSound: {fileID: 11400000, guid: fd201790f296a67418e6a7e3927d3324, type: 2}
-  fireHaptic: {fileID: 11400000, guid: c8b399e476ad480bb7495bdf040a836b, type: 2}
-  fireCameraFeedback: {fileID: 11400000, guid: 3853713a00de416db74daf2ee0ef0f9d, type: 2}

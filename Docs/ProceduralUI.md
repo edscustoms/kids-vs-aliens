@@ -272,7 +272,7 @@ lives in `UI/Components/InterfaceFactory.cs`, `NeonPanel` and `UI/Themes/MenuThe
 | --- | --- | --- |
 | Main Menu | `Scenes/Menu.unity`, `Scripts/UI/MenuController.cs`, `Editor/Helpers/MenuUISetup.cs`; preview catalogs/settings in `Scripts/UI` | MenuController, PlayerLoadoutState |
 | Active Run gate | `UI/Screens/ActiveRunMenu.cs` | RunSaveService; UIScreenRouter |
-| HUD | `UI/Screens/GameplayInterface.cs` (`CompactResourceDisplay`) | PlayerHealth |
+| HUD | `UI/Screens/GameplayInterface.cs` (`CompactResourceDisplay`) and `UI/Screens/CombatAmmoDisplay.cs` for magazine/capsules/reload, built under the existing SafeArea | PlayerHealth; PlayerInventory/OwnedWeaponState |
 | Quick Slots | `Scripts/Player/InventoryUI.cs` and `InventorySlotUI.cs` | PlayerInventory assignments; no separate item storage |
 | Touch Controls | Authored gameplay canvas and Starter Assets input components; `GameplayInterface.RestyleTouchControls` for the shell | Existing input/action router; repair via GameplayPresentationSetup |
 | Pause | `GameplayInterface.BuildPause` creates visible Resume/Settings/Inventory/Quit/Restart | `UI/Screens/InGameMenuController.cs`, suspension lease |

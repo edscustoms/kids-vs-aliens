@@ -84,7 +84,11 @@ public sealed class EnemyEquipment : MonoBehaviour, IRunStateParticipant
         RunWorldObject.TrackSpawn(dropped, prefab);
         Unequip(); return dropped;
     }
-    private void OnDeath() { if (acquiredPickup != null || dropWeaponOnDeath) Drop(); }
+    private void OnDeath()
+    {
+        GetComponent<EnemyPlasmaLoot>()?.ResolveDeath(Weapon);
+        if (acquiredPickup != null || dropWeaponOnDeath) Drop();
+    }
     private void ReturnAcquiredPickup()
     {
         if (acquiredPickup == null) return;

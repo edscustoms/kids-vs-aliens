@@ -53,3 +53,23 @@ MonoBehaviour:
     replaceEqualPriority: 1
     queueWhenBlocked: 0
     queueLifetime: 8
+  - code: 4
+    template: +{amount} PLASMA
+    localizationKey: feedback.PlasmaCollected
+    category: 0
+    priority: 30
+    duration: 1.5
+    cooldown: 0
+    replaceEqualPriority: 1
+    queueWhenBlocked: 1
+    queueLifetime: 5
+  - code: 5
+    template: +{amount} ARMOR CAPSULE
+    localizationKey: feedback.ArmorCapsulesCollected
+    category: 0
+    priority: 30
+    duration: 1.5
+    cooldown: 0
+    replaceEqualPriority: 1
+    queueWhenBlocked: 1
+    queueLifetime: 5

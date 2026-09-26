@@ -7,6 +7,16 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE — 26 Sep 2026 — Combat Economy V1
+
+PlayerInventory now owns separate Plasma/Armor Capsule quantities alongside owned
+weapon state. Empty selected plasma weapons automatically pay their data-defined cost
+once and reload; paid reload timers survive swaps/Continue. Duplicate world plasma guns
+convert to capsules, and plasma-equipped enemies can roll capsule drops separately from
+equipment custody. The existing neon HUD displays ammo, resources and reload status.
+Armor consumption is deliberately not implemented. These are initial configurable
+weapon values, not final balance. See Docs/CombatEconomyV1.md for the exact contract.
+
 CURRENT IMPLEMENTATION OVERRIDE — 18 Sep 2026 — Interface / Active Run
 
 The requested interface and functional active-run foundation are implemented on the

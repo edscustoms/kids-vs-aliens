@@ -33,9 +33,20 @@ Equipment selects it; the mounted `WeaponInstance` is presentation. Reselection 
 pistol/rifle swaps retain rounds, reload deadline and fire cooldown. Reload time continues
 on the scaled gameplay clock while stowed; pause freezes it. Active Run saves all owned
 magazines plus remaining reload/cooldown times. Legacy snapshots retain selected `ammo`;
-missing other weapon records start full. Removing a weapon ends that inventory record;
-physical dropped-magazine economy is outside this change. This is pre-release compatibility,
-not a released-save migration framework.
+missing other weapon records start full. A player drop transfers that same record from
+inventory to the specific `PickupItem`; collecting it transfers custody back. Its world
+participant saves rounds and remaining reload/cooldown times. Fresh world weapons and
+legacy pickups without that record still initialize normally; a new acquisition must not
+inherit another physical gun's dropped state. This is pre-release compatibility, not a
+released-save migration framework.
+
+Combat Economy adds absolute `plasmaCapsules` and `armorCapsules` values to SavedPlayer
+(missing legacy fields mean zero). Reload payment is committed once before a timer starts;
+restoring a timer never spends again. The reload transaction rejects weapons other than
+the current selection; already-paid reloads may finish while holstered or dropped.
+Pickup quantities and resolved enemy loot rolls use
+the existing world-participant snapshots; removed pickup identities prevent replaying
+duplicate conversion. Resource pickup/conversion is never an inventory-restore operation.
 
 `IRunStateParticipant` implementers must read its XML contract. Keys are stable and unique
 on each `RunWorldObject`; cross-object references store stable world IDs, never hierarchy

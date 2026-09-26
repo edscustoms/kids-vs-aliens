@@ -79,6 +79,8 @@ public class PlayerShooter : MonoBehaviour
     private int shootMask;
     private PlayerFeedback feedback;
     private SkillData reportedMissingSkill;
+    private PlayerInventory inventory;
+    private bool dryFireReported;
 
     private readonly RaycastHit[] muzzleSafetyHits = new RaycastHit[16];
 
@@ -93,6 +95,7 @@ public class PlayerShooter : MonoBehaviour
 
     private void Awake()
     {
+        inventory = GetComponent<PlayerInventory>();
         feedback = GetComponent<PlayerFeedback>();
         shootMask = ~LayerMask.GetMask("Player");
 
@@ -135,7 +138,10 @@ public class PlayerShooter : MonoBehaviour
         shootWasPressed = shootPressed;
 
         if (!shootPressed)
+        {
             reportedMissingSkill = null;
+            dryFireReported = false;
+        }
 
         if (fireBlocked)
             return;
@@ -144,6 +150,11 @@ public class PlayerShooter : MonoBehaviour
         {
             return;
         }
+
+        if (Time.timeScale <= 0 || (ActiveRunController.Instance != null && !ActiveRunController.Instance.IsReady)) return;
+        // Empty equipped guns also resume auto-reload when capsules arrive, without
+        // requiring another trigger press. Already-paid holstered reloads keep their timer.
+        if (CurrentAmmo == 0 && !IsReloading && CanUseEquippedWeapon()) BeginReload();
 
         if (IsReloading)
             return;
@@ -186,8 +197,11 @@ public class PlayerShooter : MonoBehaviour
 
         if (CurrentAmmo <= 0)
         {
-            BeginReload();
-
+            if (!dryFireReported)
+            {
+                dryFireReported = true;
+                AudioService.Play(equippedWeapon.dryFireSound, muzzle.position);
+            }
             return;
         }
 
@@ -558,8 +572,8 @@ public class PlayerShooter : MonoBehaviour
 
     private void BeginReload()
     {
-        weaponState?.BeginReload(Time.time);
-        ActiveRunController.Instance?.MarkDirty();
+        if (inventory == null) inventory = GetComponent<PlayerInventory>();
+        inventory?.TryBeginReload(equippedWeapon, Time.time);
     }
 
     // =====================================================

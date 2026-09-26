@@ -108,6 +108,7 @@ public sealed class ActiveRunController : MonoBehaviour
                     character = catalog.Id(GetComponent<PlayerCharacter>().CurrentCharacterPrefab),
                     equipped = catalog.Id(equipment.EquippedWeapon), selected = catalog.Id(inventory.SelectedItem),
                     ammo = GetComponent<PlayerShooter>().CurrentAmmo, weapons = inventory.CaptureWeaponStates(),
+                    plasmaCapsules = inventory.PlasmaCapsules, armorCapsules = inventory.ArmorCapsules,
                     items = inventory.Items.Select(item => catalog.Id(item)).ToList(), itemCounts = inventory.CaptureCounts(), quickSlots = inventory.CaptureQuickSlots()
                 }, world = snapshots.Values.ToList()
             };
@@ -145,6 +146,7 @@ public sealed class ActiveRunController : MonoBehaviour
             if (objects.TryGetValue(snapshot.id, out var entity) && entity != null) entity.Restore(snapshot);
         var player = saved.player;
         inventory.RestoreSavedItems(player.items.Select(id => catalog.Resolve<ItemData>(id)).ToArray(), player.quickSlots, player.itemCounts);
+        inventory.RestoreCapsules(player.plasmaCapsules, player.armorCapsules);
         var controller = GetComponent<CharacterController>(); bool enabledController = controller.enabled;
         controller.enabled = false; transform.SetPositionAndRotation(player.position, player.rotation); controller.enabled = enabledController;
         GetComponent<ThirdPersonController>().RestoreRunVerticalVelocity(player.verticalVelocity);

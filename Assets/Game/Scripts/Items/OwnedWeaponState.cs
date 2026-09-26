@@ -1,6 +1,9 @@
 using UnityEngine;
 
-/// <summary>Run-specific state owned by PlayerInventory, never by a mounted WeaponInstance.</summary>
+/// <summary>
+/// Run-specific state owned by PlayerInventory, or carried by its specific world pickup
+/// after a player drop. Custody transfers on pickup; mounted WeaponInstances never own it.
+/// </summary>
 public sealed class OwnedWeaponState
 {
     public WeaponItemData Weapon { get; }

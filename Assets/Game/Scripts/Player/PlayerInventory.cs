@@ -32,6 +32,41 @@ public class PlayerInventory : MonoBehaviour
     private readonly List<int> counts = new();
     private readonly Dictionary<WeaponItemData, OwnedWeaponState> weaponStates = new();
 
+    public int PlasmaCapsules { get; private set; }
+    public int ArmorCapsules { get; private set; }
+
+    public bool TryAddCapsules(CapsuleKind kind, int amount)
+    {
+        int current = kind == CapsuleKind.Plasma ? PlasmaCapsules : ArmorCapsules;
+        if (amount <= 0 || amount > int.MaxValue - current) return false;
+        if (kind == CapsuleKind.Plasma) PlasmaCapsules += amount;
+        else ArmorCapsules += amount;
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public void RestoreCapsules(int plasma, int armor)
+    {
+        PlasmaCapsules = Mathf.Max(0, plasma);
+        ArmorCapsules = Mathf.Max(0, armor);
+        OnInventoryChanged?.Invoke();
+    }
+
+    // Equipment owns selection. Only that selected weapon can start a new reload;
+    // an already-paid reload may still finish while holstered or dropped.
+    public bool TryBeginReload(WeaponItemData weapon, float now)
+    {
+        if (weapon == null || SelectedItem != weapon) return false;
+        var state = GetWeaponState(weapon);
+        if (state == null || state.IsReloading || state.Rounds != 0) return false;
+        int cost = weapon.usesPlasmaCapsules ? Mathf.Max(1, weapon.plasmaReloadCost) : 0;
+        if (PlasmaCapsules < cost) return false;
+        PlasmaCapsules -= cost;
+        state.BeginReload(now);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
     public OwnedWeaponState GetWeaponState(WeaponItemData weapon)
     {
         if (weapon == null || !items.Contains(weapon)) return null;
@@ -211,8 +246,16 @@ public class PlayerInventory : MonoBehaviour
     public bool TryAddItem(ItemData item) => TryAddItem(item, out _);
 
     public bool TryAddItem(ItemData item, out InventoryAddFailure failure)
+        => TryAddItem(item, out failure, null);
+
+    // A world pickup transfers its existing record before inventory observers run.
+    // Null means a fresh acquisition, whose normal magazine is initialized on demand.
+    internal bool TryAddItem(ItemData item, out InventoryAddFailure failure, OwnedWeaponState transferredState)
     {
+        if (transferredState != null && transferredState.Weapon != item)
+            throw new ArgumentException("Transferred weapon state does not match the item.");
         if (!CanAcceptItem(item, out failure)) return false;
+        if (item is CapsuleItemData capsule) return TryAddCapsules(capsule.kind, 1);
         int existing = item.IsStackable ? items.IndexOf(item) : -1;
         if (existing >= 0)
         {
@@ -222,6 +265,7 @@ public class PlayerInventory : MonoBehaviour
         }
         items.Add(item);
         counts.Add(1);
+        if (transferredState != null) weaponStates.Add(transferredState.Weapon, transferredState);
         for (int i = 0; i < quickSlots.Length; i++) if (quickSlots[i] == -1) { quickSlots[i] = items.Count - 1; break; }
         OnInventoryChanged?.Invoke();
         return true;
@@ -236,6 +280,8 @@ public class PlayerInventory : MonoBehaviour
             failure = InventoryAddFailure.InvalidItem;
             return false;
         }
+
+        if (item is CapsuleItemData) return true;
 
         if (item is KnowledgeBookItemData book && book.skill != null)
         {
@@ -441,6 +487,14 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
+        var weapon = item as WeaponItemData;
+        if (weapon != null && item.worldPrefab.GetComponent<PickupItem>() == null)
+        {
+            Debug.LogWarning($"{item.itemName} world prefab has no PickupItem to carry its weapon state.");
+            return;
+        }
+        var droppedState = GetWeaponState(weapon);
+
         if (playerEquipment != null && playerEquipment.IsEquipped(item))
         {
             playerEquipment.UnequipWeapon();
@@ -449,6 +503,11 @@ public class PlayerInventory : MonoBehaviour
         Vector3 dropPosition = transform.position + transform.forward * 2f + Vector3.up * 0.6f;
 
         var dropped = Instantiate(item.worldPrefab, dropPosition, Quaternion.identity);
+        if (droppedState != null)
+        {
+            weaponStates.Remove(weapon);
+            dropped.GetComponent<PickupItem>().CarryWeaponState(droppedState);
+        }
         RunWorldObject.TrackSpawn(dropped, item.worldPrefab);
 
         // Drop one physical unit, retaining the stack and its quick-slot assignment.

@@ -11,6 +11,8 @@ Run from the repository root in Windows PowerShell, with Unity closed:
 .\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy
 # Focused selection (overrides the suite filter)
 .\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy -TestFilter 'AuditContinueTests;AuditLifecycleTests;RepairPreservationTests'
+# Combat Economy, actual Save/Continue/HUD flow and wired audio/import contracts
+.\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy -TestFilter 'CombatEconomyTests;CombatEconomyPlayTests;CombatEconomyStateTests;CombatEconomyAuthoringTests;AuditContinueTests;UIAudioTests'
 ```
 
 The runner copies current tracked and untracked, nonignored Assets/Packages/ProjectSettings

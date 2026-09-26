@@ -25,6 +25,7 @@ using UnityEngine;
     public float health, armor, verticalVelocity;
     public string character, equipped, selected;
     public int ammo; // Legacy selected-magazine fallback.
+    public int plasmaCapsules, armorCapsules; // Missing in legacy saves: zero resources.
     public List<SavedWeaponState> weapons; // Null in pre-owned-magazine saves.
     public List<string> items = new();
     // Null in older saves: each item entry then represents one unit.

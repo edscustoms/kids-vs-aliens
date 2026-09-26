@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -150,7 +151,14 @@ public sealed class AlienCombatantTests
             Assert.That(world.Capture().removed, Is.False); Assert.That(gun.activeSelf, Is.False);
             Assert.That(equipment.TryAcquire(pickup, equipment), Is.False);
             actor.transform.position = Home + Vector3.right * 5;
+            var loot = actor.GetComponent<EnemyPlasmaLoot>();
+            Assert.That(loot, Is.Not.Null);
+            Set(loot, "plasmaDropChance", 1f); Set(loot, "plasmaDropMin", 2); Set(loot, "plasmaDropMax", 2);
+            int capsulesBefore = PickupItem.Available.Count(p => p.Item is CapsuleItemData);
             actor.GetComponent<EnemyHealth>().TakeDamage(1000);
+            Assert.That(PickupItem.Available.Count(p => p.Item is CapsuleItemData), Is.EqualTo(capsulesBefore + 1));
+            actor.GetComponent<EnemyHealth>().TakeDamage(1000);
+            Assert.That(PickupItem.Available.Count(p => p.Item is CapsuleItemData), Is.EqualTo(capsulesBefore + 1));
             Assert.That(equipment.HasWeapon, Is.False);
             Assert.That(gun != null && gun.activeSelf, Is.True);
             Assert.That(world.Id, Is.EqualTo(id)); Assert.That(world.Capture().removed, Is.False);
@@ -348,18 +356,23 @@ public sealed class AlienCombatantTests
         foreach(string weapon in new[]{"PlasmaPistolItem","PlasmaRifleItem"})
         {
             var actor=Spawn(weapon);Set(actor.GetComponent<EnemyEquipment>(),"dropWeaponOnDeath",true);
+            Set(actor.GetComponent<EnemyPlasmaLoot>(),"plasmaDropChance",1f);
             yield return Seconds(.2f);
             var health=actor.GetComponent<EnemyHealth>();
             var damage=new HitInfo(10000,actor.transform.position,Vector3.up,Vector3.forward,target);
             health.ReceiveDamage(damage);health.ReceiveDamage(damage);
             yield return Seconds(.2f);
-            var pickups=Object.FindObjectsByType<PickupItem>(FindObjectsSortMode.None);
-            Assert.That(pickups.Length,Is.EqualTo(1),"Death must drop one world pickup, including repeated lethal hits");
-            Assert.That(pickups[0].Item,Is.EqualTo(EnemyCombatantSetup.Weapon(weapon)));
+            var pickups=Object.FindObjectsByType<PickupItem>();
+            var guns=pickups.Where(p=>p.Item is WeaponItemData).ToArray();
+            Assert.That(guns.Length,Is.EqualTo(1),"Death must drop one gun, including repeated lethal hits");
+            Assert.That(guns[0].Item,Is.EqualTo(EnemyCombatantSetup.Weapon(weapon)));
+            Assert.That(pickups.Count(p=>p.Item is CapsuleItemData capsule && capsule.kind==CapsuleKind.Plasma),Is.EqualTo(1),
+                "The guaranteed loot roll is separate from weapon custody and resolves once");
             Assert.That(actor.GetComponent<EnemyEquipment>().HasWeapon,Is.False);
             Assert.That(actor.GetComponent<EnemyEquipment>().Drop(),Is.Null,"Already-dropped weapon cannot duplicate");
-            results.Add(weapon+" dropped one normal "+pickups[0].name);
-            Object.Destroy(pickups[0].gameObject);Object.Destroy(actor);yield return EditorTestFrame.Next();
+            results.Add(weapon+" dropped one normal "+guns[0].name);
+            foreach(var pickup in pickups) Object.Destroy(pickup.gameObject);
+            Object.Destroy(actor);yield return EditorTestFrame.Next();
         }
     }
     static void Set(object target, string field, object value) => target.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(target,value);

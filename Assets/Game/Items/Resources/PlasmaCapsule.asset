@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2b2df0b187b4170a95d59fc701c94c5, type: 3}
+  m_Name: PlasmaCapsule
+  m_EditorClassIdentifier: Assembly-CSharp::CapsuleItemData
+  itemName: Plasma Capsule
+  itemType: 1
+  icon: {fileID: 0}
+  stackable: 0
+  worldPrefab: {fileID: 211952698670038261, guid: b978ba45344aa394796f56d5ebddd385, type: 3}
+  kind: 0

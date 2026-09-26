@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: RunContentCatalog
   m_EditorClassIdentifier: Assembly-CSharp::RunContentCatalog
   entries:
+  - id: 08f46e9670704834990dc952eae8d0d1
+    asset: {fileID: 1491699223791567673, guid: 08f46e9670704834990dc952eae8d0d1, type: 3}
   - id: 362870b7ff0504c4886cfe9168b33789
     asset: {fileID: 217488463840535515, guid: 362870b7ff0504c4886cfe9168b33789, type: 3}
   - id: 36602d022db5afe46b4f5a39704892e8#character
@@ -57,6 +59,12 @@ MonoBehaviour:
     asset: {fileID: 1049318778344171827, guid: a3bf2f3d7a8e6d841ab23094a36293ca, type: 3}
   - id: a83f5a0e4cb792b46bf779932755bbcf
     asset: {fileID: 11400000, guid: a83f5a0e4cb792b46bf779932755bbcf, type: 2}
+  - id: b716213f2b86156499ed07ec4cfbff25
+    asset: {fileID: 11400000, guid: b716213f2b86156499ed07ec4cfbff25, type: 2}
+  - id: b978ba45344aa394796f56d5ebddd385
+    asset: {fileID: 211952698670038261, guid: b978ba45344aa394796f56d5ebddd385, type: 3}
+  - id: ba98cc4a1aad5824ab39ca1378eca886
+    asset: {fileID: 11400000, guid: ba98cc4a1aad5824ab39ca1378eca886, type: 2}
   - id: bc31fe159d8b481297ee8bafa9a6393c
     asset: {fileID: 5099080681534595980, guid: bc31fe159d8b481297ee8bafa9a6393c, type: 3}
   - id: d7093383cb5ff764e942d8c3bdbe6e9a

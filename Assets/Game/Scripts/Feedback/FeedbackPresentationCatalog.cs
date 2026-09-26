@@ -58,6 +58,7 @@ public sealed class FeedbackPresentationCatalog : ScriptableObject
                 "{skillName}",
                 feedback.Skill != null ? feedback.Skill.DisplayName : string.Empty
             )
-            .Replace("{itemName}", feedback.Item != null ? feedback.Item.itemName : string.Empty);
+            .Replace("{itemName}", feedback.Item != null ? feedback.Item.itemName : string.Empty)
+            .Replace("{amount}", feedback.Amount.ToString());
     }
 }

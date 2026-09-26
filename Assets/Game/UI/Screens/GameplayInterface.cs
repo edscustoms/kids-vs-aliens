@@ -59,6 +59,8 @@ public sealed class GameplayInterface : MonoBehaviour
         toast.gameObject.SetActive(false);RunSaveService.Feedback+=ShowFeedback;
         RestyleTutorial();RestyleTouchControls();
         player.gameObject.AddComponent<CompactResourceDisplay>().Build(safe,player.GetComponent<PlayerHealth>());
+        var ammo = player.GetComponent<CombatAmmoDisplay>() ?? player.gameObject.AddComponent<CombatAmmoDisplay>();
+        ammo.Build(safe, player.GetComponent<PlayerInventory>());
         var oldHealth=FindAnyObjectByType<PlayerHealthUI>();if(oldHealth!=null)oldHealth.HideLegacyBars();
         var quick=FindAnyObjectByType<InventoryUI>();if(quick!=null)quick.ApplyPresentation(theme);
     }

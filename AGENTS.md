@@ -53,7 +53,7 @@ another copy.
 
 | Concept | Current owner and extension entry point |
 | --- | --- |
-| Inventory | `PlayerInventory`: possession, quantities/stacks, quick-slot assignments, unique weapons and one run-specific `OwnedWeaponState` per owned weapon definition, including magazine/reload/cooldown state. |
+| Inventory | `PlayerInventory`: possession, quantities/stacks, quick-slot assignments, Plasma/Armor Capsule quantities, reload payment, unique weapons and one run-specific `OwnedWeaponState` per owned weapon definition, including magazine/reload/cooldown state. |
 | Equipment | `PlayerEquipment`: selected owned weapon and mounted presentation. `WeaponInstance` represents the mounted weapon; it does not own its logical magazine. |
 | Firing/combat | `PlayerShooter` operates on active owned state and owns accepted delayed player hits. Reuse `HitInfo`, `CombatHitResolver`, `IDamageable` and `IHitReaction`. |
 | Enemies | `EnemyActor`, `EnemyBrain` and shared movement/perception/combat components; `EnemyEquipment` owns enemy equipment. Compose prefabs with combat/animation profiles and loadout data, independently of the replaceable visual model. |
@@ -79,6 +79,11 @@ production-sensitive; inspect their consumers before changing shared code.
 
 ### Weapons and delayed plasma hits
 
+- Combat Economy V1 uses full-magazine, empty-only automatic reloads. Inventory pays the
+  weapon-authored Plasma Capsule cost once at start; paid timers survive swaps/Continue.
+  Only world pickup acquisition converts duplicate plasma weapons; restore/ensure-owned
+  never grants rewards. EnemyPlasmaLoot resolves separately before equipment returns its
+  original scavenged pickup. Armor Capsules remain separate; no consumption mechanic exists.
 - Use `WeaponItemData`, equipped/world prefabs, `WeaponInstance`, GripPoint/Muzzle,
   required skill, fire mode and animation style. Inspect inventory stack/uniqueness
   rules before changing acquisition, quantities or consumption.
@@ -284,7 +289,7 @@ tool behavior and supported commands. Prefer updating the existing relevant docu
 and comments explaining reasons/contracts over duplicated status documents, obvious C#
 commentary or sprawling architecture essays.
 
-Combat Economy, Difficulty/Madness, future missions and Bike systems are upcoming work,
+Difficulty/Madness, future missions and Bike systems are upcoming work,
 not current architecture. Implement them only within an explicit task; apply these same
 ownership/readability rules and update this file with durable contracts when established.
 Keep temporary balance values, feature TODOs, animation/IK wish lists and roadmap history

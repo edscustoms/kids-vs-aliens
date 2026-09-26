@@ -6,6 +6,8 @@ public enum FeedbackCode
     InventoryFull,
     KnowledgeAlreadyKnown,
     GrenadeThrownInert,
+    PlasmaCollected,
+    ArmorCapsulesCollected,
 }
 
 public enum FeedbackAction
@@ -23,19 +25,22 @@ public readonly struct GameplayFeedbackEvent
         FeedbackCode code,
         SkillData skill = null,
         ItemData item = null,
-        FeedbackAction action = FeedbackAction.None
+        FeedbackAction action = FeedbackAction.None,
+        int amount = 0
     )
     {
         Code = code;
         Skill = skill;
         Item = item;
         Action = action;
+        Amount = amount;
     }
 
     public FeedbackCode Code { get; }
     public SkillData Skill { get; }
     public ItemData Item { get; }
     public FeedbackAction Action { get; }
+    public int Amount { get; }
 
     public FeedbackKey Key => new(this);
 }
@@ -53,7 +58,8 @@ public readonly struct FeedbackKey : IEquatable<FeedbackKey>
         // Capacity is global to this player's inventory; requirements are
         // shared by weapons/items, regardless of which item requested them.
         skill = code == FeedbackCode.InventoryFull ? null : value.Skill;
-        item = skill != null || code == FeedbackCode.InventoryFull ? null : value.Item;
+        item = skill != null || code == FeedbackCode.InventoryFull
+            || code == FeedbackCode.PlasmaCollected || code == FeedbackCode.ArmorCapsulesCollected ? null : value.Item;
         action = code == FeedbackCode.InventoryFull ? FeedbackAction.None : value.Action;
     }
 

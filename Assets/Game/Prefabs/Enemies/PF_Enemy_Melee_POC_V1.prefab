@@ -227,6 +227,7 @@ GameObject:
   - component: {fileID: 2466120223940487441}
   - component: {fileID: 2293460975760821578}
   - component: {fileID: 5150983897785989327}
+  - component: {fileID: 4311302219214498445}
   m_Layer: 7
   m_Name: PF_Enemy_Melee_POC_V1
   m_TagString: Untagged
@@ -631,6 +632,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponAwareness
   allowWeaponPickup: 0
+--- !u!114 &4311302219214498445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3628672886102332991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8719195945574f119d34794d1a049c01, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPlasmaLoot
+  plasmaPickup: {fileID: 3842408856438203956, guid: b978ba45344aa394796f56d5ebddd385, type: 3}
+  plasmaDropChance: 0.75
+  plasmaDropMin: 2
+  plasmaDropMax: 4
 --- !u!1 &4160581365446221198
 GameObject:
   m_ObjectHideFlags: 0

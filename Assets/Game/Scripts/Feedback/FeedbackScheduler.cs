@@ -35,6 +35,23 @@ public sealed class FeedbackScheduler
             return false;
         Tick(now);
         FeedbackKey key = feedback.Key;
+        bool quantityPickup = feedback.Code == FeedbackCode.PlasmaCollected || feedback.Code == FeedbackCode.ArmorCapsulesCollected;
+        // Repeated nearby capsule pickups are rewards, not repeated denied actions.
+        // Keep one compact toast but include every collected unit.
+        if (quantityPickup && HasActive && Active.Key.Equals(key))
+        {
+            Active = CombinePickup(Active, feedback);
+            visibleUntil = now + policy.duration;
+            Revision++;
+            return true;
+        }
+        if (quantityPickup)
+            for (int i = 0; i < pending.Count; i++)
+                if (pending[i].Feedback.Key.Equals(key))
+                {
+                    pending[i] = new Pending(CombinePickup(pending[i].Feedback, feedback), policy, now + policy.queueLifetime);
+                    return true;
+                }
         if (
             (HasActive && Active.Key.Equals(key))
             || (cooldowns.TryGetValue(key, out double until) && now < until)
@@ -77,6 +94,10 @@ public sealed class FeedbackScheduler
         pending.RemoveAt(best);
         Show(next.Feedback, next.Policy, now);
     }
+
+    private static GameplayFeedbackEvent CombinePickup(GameplayFeedbackEvent previous, GameplayFeedbackEvent next) =>
+        new(next.Code, next.Skill, next.Item, next.Action,
+            (int)System.Math.Min(int.MaxValue, (long)previous.Amount + next.Amount));
 
     public void InvalidateSkill(SkillData skill, double now)
     {
