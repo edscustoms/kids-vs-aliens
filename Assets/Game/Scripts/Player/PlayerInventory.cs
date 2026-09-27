@@ -132,6 +132,13 @@ public class PlayerInventory : MonoBehaviour
     public void UseQuickSlot(int slot) => UseItem(QuickSlotIndex(slot));
     public void DropQuickSlot(int slot) => DropItem(QuickSlotIndex(slot));
     public int[] CaptureQuickSlots() => (int[])quickSlots.Clone();
+    public bool AssignFirstEmptyQuickSlot(int itemIndex)
+    {
+        if (EntryItem(itemIndex) == null) return false;
+        for (int slot = 0; slot < quickSlots.Length; slot++)
+            if (quickSlots[slot] == -1) return AssignQuickSlot(slot, itemIndex);
+        return false;
+    }
     public bool AssignQuickSlot(int slot, int itemIndex)
     {
         if (slot < 0 || slot >= quickSlots.Length || (itemIndex != -1 && EntryItem(itemIndex) == null)) return false;
@@ -455,8 +462,6 @@ public class PlayerInventory : MonoBehaviour
         // Repeated books must not duplicate an existing granted option.
         if (book.grantedItem is UnarmedCombatItemData)
         {
-            for (int slot = 0; slot < quickSlots.Length; slot++)
-                if (quickSlots[slot] == index) quickSlots[slot] = book.grantedItem == LearnedCombat ? CombatEntry : -1;
             RemoveItem(index);
         }
         else if (book.grantedItem != null && !items.Contains(book.grantedItem))
@@ -468,6 +473,14 @@ public class PlayerInventory : MonoBehaviour
             RemoveItem(index);
 
         RemoveLearnedBooks();
+        // The consumed book frees its slot before choosing the first empty one.
+        // Restore never runs this acquisition path, so a deliberately cleared
+        // assignment stays cleared on Continue and Knowledge remains permanent.
+        if (book.grantedItem is UnarmedCombatItemData combat && combat == LearnedCombat)
+        {
+            AssignFirstEmptyQuickSlot(CombatEntry);
+            playerMeleeController.SelectCombatItem(combat);
+        }
         OnInventoryChanged?.Invoke();
     }
 

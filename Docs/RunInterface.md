@@ -10,7 +10,38 @@ The interface uses the existing uGUI/TMP, inventory, tutorial and suspension sys
 - Continue restores the active run and opens Pause. New Game and Hard Restart require confirmation. Restart restores the original starting loadout, not the current acquired equipment.
 - Pause owns one lease across Settings, Inventory and restart confirmation. Inventory Back returns to Pause. Quit to Menu writes a snapshot before leaving and remains in the game if saving fails.
 - Learn owns a separate modal lease. Reviewing a learned entry reuses `KnowledgeAcquiredPresenter` and its existing demos. Acknowledgement is permanent; interrupted presentations remain unread.
-- The resource HUD displays health and **armor**. The quick bar has five fixed assignments into the real inventory list; it does not add storage or create item copies. Backpack capacity remains the player's authored capacity.
+- The resource HUD displays health and **armor**. The quick bar has five assignments into inventory or the permanent learned-combat entry; it does not add storage or create item copies. Backpack capacity remains the player's authored capacity.
+
+### Inventory / quick-slot UX
+
+Learning Fighting from its book consumes the book, assigns Fighting to the first empty
+quick slot and selects it through the existing melee owner. The inventory event updates
+the HUD immediately. Occupied slots are preserved, including when all five are full.
+The existing Knowledge presentation is unchanged; there is no extra assignment prompt.
+
+`PlayerInventory.AssignFirstEmptyQuickSlot` also owns the Inventory button's ordered
+search. One click assigns the selected entry; a full bar leaves assignments unchanged
+and shows **QUICK SLOTS FULL** in the existing Inventory hint. Clear and deliberate
+drag/drop remain available. `InventoryManagementView` has no category column: wider
+Quick Slots sit above Backpack and an always-visible Learned Combat area, with Item
+Details alongside. Clearing Fighting removes only its assignment; it remains selectable
+in Learned Combat without occupying a Backpack cell. Beam Hoist stays contextual.
+
+Existing Active Run quick-slot tokens and selected-item state persist these changes.
+Continue preserves both assignments and deliberate clearing without reassigning during
+restore. Hard Restart/new runs retain permanent Knowledge and their existing starting
+loadout/empty-assignment behavior; learned Fighting can be assigned from Inventory.
+
+Unity 6000.5.6f1 validation: `InventoryQuickSlotUX-Final` passed **7/7**, including
+actual book use, immediate HUD update, combat, Save/Continue, deliberate clearing and
+Hard Restart. **85/85 adjacent checks** passed across `InventoryQuickSlotUX-01` and
+`InventoryQuickSlotUX-02` (Inventory, Knowledge, melee, persistence, Beam, menu and UI
+audio). Early new-fixture failures involved the resume-frame guard, nested HUD icon
+lookup and normal diagnostic logs; all were corrected without changing production
+input/ownership. XML/logs are under `Logs/RepositoryAuditRemediation`. Inventory
+captures at 1080p, 720p and 4:3 are in `Logs/InventoryQuickSlotUX`. No full regression
+was needed for this bounded change. Touch selection/scroll/drag and readability on
+the actual device remain manual checks; no build/deployment work was performed.
 
 ## Save contract
 

@@ -14,9 +14,8 @@ public sealed class InventoryManagementView : MonoBehaviour
     private TMP_Text details, hint, usage;
     private Image detailIcon;
     private InventoryDragSlot[] quick, backpack;
-    private ItemType? category;
+    private InventoryDragSlot learnedCombat;
     private int selected = -1, selectedQuick = -1;
-    private bool assigning;
     private readonly List<int> backpackIndices = new(25);
     public void Build(PlayerInventory source, Action back, Action resume)
     {
@@ -25,25 +24,25 @@ public sealed class InventoryManagementView : MonoBehaviour
         Text(panel,"Title","INVENTORY",new(.035f,.88f),new(.7f,.985f),46);
         Text(panel,"Subtitle","PAUSED  /  MANAGE YOUR GEAR",new(.035f,.825f),new(.8f,.89f),23,Cyan);
         Button(panel,"Close","×",new(.92f,.885f),new(.975f,.985f),()=>back());
-        var categories = new (string, ItemType?)[] { ("ALL",null),("WEAPONS",ItemType.Weapon),("THROWABLES",ItemType.Grenade),("CONSUMABLES",ItemType.Consumable),("ARMOR",ItemType.Armor),("KEY ITEMS",ItemType.Key),("KNOWLEDGE",ItemType.KnowledgeBook),("COMBAT",ItemType.UnarmedCombat) };
-        for (int i=0;i<categories.Length;i++) {
-            var entry=categories[i]; float y=.73f-i*.087f;
-            Button(panel,"Category"+i,entry.Item1,new(.025f,y),new(.205f,y+.073f),()=>{category=entry.Item2;Refresh();});
-        }
-        var center=Panel(panel,"Items",new(.225f,.04f),new(.71f,.805f));
+        var center=Panel(panel,"Items",new(.025f,.04f),new(.71f,.805f));
         Text(center,"QuickTitle","QUICK SLOTS",new(.025f,.9f),new(.97f,.985f),27,Cyan);
         quickRow=Rect(center,"QuickSlots",new(.025f,.60f),new(.975f,.89f));
-        usage=Text(center,"BackpackTitle","BACKPACK",new(.025f,.47f),new(.98f,.57f),25,Cyan);
-        bag=Scroll(center,new(.025f,.045f),new(.975f,.46f),out var backpackScroll);
+        usage=Text(center,"BackpackTitle","BACKPACK",new(.025f,.47f),new(.71f,.57f),25,Cyan);
+        bag=Scroll(center,new(.025f,.045f),new(.71f,.46f),out var backpackScroll);
         backpackScroll.name="Backpack";
         backpackScroll.scrollSensitivity=45;
         bag.gameObject.AddComponent<BackpackGridLayout>();
         bag.gameObject.AddComponent<ContentSizeFitter>().verticalFit=ContentSizeFitter.FitMode.PreferredSize;
+        var combat=Panel(center,"LearnedCombat",new(.735f,.045f),new(.975f,.57f));
+        Text(combat,"Heading","LEARNED COMBAT",new(.05f,.77f),new(.95f,.98f),23,Cyan,TextAlignmentOptions.Center);
+        var combatSlot=Panel(combat,"Fighting",new(.06f,.12f),new(.94f,.73f));
+        learnedCombat=combatSlot.gameObject.AddComponent<InventoryDragSlot>();
+        learnedCombat.Configure(this,PlayerInventory.CombatEntry,false);
         var side=Panel(panel,"Details",new(.725f,.04f),new(.975f,.805f));
         Text(side,"Heading","ITEM DETAILS",new(.05f,.9f),new(.95f,.99f),27,Cyan);
         detailIcon=NeonVisuals.Icon(side,"ItemIcon",new(.14f,.58f),new(.86f,.87f));
         details=Text(side,"Description","Select an item",new(.06f,.27f),new(.94f,.55f),29,null,TextAlignmentOptions.TopLeft);
-        Button(side,"Assign","ASSIGN TO QUICK SLOT",new(.045f,.13f),new(.955f,.235f),()=>{if(inventory.EntryItem(selected)!=null){assigning=true;hint.text="Tap the quick slot to assign this item.";}});
+        Button(side,"Assign","ASSIGN TO QUICK SLOT",new(.045f,.13f),new(.955f,.235f),AssignSelected);
         Button(side,"Unassign","CLEAR QUICK SLOT",new(.045f,.015f),new(.955f,.115f),()=>{if(selectedQuick>=0)inventory.AssignQuickSlot(selectedQuick,-1);});
         Button(transform,"Back","‹  BACK TO PAUSE",new(.055f,.045f),new(.31f,.12f),()=>back());
         Button(transform,"Resume","RESUME GAME",new(.71f,.045f),new(.945f,.12f),()=>resume());
@@ -60,12 +59,18 @@ public sealed class InventoryManagementView : MonoBehaviour
         var r=Panel(parent,"Slot"+index,new(index/(float)count+.006f,.025f),new((index+1)/(float)count-.006f,.975f));
         var slot=r.gameObject.AddComponent<InventoryDragSlot>();slot.Configure(this,index,isQuick);return slot;
     }
-    public int OwnedIndexFor(int index,bool isQuick) => isQuick ? inventory.QuickSlotIndex(index) : index>=0&&index<backpackIndices.Count?backpackIndices[index]:-1;
+    public int OwnedIndexFor(int index,bool isQuick) => isQuick ? inventory.QuickSlotIndex(index)
+        : index==PlayerInventory.CombatEntry ? PlayerInventory.CombatEntry
+        : index>=0&&index<backpackIndices.Count?backpackIndices[index]:-1;
     public ItemData ItemFor(int index,bool isQuick) => inventory.EntryItem(OwnedIndexFor(index,isQuick));
+    private void AssignSelected()
+    {
+        if(inventory.EntryItem(selected)==null)return;
+        hint.text=inventory.AssignFirstEmptyQuickSlot(selected)?"Quick slot updated":"QUICK SLOTS FULL";
+    }
     public void Select(int index,bool isQuick)
     {
         UIAudioFeedback.Click();
-        if(assigning&&isQuick&&inventory.EntryItem(selected)!=null){inventory.AssignQuickSlot(index,selected);assigning=false;hint.text="Quick slot updated";return;}
         selected=OwnedIndexFor(index,isQuick);
         selectedQuick=isQuick?index:-1;Refresh();
     }
@@ -77,26 +82,25 @@ public sealed class InventoryManagementView : MonoBehaviour
         if(target.IsQuick)inventory.AssignQuickSlot(target.Index,itemIndex);
         else if(source.IsQuick)inventory.AssignQuickSlot(source.Index,-1);
         else { int destination=OwnedIndexFor(target.Index,false);if(inventory.SwapItems(itemIndex,destination))selected=destination; }
-        assigning=false;hint.text="Inventory updated";
+        hint.text="Inventory updated";
     }
     private void Refresh()
     {
         if(quick==null)return;
         backpackIndices.Clear();
-        if(category==ItemType.UnarmedCombat) {
-            if(inventory.LearnedCombat!=null)backpackIndices.Add(PlayerInventory.CombatEntry);
-        } else {
-            for(int owned=0;owned<inventory.Items.Count;owned++)backpackIndices.Add(owned);
-        }
+        for(int owned=0;owned<inventory.Items.Count;owned++)backpackIndices.Add(owned);
         for(int i=0;i<quick.Length;i++)quick[i].Refresh(ItemFor(i,true),true,selectedQuick==i,quantity:inventory.CountAt(OwnedIndexFor(i,true)));
         for(int i=0;i<backpack.Length;i++){
-            var item=ItemFor(i,false);bool visible=category==null||item==null||item.itemType==category;
-            backpack[i].gameObject.SetActive(category!=ItemType.UnarmedCombat||item!=null);
+            var item=ItemFor(i,false);
             int entry=OwnedIndexFor(i,false), assigned=-1;
             for(int slot=0;slot<inventory.QuickSlotCount;slot++)if(entry!=-1&&inventory.QuickSlotIndex(slot)==entry){assigned=slot;break;}
-            backpack[i].Refresh(item,visible,selected!=-1&&selected==entry,assigned,inventory.CountAt(entry));
+            backpack[i].Refresh(item,true,selected!=-1&&selected==entry,assigned,inventory.CountAt(entry));
         }
-        usage.text=category==ItemType.UnarmedCombat?"LEARNED COMBAT":$"BACKPACK  {inventory.Items.Count} / {inventory.Capacity}";
+        int combatAssignment=-1;
+        for(int slot=0;slot<inventory.QuickSlotCount;slot++)
+            if(inventory.QuickSlotIndex(slot)==PlayerInventory.CombatEntry){combatAssignment=slot;break;}
+        learnedCombat.Refresh(inventory.LearnedCombat,true,selected==PlayerInventory.CombatEntry,combatAssignment);
+        usage.text=$"BACKPACK  {inventory.Items.Count} / {inventory.Capacity}";
         var selectedItem=inventory.EntryItem(selected);
         detailIcon.sprite=InterfaceIconCatalog.ForItem(selectedItem);detailIcon.enabled=detailIcon.sprite!=null;
         string stats = selectedItem is WeaponItemData weapon ? $"\nDamage: {weapon.damage:g}   Range: {weapon.range:g} m\nMagazine: {weapon.magazineSize}   {weapon.fireMode}"
@@ -132,14 +136,14 @@ public sealed class InventoryDragSlot : MonoBehaviour, IPointerClickHandler, IPo
         scroll=quick?null:GetComponentInParent<ScrollRect>();
         icon=NeonVisuals.Icon(transform,"Icon",new(.12f,.33f),new(.88f,.82f));
         label=Text(transform,"Name","",new(.06f,.035f),new(.94f,.32f),20,null,TextAlignmentOptions.Center);
-        number=Text(transform,"Number",(index+1).ToString(),new(.1f,.82f),new(.9f,.99f),quick?21:14,Cyan,TextAlignmentOptions.Center);
+        number=Text(transform,"Number",index==PlayerInventory.CombatEntry?"":(index+1).ToString(),new(.1f,.82f),new(.9f,.99f),quick?21:14,Cyan,TextAlignmentOptions.Center);
     }
     public void Refresh(ItemData item,bool visible,bool selected,int assigned=-1,int quantity=1)
     {
         filtered=!visible;available=visible&&item!=null;icon.sprite=available?InterfaceIconCatalog.ForItem(item):null;icon.enabled=icon.sprite!=null;
         label.text=!visible?"—":item==null?"EMPTY":item.itemName;
         if(available&&quantity>1)label.text+=$" x{quantity}";
-        number.text=available&&assigned>=0?$"SLOT {assigned+1}":(Index+1).ToString();
+        number.text=available&&assigned>=0?$"SLOT {assigned+1}":Index==PlayerInventory.CombatEntry?"":(Index+1).ToString();
         icon.color=assigned>=0?new Color(1,1,1,.55f):Color.white;
         label.color=available?Color.white:Muted;
         GetComponent<NeonPanel>().SetState(!visible ? NeonState.Disabled : selected ? NeonState.Selected : item == null ? NeonState.Empty : NeonState.Normal);
