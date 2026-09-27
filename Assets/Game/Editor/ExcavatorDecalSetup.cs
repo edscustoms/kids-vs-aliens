@@ -10,6 +10,7 @@ using Object = UnityEngine.Object;
 public static class ExcavatorDecalSetup
 {
     public const string PrefabPath = "Assets/Game/Prefabs/Environment/Machinery/PF_Excavator_A.prefab";
+    public const string DecalRootPath = "Excavator_A_10/UpperPivot/Decals";
     public const string LayoutPath = "Assets/Game/Editor/ExcavatorDecalLayout.asset";
     public const string MeshFolder = "Assets/Game/Prefabs/Environment/Machinery/ExcavatorDecalMeshes";
     public const string ShaderPath = "Assets/Game/Shaders/ExcavatorMeshDecal.shader";
@@ -64,20 +65,22 @@ public static class ExcavatorDecalSetup
     public static void Configure(GameObject root, ExcavatorDecalLayout layout, bool rebuild)
     {
         Transform model = root.transform.Find("Excavator_A_10");
-        if (model == null || root.GetComponent<CameraOcclusionGroup>() == null)
-            throw new InvalidOperationException("Expected Excavator_A_10 and the existing root CameraOcclusionGroup.");
+        Transform pivot = model != null ? model.Find("UpperPivot") : null;
+        if (pivot == null || root.GetComponent<CameraOcclusionGroup>() == null)
+            throw new InvalidOperationException("Expected Excavator_A_10/UpperPivot and the existing root CameraOcclusionGroup.");
         ValidateLayout(layout);
         if (!AssetDatabase.IsValidFolder(MeshFolder))
             AssetDatabase.CreateFolder("Assets/Game/Prefabs/Environment/Machinery", "ExcavatorDecalMeshes");
         Material brand = GetMaterial(false, rebuild), safety = GetMaterial(true, rebuild);
-        bool newRoot = root.transform.Find("Decals") == null;
-        Transform decals = Child(root.transform, "Decals");
+        bool newRoot = pivot.Find("Decals") == null;
+        Transform decals = Child(pivot, "Decals");
         if (newRoot || rebuild)
         {
-            decals.localPosition = model.localPosition;
-            // The source FBX is Z-up; its prefab override turns it upright by -90 degrees X.
-            decals.localRotation = model.localRotation * Quaternion.Euler(90, 0, 0);
-            decals.localScale = model.localScale;
+            // Layout coordinates retain their original upright model frame. The neutral
+            // slew parent contributes motion, without rebaking any sticker geometry.
+            decals.localPosition = -pivot.localPosition;
+            decals.localRotation = Quaternion.Euler(90, 0, 0);
+            decals.localScale = Vector3.one;
         }
         foreach (var label in layout.labels)
         {

@@ -251,7 +251,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6149659162171637288}
-  - {fileID: 8026993718827451864}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4700928268902640233
@@ -958,14 +957,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4935677456419393392}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.00000008940697, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 2.3269076, y: 0.018110178, z: -1.3856548}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2133675146422988307}
   - {fileID: 2937050812444995787}
-  m_Father: {fileID: 5890515632734451975}
+  m_Father: {fileID: 2773582194224530792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5181865739832953524
 GameObject:
@@ -1774,7 +1773,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8403995484948012203, guid: 06771cfd8fe0ef543981040c7b8cb3f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8026993718827451864}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 06771cfd8fe0ef543981040c7b8cb3f7, type: 3}
       insertIndex: -1
@@ -1789,6 +1791,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 8801617685550737035}
   m_SourcePrefab: {fileID: 100100000, guid: 06771cfd8fe0ef543981040c7b8cb3f7, type: 3}
+--- !u!4 &2773582194224530792 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8403995484948012203, guid: 06771cfd8fe0ef543981040c7b8cb3f7, type: 3}
+  m_PrefabInstance: {fileID: 5971002423476099523}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6149659162171637288 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 06771cfd8fe0ef543981040c7b8cb3f7, type: 3}

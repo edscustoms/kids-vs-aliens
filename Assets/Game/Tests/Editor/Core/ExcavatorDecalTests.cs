@@ -18,15 +18,75 @@ public sealed class ExcavatorDecalTests
     static GameObject Prefab => AssetDatabase.LoadAssetAtPath<GameObject>(ExcavatorDecalSetup.PrefabPath);
 
     [Test]
+    public void UpperPivotSitsOnTheSlewBearingAndKeepsTheTrackedBaseSeparate()
+    {
+        var model = Prefab.transform.Find("Excavator_A_10");
+        var pivot = model.Find("UpperPivot");
+        Assert.That(pivot, Is.Not.Null);
+        Assert.That(pivot.localRotation, Is.EqualTo(Quaternion.identity));
+        Assert.That(pivot.localScale, Is.EqualTo(Vector3.one));
+        var bearing = model.Find("08_-_Default").GetComponent<MeshFilter>().sharedMesh.vertices;
+        float top = bearing.Max(v => v.z);
+        var ring = bearing.Where(v => v.z > top - .00001f).ToArray();
+        var center = new Vector3((ring.Min(v => v.x) + ring.Max(v => v.x)) * .5f,
+            (ring.Min(v => v.y) + ring.Max(v => v.y)) * .5f, pivot.localPosition.z);
+        Assert.That(Vector3.Distance(center, pivot.localPosition), Is.LessThan(.00001f));
+        Assert.That(pivot.localPosition.z, Is.InRange(top - .12f, top));
+        foreach (string name in new[] { "08_-_Default", "14_-_Default", "20_-_Default" })
+            Assert.That(model.Find(name).parent, Is.SameAs(model), name);
+        foreach (string name in new[] { "05_-_Default", "06_-_Default", "07_-_Default", "12_-_Default",
+            "17_-_Defaultsadsa", "17_-_Defaultsadsadd", "17_BucketSteel", "17_HydraulicChrome", "17_YellowPaint" })
+            Assert.That(pivot.Find(name), Is.Not.Null, name);
+        Assert.That(Prefab.transform.Find(ExcavatorDecalSetup.DecalRootPath).parent, Is.SameAs(pivot));
+    }
+
+    [TestCase(0f), TestCase(45f), TestCase(90f), TestCase(-45f)]
+    public void SlewMovesUpperGeometryAndLabelsTogetherWhileTracksStayFixed(float angle)
+    {
+        var root = Object.Instantiate(Prefab);
+        try
+        {
+            var pivot = root.transform.Find("Excavator_A_10/UpperPivot");
+            var filters = root.GetComponentsInChildren<MeshFilter>();
+            var vertices = filters.Select(f => f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v)).ToArray()).ToArray();
+            var materials = filters.Select(f => f.GetComponent<Renderer>().sharedMaterials).ToArray();
+            Vector3 center = pivot.position;
+            var yaw = Quaternion.AngleAxis(angle, pivot.parent.TransformDirection(Vector3.forward));
+            pivot.localRotation = Quaternion.AngleAxis(angle, Vector3.forward);
+            for (int i = 0; i < filters.Length; i++)
+            {
+                var f = filters[i]; var local = f.sharedMesh.vertices;
+                for (int v = 0; v < local.Length; v++)
+                {
+                    Vector3 expected = f.transform.IsChildOf(pivot) ? center + yaw * (vertices[i][v] - center) : vertices[i][v];
+                    Assert.That(Vector3.Distance(f.transform.TransformPoint(local[v]), expected), Is.LessThan(.00002f), f.name);
+                }
+                Assert.That(f.GetComponent<Renderer>().sharedMaterials, Is.EqualTo(materials[i]));
+            }
+            Assert.That(pivot.position, Is.EqualTo(center), "The slew axis must not orbit or jump.");
+            pivot.localRotation = Quaternion.identity;
+            for (int i = 0; i < filters.Length; i++)
+            {
+                var local = filters[i].sharedMesh.vertices;
+                for (int v = 0; v < local.Length; v++)
+                    Assert.That(Vector3.Distance(filters[i].transform.TransformPoint(local[v]), vertices[i][v]), Is.LessThan(.00001f));
+            }
+        }
+        finally { Object.DestroyImmediate(root); }
+    }
+
+    [Test]
     public void AuthoredLabelsHaveSeparateOutwardGeometryAndUnmirroredUvs()
     {
-        var decals = Prefab.transform.Find("Decals");
+        var decals = Prefab.transform.Find(ExcavatorDecalSetup.DecalRootPath);
         Assert.That(decals, Is.Not.Null);
         var filters = decals.GetComponentsInChildren<MeshFilter>();
         Assert.That(filters.Length, Is.EqualTo(17));
         Assert.That(decals.GetComponentsInChildren<Collider>(), Is.Empty);
         Assert.That(Prefab.GetComponentsInChildren<Collider>().Length, Is.EqualTo(4));
-        var body = Prefab.transform.Find("Excavator_A_10").GetComponentsInChildren<Renderer>();
+        var body = Prefab.transform.Find("Excavator_A_10").GetComponentsInChildren<MeshFilter>()
+            .Where(f => AssetDatabase.GetAssetPath(f.sharedMesh).EndsWith("Excavator_A_10.fbx", StringComparison.Ordinal))
+            .Select(f => f.GetComponent<Renderer>()).ToArray();
         Assert.That(body, Is.Not.Empty);
         Assert.That(body.Intersect(decals.GetComponentsInChildren<Renderer>()), Is.Empty, "Labels must remain separate from body geometry");
         Assert.That(decals.GetComponentsInChildren<Renderer>().Select(r => r.sharedMaterial).Distinct().Count(), Is.EqualTo(2));
@@ -52,7 +112,8 @@ public sealed class ExcavatorDecalTests
     public void LabelSurfacesAreSupportedAcrossTheirWholeArea()
     {
         var triangles = new List<Triangle>();
-        foreach (var f in Prefab.transform.Find("Excavator_A_10").GetComponentsInChildren<MeshFilter>())
+        foreach (var f in Prefab.transform.Find("Excavator_A_10").GetComponentsInChildren<MeshFilter>()
+            .Where(f => AssetDatabase.GetAssetPath(f.sharedMesh).EndsWith("Excavator_A_10.fbx", StringComparison.Ordinal)))
         {
             var vertices = f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v)).ToArray();
             var indices = f.sharedMesh.triangles;
@@ -65,7 +126,7 @@ public sealed class ExcavatorDecalTests
                 triangles.Add(new Triangle { a = a, ab = ab, ac = ac, normal = Vector3.Cross(ab, ac).normalized, aa = aa, bb = bb, cc = cc, inverse = 1 / determinant });
             }
         }
-        foreach (var f in Prefab.transform.Find("Decals").GetComponentsInChildren<MeshFilter>())
+        foreach (var f in Prefab.transform.Find(ExcavatorDecalSetup.DecalRootPath).GetComponentsInChildren<MeshFilter>())
         {
             var normal = f.transform.TransformDirection(Vector3.back);
             var candidates = triangles.Where(t => Vector3.Dot(t.normal, normal) > .99f
@@ -98,16 +159,16 @@ public sealed class ExcavatorDecalTests
         try
         {
             var layout = ExcavatorDecalSetup.GetOrCreateLayout();
-            var node = root.transform.Find("Decals/Branding/BoomBrand_L");
+            var node = root.transform.Find(ExcavatorDecalSetup.DecalRootPath + "/Branding/BoomBrand_L");
             Vector3 original = node.localPosition;
             node.localPosition += new Vector3(.13f, .19f, .03f);
             node.localRotation = Quaternion.Euler(7, 23, 9);
             node.localScale = new Vector3(1.12f, .4f, 1);
             Vector3 moved = node.localPosition, scale = node.localScale;
             Quaternion rotation = node.localRotation;
-            Object.DestroyImmediate(root.transform.Find("Decals/Branding/EX27_R").gameObject);
+            Object.DestroyImmediate(root.transform.Find(ExcavatorDecalSetup.DecalRootPath + "/Branding/EX27_R").gameObject);
             ExcavatorDecalSetup.Configure(root, layout, false);
-            Assert.That(root.transform.Find("Decals/Branding/EX27_R"), Is.Not.Null);
+            Assert.That(root.transform.Find(ExcavatorDecalSetup.DecalRootPath + "/Branding/EX27_R"), Is.Not.Null);
             Assert.That(node.localPosition, Is.EqualTo(moved));
             Assert.That(node.localRotation, Is.EqualTo(rotation));
             Assert.That(node.localScale, Is.EqualTo(scale));
@@ -140,7 +201,7 @@ public sealed class ExcavatorDecalTests
             {
                 object state = states[renderer];
                 Assert.That(state, Is.Not.Null, renderer.name);
-                bool decal = renderer.transform.IsChildOf(machine.transform.Find("Decals"));
+                bool decal = renderer.transform.IsChildOf(machine.transform.Find(ExcavatorDecalSetup.DecalRootPath));
                 Assert.That(renderer.sharedMaterials.All(m => m.GetTag("CameraOcclusionLines", false, "") == "Off"), Is.EqualTo(decal), renderer.name);
                 var original = renderer.sharedMaterials;
                 Invoke(controller, "EnsureFadeMaterials", renderer, state);
@@ -242,7 +303,7 @@ public sealed class ExcavatorDecalTests
         Assert.That(shader, Is.Not.Null);
         Assert.That(ShaderUtil.GetShaderMessages(shader), Is.Empty);
         Assert.That(shader.isSupported, Is.True);
-        foreach (var renderer in Prefab.transform.Find("Decals").GetComponentsInChildren<Renderer>())
+        foreach (var renderer in Prefab.transform.Find(ExcavatorDecalSetup.DecalRootPath).GetComponentsInChildren<Renderer>())
         {
             var material = renderer.sharedMaterial;
             Assert.That(material.shader, Is.SameAs(shader));

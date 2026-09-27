@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a7a9fc3a87b22d4cbc75a87e5f52e07, type: 3}
+  m_Name: IndustrialFuse
+  m_EditorClassIdentifier: Assembly-CSharp::GenericItemData
+  itemName: Industrial Fuse
+  itemType: 7
+  icon: {fileID: 21300000, guid: 6f4b997b3b9bcd74cac54037eedebf06, type: 3}
+  stackable: 1
+  worldPrefab: {fileID: 6825120946638339728, guid: 598fb63b617738f45b2a60e765758957, type: 3}
