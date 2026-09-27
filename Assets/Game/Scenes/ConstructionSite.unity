@@ -4938,6 +4938,82 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 486268, guid: 4357217ce6e63554f97828955f1d9394, type: 3}
   m_PrefabInstance: {fileID: 9200000000020}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &204713075
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8748120536408156926, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      propertyPath: m_Name
+      value: PF_AlienGroundAurora
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 945910490}
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+--- !u!114 &204713076 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5022707900133938155, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+  m_PrefabInstance: {fileID: 204713075}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68442bad1ca546a4086ed29e08314cc8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AlienGroundAuroraController
+--- !u!4 &204713077 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 841788954085456596, guid: 771a20fcc9c40c841a965965729f027f, type: 3}
+  m_PrefabInstance: {fileID: 204713075}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &236781678 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1028340084111375183, guid: f31461f9ac7349142bc33aa3fa8fc5b8, type: 3}
@@ -27979,6 +28055,90 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunWorldObject
   stableId: GlobalObjectId_V1-2-7b00e10e5592ae649b8eae83c2b809c4-3195579424107535968-820160965
+--- !u!1 &945910489
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 945910490}
+  - component: {fileID: 945910491}
+  m_Layer: 0
+  m_Name: Authoring (Editor only)
+  m_TagString: EditorOnly
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &945910490
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945910489}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 204713077}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &945910491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945910489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16b6a8131df290d49bbcdc5e5d3f1069, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AlienGroundAuroraAuthoring
+  controller: {fileID: 204713076}
+  output: {fileID: 11400000, guid: bb6be21d30567c044b70b0f6154c5aa2, type: 2}
+  allowedGround:
+  - {fileID: 1037906663}
+  allowedZones:
+  - m_Center: {x: 0, y: 3, z: 0.08000183}
+    m_Extent: {x: 38, y: 15, z: 48}
+  excludedZones:
+  - m_Center: {x: -28.69, y: 0.42240095, z: -23.39}
+    m_Extent: {x: 4, y: 15, z: 4}
+  excludedObjects:
+  - {fileID: 1659472511}
+  - {fileID: 1475692872}
+  - {fileID: 123398255}
+  - {fileID: 1052242379662514400}
+  exclusionPadding: 2
+  seed: 73129
+  eventCount: 19
+  candidateLocationCount: 128
+  maximumActive: 4
+  scheduleDuration: 96
+  timingSpread: 0.75
+  lifetimeRange: {x: 8, y: 20}
+  lengthRange: {x: 9, y: 18}
+  widthRange: {x: 4.5, y: 8}
+  fadeInRange: {x: 2.5, y: 3.5}
+  fadeOutRange: {x: 3, y: 4}
+  edgeSoftness: 0.4
+  irregularity: 0.85
+  shapeVariation: 1
+  movementSpeedRange: {x: 0.3, y: 0.45}
+  locationSpacing: 2
+  activeSpacing: 0.8
+  slopeLimit: 12
+  groundTolerance: 0.06
+  palette:
+  - {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
+  - {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
+  - {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
+  - {r: 0.7, g: 0.16, b: 1.15, a: 0.32}
 --- !u!4 &946978580 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 486268, guid: 4357217ce6e63554f97828955f1d9394, type: 3}
@@ -35771,6 +35931,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+--- !u!4 &1475692872 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4216684762159894371, guid: bdec4dabd4cf54e41aaacfd37e8cece0, type: 3}
+  m_PrefabInstance: {fileID: 1475692871}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1481726082
 GameObject:
   m_ObjectHideFlags: 0
@@ -351067,6 +351232,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
+--- !u!4 &1052242379662514400 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8676730168131845231, guid: 7eae7b8297751444c842201af5815ebe, type: 3}
+  m_PrefabInstance: {fileID: 1052242379662514399}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2114283753834967212
 GameObject:
   m_ObjectHideFlags: 0
@@ -351420,3 +351590,4 @@ SceneRoots:
   - {fileID: 49439446}
   - {fileID: 1052242379662514399}
   - {fileID: 1475692871}
+  - {fileID: 204713075}
