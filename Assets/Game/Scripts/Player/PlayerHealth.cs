@@ -26,8 +26,29 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public event Action OnHealthChanged;
     public event Action OnDied;
     public float CurrentHealth => currentHealth;
+    public float MaxHealth => maxHealth;
     public float CurrentArmor => currentArmor;
     public bool IsDead => isDead;
+
+    // Healing changes health only. It cannot resurrect or replenish Armor.
+    public bool HealToFull()
+    {
+        if (isDead) return false;
+        Heal(maxHealth - currentHealth);
+        return true;
+    }
+
+    // Returns the actual grant; callers own their supply, this component owns health.
+    public float Heal(float amount)
+    {
+        if (isDead || amount <= 0 || float.IsNaN(amount) || float.IsInfinity(amount)) return 0;
+        float previous = currentHealth;
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        float restored = currentHealth - previous;
+        if (restored > 0) OnHealthChanged?.Invoke();
+        return restored;
+    }
+
     public void RestoreRunHealth(float health, float armor)
     {
         currentHealth = Mathf.Clamp(health, 0, maxHealth); currentArmor = Mathf.Clamp(armor, 0, maxArmor);

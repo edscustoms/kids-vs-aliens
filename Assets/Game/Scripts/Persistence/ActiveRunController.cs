@@ -23,6 +23,8 @@ public sealed class ActiveRunController : MonoBehaviour
     private double elapsed;
     private float nextSave;
     private bool ready, leaving, dead, restoring, unfocused, backgrounded;
+    private MonoBehaviour playerSavePointOwner;
+    private Transform playerSavePoint;
     public string RestoreError { get; private set; }
     public void ReturnToMenuPreservingSnapshot() { PrepareToLeave(); SceneManager.LoadScene(mainMenuScene); }
     public bool IsReady => ready && !leaving && !dead;
@@ -77,6 +79,23 @@ public sealed class ActiveRunController : MonoBehaviour
     public void Record(SavedWorldObject snapshot) => snapshots[snapshot.id] = snapshot;
     public RunWorldObject FindWorldObject(string id) => objects.TryGetValue(id, out var entity) ? entity : null;
     public void MarkDirty() { if (ready) nextSave = Mathf.Min(nextSave, Time.unscaledTime + .35f); }
+
+    // Short interactions supply a safe endpoint without moving the live player on Save.
+    // The caller validates it and clears only its own reservation on completion/abort.
+    public bool TryReservePlayerSavePoint(MonoBehaviour owner, Transform point)
+    {
+        if (!IsReady || owner == null || point == null || playerSavePointOwner != null) return false;
+        playerSavePointOwner = owner;
+        playerSavePoint = point;
+        return true;
+    }
+
+    public void ClearPlayerSavePoint(MonoBehaviour owner)
+    {
+        if (playerSavePointOwner != owner) return;
+        playerSavePointOwner = null;
+        playerSavePoint = null;
+    }
     private void Update()
     {
         if (!IsReady) return;
@@ -98,13 +117,15 @@ public sealed class ActiveRunController : MonoBehaviour
             // A scripted transit is transient; preserve a safe endpoint, never mid-beam suspension.
             if (beam != null && beam.IsTransporting)
                 position = beam.PresentationIsCurved ? beam.PresentationStart : beam.PresentationDestination;
+            bool safeInteraction = playerSavePointOwner != null && playerSavePoint != null;
+            if (safeInteraction) position = playerSavePoint.position;
             var save = new ActiveRunSave {
                 startingCharacter = startingCharacter, startingWeapon = startingWeapon,
                 runId = runId, sceneName = gameObject.scene.name, elapsedSeconds = elapsed, savedUtc = DateTime.UtcNow.ToString("O"),
                 player = new SavedPlayer {
-                    position = position, rotation = transform.rotation,
+                    position = position, rotation = safeInteraction ? playerSavePoint.rotation : transform.rotation,
                     health = health != null ? health.CurrentHealth : 0, armor = health != null ? health.CurrentArmor : 0,
-                    verticalVelocity = beam != null && beam.IsTransporting ? 0 : movement.RunVerticalVelocity,
+                    verticalVelocity = safeInteraction || (beam != null && beam.IsTransporting) ? 0 : movement.RunVerticalVelocity,
                     character = catalog.Id(GetComponent<PlayerCharacter>().CurrentCharacterPrefab),
                     equipped = catalog.Id(equipment.EquippedWeapon), selected = catalog.Id(inventory.SelectedItem),
                     ammo = GetComponent<PlayerShooter>().CurrentAmmo, weapons = inventory.CaptureWeaponStates(),

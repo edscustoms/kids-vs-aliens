@@ -64,6 +64,7 @@ another copy.
 | Knowledge/permanent data | Books/`SkillData` define capability unlocks; `PlayerSkillState` exposes player skills; `PermanentProgress` persists learned Knowledge, XP and acknowledgement state. |
 | Active Run | `ActiveRunController` coordinates the current attempt/world/player snapshot with `RunSaveService`. `RunWorldObject` supplies stable identity; participants own their component state. |
 | Suspension | `GameplaySuspensionController` owns suspension leases and world-pause policy. Consumers acquire/release leases rather than independently restoring global pause state. |
+| Healing Pod | `HealingPodController` owns the sequence and remaining run-specific healing capacity in full-health-bar units. Prefab markers/triggers survive visual replacement; `PlayerHealth` owns grants, `PlayerAnimation` owns temporary falling presentation, suspension leases own control, and Active Run records the reserved safe exit. Preserve authored prefab/instance tuning. |
 | UI/previews | Edit the actual screen owner/runtime builder. See the [screen ownership map](Docs/ProceduralUI.md#screen-ownership-where-to-edit); generated controls and hidden legacy scene controls are not interchangeable. Preview wrappers/settings must not force gameplay-prefab changes. |
 
 Do not create a second system for a concept the repository already owns. If a requested

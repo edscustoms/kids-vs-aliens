@@ -16,16 +16,19 @@ Paths below are relative to `Assets/Game/Audio/Clips/`.
 | Combat_Melee_Impact | Combat/game-whip-shot-1512.wav | Confirmed contact; stylized snap pending a proper body-impact replacement |
 | Beam_Start | Beam/mixkit-alien-technology-button-3118.wav | Short temporary materialization/activation cue |
 | Beam_End | Beam/mixkit-sci-fi-tube-swoosh-912.wav | Temporary energy-release cue on reaching the destination |
+| HealPod_Open | Environment/mixkit-futuristic-door-opening-906.wav | Pod proximity power-up/open |
+| HealPod_Healing | Machinery/mixkit-electricity-reactor-buzz-904.wav | Short healing phase loop, stopped before exit |
+| HealPod_Depleted | Machinery/mixkit-sci-fi-interface-robot-click-901.wav | Full-health/empty chamber denial, once per visit |
 
 **Beam_Loop stays Missing.** The sustained reactor sample is not certified seamless and
-is reserved for machinery evaluation; no arbitrary repeating beam sound was forced in.
+is now reused for the short Healing Pod sequence; no repeating beam sound was added.
 
 ## Editor-only candidates with no runtime trigger
 
-These files are deliberately unused in gameplay. Their SoundEvents make later audition
-and replacement easy without adding new integrations now.
+These candidate SoundEvents have no gameplay trigger. Their source clips can be reused
+by explicit live events, as the Healing Pod does, without including the candidate event.
 They are excluded from AudioLibrary, the runtime/build/preload manifest. The Editor window
-still discovers them via AssetDatabase. The manifest holds only the six live assignments
+still discovers them via AssetDatabase. The manifest holds live assignments
 and the wired, intentionally Missing Beam_Loop event. Pack repair does not index candidates.
 
 | Candidate SoundEvent | WAV |

@@ -71,7 +71,8 @@ public static class RunInterfaceSetup
         foreach(string guid in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Game/Prefabs"}))
         {
             var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
-            if(prefab.GetComponent<PickupItem>()!=null||prefab.GetComponent<EnemyHealth>()!=null)
+            if(prefab.GetComponent<PickupItem>()!=null||prefab.GetComponent<EnemyHealth>()!=null
+                || prefab.GetComponents<MonoBehaviour>().Any(component => component is IRunStateParticipant))
                 entries.Add(new RunContentCatalog.Entry{id=guid,asset=prefab});
             var character=prefab.GetComponent<CharacterVisual>();
             if(character!=null)entries.Add(new RunContentCatalog.Entry{id=guid+"#character",asset=character});

@@ -22,6 +22,8 @@ The active snapshot stores scene, elapsed gameplay time, original loadout, curre
 
 Restored alert enemies investigate their saved last-known target position; transient attack frames and corpses are not restored. A beam snapshot records a safe endpoint (manual hoist start or automatic arrival destination). Continue explicitly suppresses the fresh-start arrival. It does not reconstruct transient particles, projectiles, animation frames or an in-flight beam.
 
+The Healing Pod reserves a validated prefab exit marker through `ActiveRunController.TryReservePlayerSavePoint` while it owns control. Saves record that position/facing with zero vertical velocity without moving the live player. Before healing commits, Continue restores prior health/capacity; after commit it restores saved health and reduced capacity. The participant applies remaining full-health-bar units absolutely on both restore passes, without replaying healing or presentation. Completion/abort releases only that owner's reservation. Spawned pods use the normal catalog and `RunWorldObject.TrackSpawn` contract; root-level participants are included by catalog repair.
+
 The default periodic interval is **10 seconds**, configurable on the player's `ActiveRunController`. Important inventory/health/world changes request a debounced snapshot. Background, focus loss, normal quit and Quit to Menu also save. Foregrounding transfers lifecycle suspension to the existing pause menu; it does not resume unattended gameplay. Death invalidates only the active run.
 
 Missing content, incompatible snapshots and restore errors preserve the existing save. A failed restore stays suspended and offers return to menu without overwriting the snapshot.

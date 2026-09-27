@@ -40,6 +40,76 @@ public sealed class HealingPodTests
     }
 
     [Test]
+    public void ReservoirRestoreIsAbsoluteAndKeepsAuthoredTuning()
+    {
+        var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+        try
+        {
+            var pod = root.GetComponent<HealingPodController>();
+            var data = new SerializedObject(pod);
+            string[] tuning = {"leftDoorOpenOffset", "rightDoorOpenOffset", "roofHingeAxis", "roofOpenAngle",
+                "openCloseDuration", "alignDuration", "riseDuration", "healDuration", "lowerDuration", "exitDuration"};
+            var before = tuning.Select(field => data.FindProperty(field).propertyType == SerializedPropertyType.Vector3
+                ? data.FindProperty(field).vector3Value.ToString("R") : data.FindProperty(field).floatValue.ToString("R")).ToArray();
+            pod.RestoreRunState("{\"remainingCapacity\":0.4}");
+            pod.RestoreRunState("{\"remainingCapacity\":0.4}");
+            Assert.That(pod.RemainingCapacity, Is.EqualTo(.4f));
+            pod.RestoreRunState("{\"remainingCapacity\":0}");
+            Assert.That(pod.IsDepleted, Is.True);
+            Assert.That(pod.Openness, Is.Zero);
+            pod.RestoreRunState("{\"depleted\":false}");
+            Assert.That(pod.RemainingCapacity, Is.EqualTo(1));
+            pod.RestoreRunState("{\"depleted\":true}");
+            Assert.That(pod.IsDepleted, Is.True);
+            data.Update();
+            CollectionAssert.AreEqual(before, tuning.Select(field => data.FindProperty(field).propertyType == SerializedPropertyType.Vector3
+                ? data.FindProperty(field).vector3Value.ToString("R") : data.FindProperty(field).floatValue.ToString("R")).ToArray());
+        }
+        finally { Object.DestroyImmediate(root); }
+    }
+
+    [TestCase(100)]
+    [TestCase(250)]
+    public void HealthOwnerClampsActualGrantWithoutTouchingArmor(float maximum)
+    {
+        var root = new GameObject("Health capacity fixture");
+        try
+        {
+            var health = root.AddComponent<PlayerHealth>();
+            var data = new SerializedObject(health);
+            data.FindProperty("maxHealth").floatValue = maximum; data.ApplyModifiedPropertiesWithoutUndo();
+            health.RestoreRunHealth(maximum * .4f, 17);
+            Assert.That(health.Heal(maximum), Is.EqualTo(maximum * .6f).Within(.001));
+            Assert.That(health.HealthNormalized, Is.EqualTo(1));
+            Assert.That(health.Heal(maximum), Is.Zero);
+            Assert.That(health.CurrentArmor, Is.EqualTo(17));
+        }
+        finally { Object.DestroyImmediate(root); }
+    }
+
+    [Test]
+    public void FullHealthRestorePreservesArmorAndCannotResurrect()
+    {
+        var actor = new GameObject("Health owner fixture");
+        try
+        {
+            var health = actor.AddComponent<PlayerHealth>();
+            health.RestoreRunHealth(20, 13);
+            int changes = 0;
+            health.OnHealthChanged += () => changes++;
+            Assert.That(health.HealToFull(), Is.True);
+            Assert.That(health.HealToFull(), Is.True, "The health owner accepts a no-op full restore; the pod rejects full-health entry");
+            Assert.That(health.HealthNormalized, Is.EqualTo(1));
+            Assert.That(health.CurrentArmor, Is.EqualTo(13));
+            Assert.That(changes, Is.EqualTo(1));
+            health.RestoreRunHealth(0, 13);
+            Assert.That(health.HealToFull(), Is.False);
+            Assert.That(health.IsDead, Is.True);
+        }
+        finally { Object.DestroyImmediate(actor); }
+    }
+
+    [Test]
     public void PrefabKeepsModelMeshesPivotsAndIndicatorWithSeparatePrimitiveCollision()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
@@ -55,14 +125,35 @@ public sealed class HealingPodTests
         Assert.That(prefab.GetComponentsInChildren<Transform>(true).Single(t => t.name == "HealPod_Indicator").parent,
             Is.SameAs(roof));
         Assert.That(controller.transform.IsChildOf(prefab.transform.Find("Visual")), Is.False);
-        Assert.That(controller.GetComponent<SphereCollider>().isTrigger, Is.True);
-        Assert.That(controller.GetComponent<Rigidbody>().isKinematic, Is.True);
+        var trigger = (SphereCollider)data.FindProperty("proximityTrigger").objectReferenceValue;
+        Assert.That(trigger.isTrigger, Is.True);
+        Assert.That(trigger.GetComponent<Rigidbody>().isKinematic, Is.True);
+        Assert.That(controller.GetComponent<RunWorldObject>(), Is.Not.Null);
+        foreach (var door in new[] {left, right})
+        {
+            var box = door.GetComponentInChildren<BoxCollider>();
+            Assert.That(box, Is.Not.Null);
+            Assert.That(box.isTrigger, Is.False);
+            Assert.That(box.GetComponent<Rigidbody>().isKinematic, Is.True);
+            Assert.That(door.GetComponent<Renderer>().sharedMaterials.Any(m =>
+                m.GetFloat("_Surface") == 1 && m.GetColor("_BaseColor").a < .2f), Is.True,
+                "Closed prototype doors need a transparent panel so healing is visible");
+        }
+        var core = prefab.GetComponentsInChildren<Renderer>().Single(r => r.name == "HealPod_Chamber");
+        Assert.That(core.sharedMaterial.GetFloat("_Surface"), Is.EqualTo(1));
+        Assert.That(core.sharedMaterial.GetColor("_BaseColor").a, Is.LessThan(.1f));
+        var energy = prefab.GetComponentInChildren<BeamEnergyField>(true);
+        Assert.That(energy, Is.Not.Null);
+        Assert.That(energy.gameObject.activeSelf, Is.False);
+        Assert.That(new SerializedObject(energy).FindProperty("spiralCount").intValue, Is.EqualTo(1));
+        Assert.That(energy.GetComponentInChildren<LineRenderer>(true).sharedMaterial.shader.name, Is.EqualTo("Game/Beam Energy"));
+        Assert.That(prefab.GetComponentsInChildren<BeamTransportController>(true), Is.Empty);
         Assert.That(prefab.GetComponentsInChildren<MeshCollider>(true), Is.Empty);
         Assert.That(prefab.GetComponentsInChildren<Animator>(true), Is.Empty);
         Assert.That(prefab.GetComponentsInChildren<Transform>(true).Any(t => t.name == "MCP_Test"), Is.False);
         foreach (var filter in prefab.GetComponentsInChildren<MeshFilter>(true))
             Assert.That(AssetDatabase.GetAssetPath(filter.sharedMesh), Does.EndWith("HealPod_Proxy.fbx"));
-        foreach (var renderer in prefab.GetComponentsInChildren<Renderer>(true))
+        foreach (var renderer in prefab.GetComponentsInChildren<MeshRenderer>(true))
             foreach (var material in renderer.sharedMaterials)
                 Assert.That(material.shader.name, Is.EqualTo("Universal Render Pipeline/Lit"));
     }
@@ -88,6 +179,14 @@ public sealed class HealingPodTests
         var indicatorLocal = indicator.localPosition;
         float duration = data.FindProperty("openCloseDuration").floatValue;
         Assert.That(controller.Openness, Is.Zero);
+        Physics.SyncTransforms();
+        Assert.That(EntranceBlocked(), Is.True, "Closed primitive doors must block the chamber entrance");
+        var leftBox = left.GetComponentInChildren<BoxCollider>();
+        var rightBox = right.GetComponentInChildren<BoxCollider>();
+        var boxCenter = leftBox.center;
+        var boxSize = leftBox.size;
+        var leftBoxLocal = leftBox.transform.localPosition;
+        var rightBoxLocal = rightBox.transform.localPosition;
 
         var actor = new GameObject("Proximity actor");
         actor.transform.position = new Vector3(0, 1, 2.5f);
@@ -111,6 +210,12 @@ public sealed class HealingPodTests
         second.radius = .15f;
         yield return Seconds(duration + .15f);
         Assert.That(controller.Openness, Is.EqualTo(1));
+        Physics.SyncTransforms();
+        Assert.That(EntranceBlocked(), Is.False, "Open doors must leave capsule-width clearance");
+        Assert.That(leftBox.center, Is.EqualTo(boxCenter));
+        Assert.That(leftBox.size, Is.EqualTo(boxSize));
+        Assert.That(leftBox.transform.localPosition, Is.EqualTo(leftBoxLocal));
+        Assert.That(rightBox.transform.localPosition, Is.EqualTo(rightBoxLocal));
         Assert.That(Vector3.Distance(left.localPosition, leftClosed + data.FindProperty("leftDoorOpenOffset").vector3Value), Is.LessThan(.0001));
         Assert.That(Vector3.Distance(right.localPosition, rightClosed + data.FindProperty("rightDoorOpenOffset").vector3Value), Is.LessThan(.0001));
         Assert.That(Quaternion.Angle(roofClosed, roof.localRotation), Is.EqualTo(Mathf.Abs(data.FindProperty("roofOpenAngle").floatValue)).Within(.01));
@@ -161,7 +266,7 @@ public sealed class HealingPodTests
         Physics.SyncTransforms();
         yield return Seconds(duration * .4f);
         controller.enabled = false;
-        Assert.That(left.localPosition, Is.EqualTo(leftClosed));
+        Assert.That(controller.Openness, Is.EqualTo(1), "Disabled interaction leaves a safe open entrance");
         controller.enabled = true;
         yield return Seconds(duration + .15f);
         Assert.That(controller.Openness, Is.EqualTo(1), "Stay recovers an already overlapping player on reenable");
@@ -179,6 +284,8 @@ public sealed class HealingPodTests
         Application.runInBackground = true;
         yield return Seconds(4);
         var pod = Object.FindAnyObjectByType<HealingPodController>();
+        // Retain the original route/proximity regression independently of the one-use sequence tests.
+        ((BoxCollider)new SerializedObject(pod).FindProperty("chamberTrigger").objectReferenceValue).enabled = false;
         var arrival = Object.FindAnyObjectByType<PlayerBeamInSequence>();
         var player = Object.FindAnyObjectByType<PlayerCharacter>();
         Assert.That(pod, Is.Not.Null);
@@ -211,6 +318,10 @@ public sealed class HealingPodTests
 
     private static Transform Reference(SerializedObject data, string field) =>
         (Transform)data.FindProperty(field).objectReferenceValue;
+
+    private static bool EntranceBlocked() => Physics.CapsuleCast(
+        new Vector3(0,.7f,1.6f), new Vector3(0,1.8f,1.6f), .25f,
+        Vector3.back, 1.6f, ~0, QueryTriggerInteraction.Ignore);
 
     private static IEnumerator Walk(CharacterController capsule, Vector3 destination)
     {

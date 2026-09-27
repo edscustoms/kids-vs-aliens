@@ -60,10 +60,13 @@ public sealed class AudioSystemTests
             .Where(s => s.status == SoundStatus.Candidate).ToArray();
         Assert.That(candidates, Is.Not.Empty);
         var dependencies = AssetDatabase.GetDependencies(AudioAssets.LibraryPath, true);
+        var usedClips = library.events.SelectMany(sound => sound.variants).ToHashSet();
         foreach (var candidate in candidates)
         {
             Assert.That(dependencies, Does.Not.Contain(AssetDatabase.GetAssetPath(candidate)));
-            foreach (var clip in candidate.variants) Assert.That(dependencies, Does.Not.Contain(AssetDatabase.GetAssetPath(clip)));
+            // A live semantic event can reuse an audition clip without indexing the candidate event.
+            foreach (var clip in candidate.variants.Where(clip => !usedClips.Contains(clip)))
+                Assert.That(dependencies, Does.Not.Contain(AssetDatabase.GetAssetPath(clip)));
         }
         var window = ScriptableObject.CreateInstance<AudioLibraryWindow>();
         try

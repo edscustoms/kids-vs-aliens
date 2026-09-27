@@ -10,6 +10,7 @@ public enum SuspensionReason
     Modal,
     BeamTransport,
     ApplicationLifecycle,
+    HealingPod,
 }
 
 // One instance per gameplay scene/player. Presentation owns leases, never time.
@@ -118,7 +119,8 @@ public sealed class GameplaySuspensionController : MonoBehaviour
     {
         bool shouldPause = false;
         foreach (var reason in owners.Values)
-            if (reason != SuspensionReason.BeamTransport) { shouldPause = true; break; }
+            if (reason != SuspensionReason.BeamTransport && reason != SuspensionReason.HealingPod)
+            { shouldPause = true; break; }
         if (shouldPause == worldPaused) return;
         worldPaused = shouldPause;
         if (worldPaused)

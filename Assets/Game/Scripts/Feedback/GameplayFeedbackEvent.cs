@@ -8,6 +8,7 @@ public enum FeedbackCode
     GrenadeThrownInert,
     PlasmaCollected,
     ArmorCapsulesCollected,
+    HealthAlreadyFull,
 }
 
 public enum FeedbackAction

@@ -79,6 +79,7 @@ public static class GameplayPresentationSetup
         {
             var entries = new[]
             {
+                Entry(FeedbackCode.HealthAlreadyFull, "HEALTH ALREADY FULL", FeedbackCategory.Information, 30),
                 Entry(
                     FeedbackCode.MissingSkill,
                     "Requires {skillName}",

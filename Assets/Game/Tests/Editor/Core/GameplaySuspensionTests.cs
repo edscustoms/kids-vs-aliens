@@ -30,6 +30,21 @@ public sealed class GameplaySuspensionTests
     }
 
     [Test]
+    public void HealingPodBlocksInputWithoutPausingAndDoesNotReleaseAnotherOwner()
+    {
+        var pod = suspension.Acquire(SuspensionReason.HealingPod);
+        Assert.That(input.GameplayInputBlocked, Is.True);
+        Assert.That(Time.timeScale, Is.EqualTo(1));
+        var modal = suspension.Acquire(SuspensionReason.Modal);
+        pod.Dispose();
+        Assert.That(input.GameplayInputBlocked, Is.True);
+        Assert.That(Time.timeScale, Is.Zero);
+        modal.Dispose();
+        Assert.That(input.GameplayInputBlocked, Is.False);
+        Assert.That(Time.timeScale, Is.EqualTo(1));
+    }
+
+    [Test]
     public void IndependentOwners_OnlyFinalReleaseRestoresPreviousTimeScale()
     {
         Time.timeScale = 0.7f;

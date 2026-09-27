@@ -23,6 +23,44 @@ public class PlayerAnimation : MonoBehaviour
     private float previousFeetY, lastSupportedY, previousBeamY;
     private bool hasSupportedHeight, wasTransporting, beamFloatFinished, floating;
     public bool IsFloating => floating;
+    private MonoBehaviour authoredMotionOwner;
+    private float speedBeforeAuthoredMotion;
+    public bool OwnsAuthoredMotion(MonoBehaviour owner) => owner != null && authoredMotionOwner == owner
+        && isActiveAndEnabled && animator != null && animator.isActiveAndEnabled;
+
+    // The interaction owns position/control; this existing presentation owner keeps
+    // the long-fall pose and Animator speed from competing with automatic fall detection.
+    public bool TryBeginAuthoredMotion(MonoBehaviour owner)
+    {
+        if (owner == null || authoredMotionOwner != null || !isActiveAndEnabled
+            || driver == null || !driver.IsCompatible || animator == null || !animator.isActiveAndEnabled) return false;
+        authoredMotionOwner = owner;
+        speedBeforeAuthoredMotion = animator.speed;
+        ClearFloating();
+        return true;
+    }
+
+    public void SetAuthoredSuspension(MonoBehaviour owner, bool active, float speedMultiplier = 1f)
+    {
+        if (!OwnsAuthoredMotion(owner)) return;
+        SetFloating(active);
+        animator.speed = speedBeforeAuthoredMotion * (active ? Mathf.Clamp(speedMultiplier, .05f, 1f) : 1f);
+    }
+
+    public void EndAuthoredMotion(MonoBehaviour owner)
+    {
+        if (owner == null || authoredMotionOwner != owner) return;
+        ClearAuthoredMotion();
+    }
+
+    private void ClearAuthoredMotion()
+    {
+        if (authoredMotionOwner == null) return;
+        if (animator != null) animator.speed = speedBeforeAuthoredMotion;
+        authoredMotionOwner = null;
+        ClearFloating();
+        driver?.SetMovement(Vector2.zero, 1f);
+    }
 
     private CharacterController characterController;
     private CharacterAnimatorDriver driver;
@@ -74,6 +112,7 @@ public class PlayerAnimation : MonoBehaviour
 
     private void OnDisable()
     {
+        ClearAuthoredMotion();
         if (transport != null) transport.TransportEnded -= ClearFloating;
         ClearFloating();
         hasSupportedHeight = false;
@@ -90,6 +129,7 @@ public class PlayerAnimation : MonoBehaviour
 
     private void OnCharacterChanged(CharacterVisual visual)
     {
+        ClearAuthoredMotion();
         driver?.SetFloating(false);
         InterruptMarkedAction();
         DetachRelay();
@@ -121,7 +161,7 @@ public class PlayerAnimation : MonoBehaviour
             return;
 
         // A disabled controller can retain its last walking velocity during beam materialization.
-        Vector3 velocity = transport != null && transport.IsTransporting
+        Vector3 velocity = !characterController.enabled || (transport != null && transport.IsTransporting)
             ? Vector3.zero : characterController.velocity;
         velocity.y = 0f;
 
@@ -214,6 +254,11 @@ public class PlayerAnimation : MonoBehaviour
     // Runs after locomotion; observes its collision-derived Grounded flag without writing it.
     private void UpdateFloating()
     {
+        if (authoredMotionOwner != null)
+        {
+            if (!authoredMotionOwner.isActiveAndEnabled) ClearAuthoredMotion();
+            else { previousFeetY = FeetY; return; }
+        }
         float feetY = FeetY;
         if (transport != null && transport.IsTransporting)
         {

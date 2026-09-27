@@ -13,6 +13,16 @@ MonoBehaviour:
   m_Name: GameplayFeedbackCatalog
   m_EditorClassIdentifier: Assembly-CSharp::FeedbackPresentationCatalog
   entries:
+  - code: 6
+    template: HEALTH ALREADY FULL
+    localizationKey: feedback.HealthAlreadyFull
+    category: 0
+    priority: 30
+    duration: 2
+    cooldown: 2
+    replaceEqualPriority: 1
+    queueWhenBlocked: 0
+    queueLifetime: 8
   - code: 0
     template: Requires {skillName}
     localizationKey: feedback.MissingSkill

@@ -1,52 +1,156 @@
-# Healing Pod proximity prototype
+# Healing Pod gameplay V1
 
-`Assets/Game/Prefabs/Environment/PF_HealingPod.prefab` owns the prototype. Its
-`InteractionTrigger/HealingPodController` recognizes the existing player
-`PlayerCharacter`, tracks overlapping colliders and animates explicit visual
-references. `Visual` contains the nested FBX; `Collision` contains six simple boxes.
-The trigger has its own kinematic Rigidbody and does not block movement.
+`Assets/Game/Prefabs/Environment/PF_HealingPod.prefab` owns the mechanic through its
+root `HealingPodController` and `RunWorldObject`. `HealingPodTrigger` forwards
+explicit proximity/chamber volumes. `PlayerCharacter` identifies the player.
+Proximity opens doors at any charge level; only the player's root inside the
+chamber can request healing. Normal movement/combat stays owned by the existing
+suspension system.
 
-The controller captures the prefab's closed pose once in Awake. A single normalized
-progress value drives absolute door offsets and a hinge rotation, so reversal does
-not accumulate transform drift. Scaled time respects world pause. Disabled or
-destroyed colliders are removed; trigger Stay handles reenable inside the radius.
-Opening is derived from proximity, not saved run state. No healing, floating,
-interaction input, animation clips or resource consumption is implemented.
+## Authored tuning
 
-## Authoring / replacing the visual
+Prefab values and scene-instance overrides are both authoritative. The final-polish
+pass preserves the existing values, markers, moving colliders and ConstructionSite
+file. Do not run a generator or reset these values from C# defaults.
 
-Replace the `Visual` child, author its closed pose, and assign the two door transforms
-and roof transform on `InteractionTrigger`. Door offsets use each door's parent-local
-space; the roof axis is relative to its closed local rotation. Put the roof origin
-at its rear hinge and keep the indicator beneath it. The controller never searches
-for imported object names. Keep gameplay collision and the trigger outside `Visual`.
-Meshes reference the FBX; the four placeholder URP materials are shared assets.
+| Phase | Base prefab | ConstructionSite instance |
+| --- | --- | --- |
+| Align and face PlayerAlignPoint | 0.45 s | 0.45 s |
+| Close doors and rear-hinged lid | 0.55 s | 1 s |
+| Rise to PlayerFloatPoint | 0.65 s | 0.65 s |
+| Hold, then grant healing | 0.85 s | 1.5 s |
+| Lower | 0.55 s | 0.55 s |
+| Reopen | 0.55 s | 1 s |
+| Walk to PlayerExitPoint | 0.8 s | 0.8 s |
 
-The current FBX is authored open. Prefab transform overrides close it. Unity's axis
-conversion mirrors its X coordinates and retains the conversion on the imported
-root; do not reset that root rotation. Import uses meter units, preserved hierarchy
-and no animation import.
+Totals are 4.4 s / 5.95 s plus frame rounding and any final ground contact.
+Smoothstep absolute poses preserve reversible door motion without drift. Float
+height remains 0.12 m. The indicator stays parented to the lid.
+ConstructionSite retains position (-23.69, 0.176327, -21.39) and the user's current
+yaw -174.51 degrees, near LevelStart.
+
+## Healing capacity and feedback
+
+`healingCapacity` is serialized in full-health-bar units: 1 supplies 100 percentage
+points of whichever character's maximum health is current. `RemainingCapacity`
+belongs to the pod; `PlayerHealth.Heal` remains the authoritative health writer.
+The grant is clamped to missing health and supply. Only the actual restored
+fraction is charged. Armor is never changed and dead players cannot heal.
+
+| Player health before | Charge before | Health after | Charge after |
+| --- | --- | --- | --- |
+| 40% | 100% | 100% | 40% |
+| 60% | 40% | 100% | 0% |
+| 20% | 40% | 60% | 0% |
+| 100% | Any available charge | 100% | Unchanged |
+
+Full health rejects the sequence before control is claimed and reports
+`HealthAlreadyFull` through `PlayerFeedback` / `GameplayFeedbackPresenter`:
+**HEALTH ALREADY FULL**. Existing semantic denial audio accompanies the feedback.
+A visit suppresses repeated chamber feedback/sounds until the player leaves
+proximity. Completing a successful walk-out also allows one fresh chamber attempt
+to report its denial. Approaching alone never plays the depleted denial.
+
+Zero charge means `IsDepleted`. Chamber/indicator renderers are off, but proximity
+still opens and closes the pod. An empty chamber attempt cannot claim control,
+heal, or consume charge. Partial charge leaves the pod available for another use.
+
+## Control, falling presentation and walk-out
+
+The pod acquires its existing `HealingPod` input/combat suspension lease and an
+explicit authored-motion reservation on `PlayerAnimation`. The latter owns
+Animator writes and cleanup; gameplay code contains no clip or Animator-state
+names. No new player component or movement framework is required.
+
+During rise/hold/lower, `PlayerAnimation` activates the existing
+`FloatingPresentation` layer used for genuine long falls, with its existing
+`Floating.fbx` clip. The configured speed multiplier is 0.45 of the prior Animator
+speed. Opening restores that speed and clears the layer. No clip, import setting
+or Animator Controller is modified. Completion, abort, disable, death and visual
+replacement release presentation ownership and restore the captured speed.
+
+Align/rise/lower retain capsule-validated smooth root motion. Walk-out enables
+the existing CharacterController, moves toward the prefab exit with physical
+collision/gravity and drives the normal walking blend from actual capsule
+velocity through PlayerAnimation. Input remains suspended until the exit is
+reached and the capsule has ground contact. A blocked exit aborts instead of
+leaving the player permanently leased. Abort opens the physical exit and uses
+the validated safe endpoint when clear; normal successful exit does not teleport.
+
+## Active Run
+
+The `healing-pod` participant saves remaining capacity under the stable world ID.
+A small fallback reads original V1 boolean-only snapshots as full/empty. Current
+capacity restoration is absolute and idempotent; it grants no health, spends no
+charge and replays no audio/VFX. Doors restore closed, then follow proximity.
+
+Before health notifications, the pod accounts for the exact clamped grant and
+then requests a save. During the interaction Active Run saves PlayerExitPoint
+position/facing with zero vertical velocity without moving the live player.
+Continue before commit restores prior health/charge; after commit it restores
+saved health/reduced charge. It never resumes a floating sequence and retains
+the existing paused Continue flow. Completion/abort clears only this reservation.
+
+Scene repair supplies authored stable IDs. Later spawns use the existing catalog
+and `RunWorldObject.TrackSpawn` contract. Activation need not occur at scene load.
+No Beam-in spawning or Beam transport coupling is implemented.
+
+## Visual swap and collision
+
+Keep root logic, persistence, `PlayerMarkers`, `InteractionTrigger`,
+`ChamberTrigger`, static `Collision` and `HealVfxPoint` when replacing `Visual`.
+Reassign explicit door/roof/powered-renderer references and fit/reattach the two
+prefab-owned DoorCollision children. Each is a BoxCollider with a kinematic body
+following its door transform. Nothing rebuilds/cooks collider geometry at runtime.
+No MeshCollider or blocking trigger is used.
+
+The proxy is authored open; prefab overrides supply closed poses. Do not reset
+the imported root's axis conversion. Shared FBX meshes, meter scale, door pivots
+and the rear hinge remain unchanged. Shared window materials preserve visibility
+inside the closed proxy; no runtime material copies are created.
 
 | Setting | Value |
 | --- | --- |
-| Trigger radius / center above prefab root | 3 m / 1 m |
-| Full open or close duration | 0.7 s |
-| Left door closed local position | (0.49, -0.72, 0.29) |
-| Right door closed local position | (-0.49, -0.72, 0.29) |
-| Left / right open offsets | (0.55, -0.08, 0) / (-0.55, -0.08, 0) |
-| Roof closed / open rotation | Imported closed pose / -75 degrees around local X |
+| Proximity radius / center height | 3 m / 1 m |
+| Chamber size / center | (0.8, 1.5, 0.8) / (0, 0.8, 0) |
+| Left / right closed local position | (0.49, -0.72, 0.29) / (-0.49, -0.72, 0.29) |
+| Left / right open offset | (0.55, -0.08, 0) / (-0.55, -0.08, 0) |
+| Roof opening | -75 degrees around local X |
+| Align / float / exit local positions | (0, 0.36, 0) / (0, 0.48, 0) / (0, 0.36, 2.15) |
 
-ConstructionSite's test instance is grounded 5 m right and 2 m forward of its authored
-LevelStart and faces the spawn. This is explicit scene content, not a required shared
-scene dependency or part of routine scene repair.
+## Energy and audio
 
-Focused validation (the filter runs only the pod fixture):
+HealVfxPoint retains 24 motes/second with 0.8-second lifetime, about 19 concurrent
+and a cap of 32. Its new HealingEnergy child reuses the existing `BeamEnergyField`
+presentation component and `Game/Beam Energy` shader with green/cyan shared
+materials and one narrow rotating spiral (161 vertices / approximately 320
+triangles). One strand avoids runtime strand duplication. The particle buffer
+is allocated once and reused; no realtime lights or material copies.
+Energy runs only during rise/hold/lower and stops on cleanup.
 
-```powershell
-.\Tools\Run-UnityTests.ps1 -Suite Full -ReuseCopy -TestFilter 'HealingPodTests'
-```
+`HealPod_Open`, `HealPod_Healing` and `HealPod_Depleted` retain their existing
+SoundEvent / AudioService / AudioEmitter wiring and replaceable placeholder clips.
+Temporary authoring helpers are removed after use.
 
-`HealingPod-02`: 3/3 passed on Unity 6000.5.6f1, including two Play Mode scenarios.
-Tests cover prefab references, real physics entry/exit and
-interruption, disabled/multiple colliders, and ConstructionSite arrival and walking
-through the chamber and back to the opening route. Device feel remains a manual check.
+## Validation
+
+Focused fixtures cover capacity examples, different maximum health, full-health
+toast/no claim, depleted doors and chamber denial, sound suppression, physical
+walk-out, slow falling presentation/restoration, abort/death/disable, actual
+Save/Continue before/after commit, late activation, idempotent restore, authored
+tuning preservation and primitive door collision/reversal.
+The Play Mode fixture captures actual URP healing and walking views under
+`Logs/HealingPodV1/healing.png` and `walking.png` in the isolated test project.
+
+Unity 6000.5.6f1: `HealingPodPolish-Full` passed **365/365**, including the
+adjacent falling/Beam presentation, suspension, feedback, audio and Active Run
+checks. The final pod-only fresh-attempt feedback adjustment was then covered by
+`HealingPodPolish-Final`: **12/12** focused tests passed. No failures or skips in
+either run. XML/logs are under `Logs/RepositoryAuditRemediation`.
+The pre-polish comparison confirmed all original prefab motion/timing values and
+14 collider/Rigidbody blocks unchanged, with ConstructionSite byte-identical.
+`git diff --check` passed. Captures are also retained in `Logs/HealingPodPolish`.
+
+Manual/device checks remain: touch approach/exit, subjective animation cadence
+and audio balance, GPU overdraw/frame rate, Android background/force-stop/Continue,
+and iOS lifecycle behavior. Editor evidence does not establish device performance.
