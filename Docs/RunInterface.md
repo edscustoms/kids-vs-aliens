@@ -29,10 +29,15 @@ in Learned Combat without occupying a Backpack cell. Beam Hoist stays contextual
 
 Existing Active Run quick-slot tokens and selected-item state persist these changes.
 Continue preserves both assignments and deliberate clearing without reassigning during
-restore. Hard Restart/new runs retain permanent Knowledge and their existing starting
-loadout/empty-assignment behavior; learned Fighting can be assigned from Inventory.
+restore. In the fresh branch of `ActiveRunController.Start`, after starting equipment
+has initialized and before the first snapshot, `PlayerInventory.InitializeFreshAttemptCombat`
+assigns permanently learned Fighting to the first empty slot only if not already assigned.
+Full slots are unchanged. New Game, Hard Restart and fresh attempts after death share
+this boundary. Fighting is selected only when no other starting action is selected;
+the existing melee state-setup path allows this during arrival/pause without releasing
+suspension. Continue never calls this initializer. Beam Hoist stays contextual.
 
-Unity 6000.5.6f1 validation: `InventoryQuickSlotUX-Final` passed **7/7**, including
+Initial UX validation on Unity 6000.5.6f1: `InventoryQuickSlotUX-Final` passed **7/7**, including
 actual book use, immediate HUD update, combat, Save/Continue, deliberate clearing and
 Hard Restart. **85/85 adjacent checks** passed across `InventoryQuickSlotUX-01` and
 `InventoryQuickSlotUX-02` (Inventory, Knowledge, melee, persistence, Beam, menu and UI
@@ -42,6 +47,13 @@ input/ownership. XML/logs are under `Logs/RepositoryAuditRemediation`. Inventory
 captures at 1080p, 720p and 4:3 are in `Logs/InventoryQuickSlotUX`. No full regression
 was needed for this bounded change. Touch selection/scroll/drag and readability on
 the actual device remain manual checks; no build/deployment work was performed.
+
+Fresh-attempt follow-up: `FightingFreshAttempt-01` passed **69/69** focused/adjacent
+checks, including real New Game and Hard Restart, explicit starting-weapon selection,
+arrival/pause selection, already-assigned/full-slot no-ops, and Save/Continue preserving
+both a cleared Fighting entry and an assignment moved to Slot 5. Inventory, Knowledge,
+melee, loadout and Active Run neighbors passed; `git diff --check` passed. This follow-up
+was Editor-tested and has not been rebuilt/deployed to the phone.
 
 ## Save contract
 

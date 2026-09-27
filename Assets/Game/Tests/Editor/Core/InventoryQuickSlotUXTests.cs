@@ -68,6 +68,46 @@ public sealed class InventoryQuickSlotUXTests
         Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(new[]{0,PlayerInventory.CombatEntry,-1,-1,-1}));
     }
 
+    [TestCase(0)] [TestCase(1)] [TestCase(5)]
+    public void FreshAttemptAssignsLearnedCombatOnlyToFirstEmptySlot(int occupied)
+    {
+        skills.UnlockSkill(book.skill);
+        var assignments=new[]{-1,-1,-1,-1,-1};
+        for(int i=0;i<occupied;i++)assignments[i]=i;
+        inventory.RestoreSavedItems(items,assignments);
+        inventory.InitializeFreshAttemptCombat();
+        if(occupied<5)assignments[occupied]=PlayerInventory.CombatEntry;
+        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(assignments));
+        Assert.That(inventory.SelectedItem,occupied<5?Is.SameAs(book.grantedItem):Is.Null);
+        int changes=0; inventory.OnInventoryChanged+=()=>changes++;
+        inventory.InitializeFreshAttemptCombat();
+        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(assignments));
+        Assert.That(changes,Is.Zero,"Already assigned or full is a no-op");
+    }
+
+    [Test] public void FreshAttemptPreservesExistingCombatSlotAndSelection()
+    {
+        skills.UnlockSkill(book.skill);
+        inventory.AssignQuickSlot(4,PlayerInventory.CombatEntry);
+        inventory.InitializeFreshAttemptCombat();
+        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(new[]{-1,-1,-1,-1,PlayerInventory.CombatEntry}));
+        Assert.That(inventory.SelectedItem,Is.Null,"Existing assignment must not change selection");
+    }
+
+    [Test] public void FreshAttemptSelectsCombatDuringArrivalWithoutReleasingInputSuspension()
+    {
+        skills.UnlockSkill(book.skill);
+        var input=owner.AddComponent<StarterAssets.StarterAssetsInputs>();
+        Call(melee,"Awake"); Call(inventory,"Awake");
+        input.SetGameplayInputBlocked(true);
+        Time.timeScale=0;
+        inventory.InitializeFreshAttemptCombat();
+        Assert.That(inventory.QuickSlotItem(0),Is.SameAs(book.grantedItem));
+        Assert.That(inventory.SelectedItem,Is.SameAs(book.grantedItem));
+        Assert.That(input.GameplayInputBlocked,Is.True);
+        Assert.That(Time.timeScale,Is.Zero);
+    }
+
     [Test] public void VisibleInventoryAssignClearRecoveryFullFeedbackAndNavigation()
     {
         skills.UnlockSkill(book.skill);
@@ -103,6 +143,7 @@ public sealed class InventoryQuickSlotUXTests
     {
         var beam=AssetDatabase.LoadAssetAtPath<KnowledgeBookItemData>("Assets/Game/Data/Items/KnowledgeBooks/BeamHoistBook.asset");
         inventory.TryAddItem(beam); inventory.UseQuickSlot(0);
+        inventory.InitializeFreshAttemptCombat();
         Assert.That(skills.HasSkill(beam.skill),Is.True);
         Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(new[]{-1,-1,-1,-1,-1}));
         Assert.That(inventory.SelectedItem,Is.Null);
@@ -188,9 +229,39 @@ public sealed class InventoryQuickSlotUXPlayTests
         yield return EditorTestFrame.Next(); yield return WaitReady();
         inventory=ActiveRunController.Instance.GetComponent<PlayerInventory>();
         Assert.That(inventory.LearnedCombat,Is.SameAs(book.grantedItem),"Hard Restart keeps permanent Knowledge");
-        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(new[]{-1,-1,-1,-1,-1}),"New run starts with its existing empty assignments");
-        Assert.That(inventory.AssignFirstEmptyQuickSlot(PlayerInventory.CombatEntry),Is.True);
+        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(new[]{PlayerInventory.CombatEntry,-1,-1,-1,-1}),"Hard Restart assigns permanent Fighting automatically");
         Assert.That(inventory.QuickSlotItem(0),Is.SameAs(book.grantedItem));
+        Assert.That(inventory.SelectedItem,Is.SameAs(book.grantedItem));
+    }
+
+    [UnityTest] public IEnumerator FreshRunKeepsExplicitWeaponSelectionAndContinueKeepsExactCombatSlot()
+    {
+        var combat=ActiveRunController.Instance.GetComponent<PlayerMeleeController>().DefaultCombatItem;
+        ActiveRunController.Instance.GetComponent<PlayerSkillState>().UnlockSkill(combat.requiredSkill);
+        PermanentProgress.Acknowledge(combat.requiredSkill);
+        var pistol=AssetDatabase.LoadAssetAtPath<WeaponItemData>("Assets/Game/Items/Weapons/PlasmaPistolItem.asset");
+        PlayerLoadoutState.SelectWeapon(pistol);
+        Assert.That(RunSaveService.StartFresh("ConstructionSite",true),Is.True);
+        yield return EditorTestFrame.Next(); yield return WaitReady();
+        var inventory=ActiveRunController.Instance.GetComponent<PlayerInventory>();
+        Assert.That(inventory.QuickSlotItem(0),Is.SameAs(pistol));
+        Assert.That(inventory.QuickSlotItem(1),Is.SameAs(combat));
+        Assert.That(inventory.SelectedItem,Is.SameAs(pistol),"Explicit fresh-loadout selection wins");
+        inventory.AssignQuickSlot(4,PlayerInventory.CombatEntry);
+        var assignments=inventory.CaptureQuickSlots();
+        Assert.That(ActiveRunController.Instance.Save(),Is.True);
+        ActiveRunController.Instance.PrepareToLeave();
+        Assert.That(RunSaveService.Continue(),Is.True,RunSaveService.LastError);
+        yield return EditorTestFrame.Next(); yield return WaitReady();
+        inventory=ActiveRunController.Instance.GetComponent<PlayerInventory>();
+        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(assignments),"Continue does not move Fighting to an earlier empty slot");
+        Assert.That(inventory.SelectedItem,Is.SameAs(pistol));
+        PlayerLoadoutState.SelectWeapon(null);
+        Assert.That(RunSaveService.StartFresh("ConstructionSite",true),Is.True);
+        yield return EditorTestFrame.Next(); yield return WaitReady();
+        inventory=ActiveRunController.Instance.GetComponent<PlayerInventory>();
+        Assert.That(inventory.CaptureQuickSlots(),Is.EqualTo(new[]{PlayerInventory.CombatEntry,-1,-1,-1,-1}));
+        Assert.That(inventory.SelectedItem,Is.SameAs(combat));
     }
 
     private static void AssertHud(ItemData item)

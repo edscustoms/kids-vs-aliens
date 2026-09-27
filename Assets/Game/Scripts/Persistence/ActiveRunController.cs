@@ -48,6 +48,7 @@ public sealed class ActiveRunController : MonoBehaviour
         {
             startingCharacter = RunContentCatalog.Instance.Id(GetComponent<PlayerCharacter>().CurrentCharacterPrefab);
             startingWeapon = RunContentCatalog.Instance.Id(GetComponent<PlayerEquipment>().EquippedWeapon);
+            inventory.InitializeFreshAttemptCombat();
         }
         if (restoring)
         {

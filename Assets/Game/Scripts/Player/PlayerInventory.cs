@@ -132,6 +132,21 @@ public class PlayerInventory : MonoBehaviour
     public void UseQuickSlot(int slot) => UseItem(QuickSlotIndex(slot));
     public void DropQuickSlot(int slot) => DropItem(QuickSlotIndex(slot));
     public int[] CaptureQuickSlots() => (int[])quickSlots.Clone();
+    // Called by Active Run only after the fresh starting loadout is established.
+    // Continue restores exact assignments instead, including deliberate clearing.
+    public void InitializeFreshAttemptCombat()
+    {
+        var combat = LearnedCombat;
+        if (combat == null) return;
+        foreach (int entry in quickSlots)
+            if (entry == CombatEntry) return;
+        bool selectCombat = SelectedItem == null;
+        if (AssignFirstEmptyQuickSlot(CombatEntry) && selectCombat)
+            // Initialization may occur during arrival/pause; use the existing
+            // state-setup path, not an input action that suspension would reject.
+            playerMeleeController.RestoreRunSelection(combat);
+    }
+
     public bool AssignFirstEmptyQuickSlot(int itemIndex)
     {
         if (EntryItem(itemIndex) == null) return false;
