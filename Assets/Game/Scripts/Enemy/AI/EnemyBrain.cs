@@ -101,18 +101,27 @@ public sealed class EnemyBrain : MonoBehaviour
         CacheReferences();
     }
 
-    private bool restoredAwareness;
+    private bool awarenessInitialized;
     public Vector3 RunInvestigationAnchor => actor != null && actor.CurrentTarget != null ? actor.CurrentTarget.position : investigationAnchor;
+    // Authored encounters alert the existing investigation owner. Normal LOS still
+    // decides when a target can be attacked; this also survives activation before Start.
+    public void InvestigatePosition(Vector3 position)
+    {
+        if (actor == null || !actor.IsAlive) return;
+        awarenessInitialized = true;
+        BeginInvestigation(position);
+    }
+
     public void RestoreRunAwareness(EnemyBrainState state, Vector3 anchor)
     {
-        restoredAwareness = true;
+        awarenessInitialized = true;
         if (state == EnemyBrainState.Investigate || state == EnemyBrainState.Chase || state == EnemyBrainState.Attack || state == EnemyBrainState.Ranged) BeginInvestigation(anchor);
         else EnterIdle();
     }
 
     private void Start()
     {
-        if (!restoredAwareness) EnterIdle();
+        if (!awarenessInitialized) EnterIdle();
     }
 
     private void Update()

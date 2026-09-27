@@ -11,6 +11,7 @@ public sealed class RunWorldObject : MonoBehaviour
     private string prefabId, parentId;
     private bool removed;
     public string Id => stableId;
+    public bool IsRemoved => removed;
     public void ConfigureIdentity(string id) => stableId = id;
     private void Start()
     {

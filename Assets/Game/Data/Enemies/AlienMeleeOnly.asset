@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55b562f9ac1551e4492dc6a0a5200d81, type: 3}
+  m_Name: AlienMeleeOnly
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatProfile
+  meleeEnabled: 1
+  rangedEnabled: 0
+  allowedWeapons: []
+  preferredRange: 6
+  meleeEnterDistance: 1.05
+  rangedResumeDistance: 1.8
+  aimDelay: 0.65
+  spreadDegrees: 2.5
+  facingTolerance: 12
+  automaticBurstCount: 6
+  burstPause: 0.7
+  repositionInterval: 0.7
+  pistolBehavior:
+    rangeBand: {x: 0.7, y: 1.35}
+    positionHoldSeconds: {x: 1.1, y: 2}
+    aimDelayMultiplier: {x: 0.8, y: 1.15}
+    burstPauseMultiplier: {x: 1, y: 1.5}
+    deliberateStepChance: 0.18
+  rifleBehavior:
+    rangeBand: {x: 0.8, y: 1.7}
+    positionHoldSeconds: {x: 2.4, y: 3.8}
+    aimDelayMultiplier: {x: 0.75, y: 1}
+    burstPauseMultiplier: {x: 0.65, y: 1.05}
+    deliberateStepChance: 0.06
+  decisionInterval: {x: 0.18, y: 0.32}
+  movementCommitTimeout: 2.5
+  automaticBurstVariation: 2
+  weaponPickupEnabled: 0
+  weaponInterestRadius: 6
+  weaponScanInterval: 0.65
+  pickupDistance: 0.65
+  pickupTimeout: 8
+  immediateThreatDistance: 2
