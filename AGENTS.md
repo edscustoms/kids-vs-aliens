@@ -64,6 +64,8 @@ another copy.
 | Knowledge/permanent data | Books/`SkillData` define capability unlocks; `PlayerSkillState` exposes player skills; `PermanentProgress` persists learned Knowledge, XP and acknowledgement state. |
 | Active Run | `ActiveRunController` coordinates the current attempt/world/player snapshot with `RunSaveService`. `RunWorldObject` supplies stable identity; participants own their component state. |
 | Suspension | `GameplaySuspensionController` owns suspension leases and world-pause policy. Consumers acquire/release leases rather than independently restoring global pause state. |
+| Authored encounters/triggers | `AuthoredEncounter` activates dormant enemy members; `GameplayTrigger` owns entry/conditions/remembered one-shot state. Their optional `GameplayActions` call existing owners directly. Use PF_AuthoredEncounter/PF_GameplayTrigger and stable RunWorldObject identities. |
+| Objectives/dialogue | `ObjectiveController` owns Active Run objective state/progress; `DialoguePlayer` owns transient ordered speech and semantic voice. CharacterVisual/DialogueSpeaker owns speaker identity, DialogueMessage owns content. GameplayCommunicationView presents; GameplayMessageLayout only reserves space. See Docs/GameplayAuthoring.md. |
 | Healing Pod | `HealingPodController` owns the sequence and remaining run-specific healing capacity in full-health-bar units. Prefab markers/triggers survive visual replacement; `PlayerHealth` owns grants, `PlayerAnimation` owns temporary falling presentation, suspension leases own control, and Active Run records the reserved safe exit. Preserve authored prefab/instance tuning. |
 | UI/previews | Edit the actual screen owner/runtime builder. See the [screen ownership map](Docs/ProceduralUI.md#screen-ownership-where-to-edit); generated controls and hidden legacy scene controls are not interchangeable. Preview wrappers/settings must not force gameplay-prefab changes. |
 
@@ -290,7 +292,7 @@ tool behavior and supported commands. Prefer updating the existing relevant docu
 and comments explaining reasons/contracts over duplicated status documents, obvious C#
 commentary or sprawling architecture essays.
 
-Difficulty/Madness, future missions and Bike systems are upcoming work,
+Difficulty/Madness, mission content beyond the opening objective and Bike systems are upcoming work,
 not current architecture. Implement them only within an explicit task; apply these same
 ownership/readability rules and update this file with durable contracts when established.
 Keep temporary balance values, feature TODOs, animation/IK wish lists and roadmap history

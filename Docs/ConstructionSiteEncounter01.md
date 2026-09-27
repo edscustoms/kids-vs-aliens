@@ -1,9 +1,13 @@
 # ConstructionSite Encounter 01
 
-`Encounter01_FirstMelee` in ConstructionSite owns an `AuthoredEncounter`, a nonblocking
+`Encounter01_FirstMelee` is an instance of `PF_AuthoredEncounter` in ConstructionSite.
+It owns an `AuthoredEncounter`, a nonblocking
 box trigger and a stable `RunWorldObject`. Its three inactive scene children are
 instances of `PF_Enemy_Melee_POC_V1`; their transforms and references remain editable.
 There is no spawn loop, objective, reward or additional combat owner.
+Reusable authoring, equipment selection and optional activation hooks are described
+in [Gameplay authoring](GameplayAuthoring.md). Migration preserved its trigger,
+three member poses/configuration and all existing stable identities.
 
 The reference platform is the front/east first-floor room, bounded by
 `First_South_East_Division` and `First_Utility_To_StairForecourt`. The existing floor

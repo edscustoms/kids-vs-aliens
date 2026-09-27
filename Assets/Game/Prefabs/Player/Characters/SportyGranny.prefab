@@ -233,6 +233,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51f5f7ef25602a24783a836f4893167a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterVisual
+  dialogueIdentity: {fileID: 11400000, guid: ed60f617358b6fb4d84ca40e04678709, type: 2}
   animator: {fileID: 2427567271531418516}
   animationActions: {fileID: 11400000, guid: be001be31c0677543a007715b328c2f7, type: 2}
   weaponSocket: {fileID: 172159675417737075}

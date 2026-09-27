@@ -7,6 +7,15 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE ? 27 Sep 2026 ? Gameplay authoring V1
+
+PF_AuthoredEncounter and PF_GameplayTrigger provide reusable scene authoring on the
+existing enemy/world ownership. DialogueMessage/DialogueSpeaker supply optional
+semantic voice and subtitles; ObjectiveController saves one active objective and
+completed/progress records through Active Run. ConstructionSite starts FIND A WAY OUT
+only on fresh attempts. Existing system feedback remains separate. See
+Docs/GameplayAuthoring.md. Excavator mission content is not implemented.
+
 CURRENT IMPLEMENTATION OVERRIDE — 26 Sep 2026 — Combat Economy V1
 
 PlayerInventory now owns separate Plasma/Armor Capsule quantities alongside owned

@@ -20,6 +20,7 @@ public static class RunInterfaceSetup
         if(player.GetComponent<ActiveRunController>()==null)Undo.AddComponent<ActiveRunController>(player.gameObject);
         var ui=presentation.GetComponent<GameplayInterface>()??Undo.AddComponent<GameplayInterface>(presentation);
         ui.Configure(player,AssetDatabase.LoadAssetAtPath<UITheme>(MenuUISetup.ThemePath));EditorUtility.SetDirty(ui);
+        GameplayAuthoringSetup.ConfigureScene(player, presentation);
         var scene=player.gameObject.scene;var ids=new HashSet<string>();
         var components=scene.GetRootGameObjects().SelectMany(root=>root.GetComponentsInChildren<MonoBehaviour>(true)).ToArray();
         var owners = components.Where(component => component is PickupItem || component is EnemyHealth || component is LootChest || component is EnemySpawner || component is IRunStateParticipant)
@@ -65,7 +66,7 @@ public static class RunInterfaceSetup
         var catalog=AssetDatabase.LoadAssetAtPath<RunContentCatalog>(CatalogPath);
         if(catalog==null){catalog=ScriptableObject.CreateInstance<RunContentCatalog>();AssetDatabase.CreateAsset(catalog,CatalogPath);}
         var entries=new List<RunContentCatalog.Entry>();
-        foreach(string filter in new[]{"t:ItemData","t:SkillData"})
+        foreach(string filter in new[]{"t:ItemData","t:SkillData","t:ObjectiveDefinition"})
             foreach(string guid in AssetDatabase.FindAssets(filter,new[]{"Assets/Game"}))
                 entries.Add(new RunContentCatalog.Entry{id=guid,asset=AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(guid))});
         foreach(string guid in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Game/Prefabs"}))

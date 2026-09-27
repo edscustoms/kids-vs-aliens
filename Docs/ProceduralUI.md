@@ -282,6 +282,7 @@ lives in `UI/Components/InterfaceFactory.cs`, `NeonPanel` and `UI/Themes/MenuThe
 | Knowledge | `UI/Screens/KnowledgeLogView.cs` | PlayerSkillState, PermanentProgress |
 | Tutorial | `Scripts/UI/KnowledgeAcquiredPresenter.cs`, KnowledgePreviewStage, skill tutorial data | Presenter owns modal/demo lifetime; gameplay never depends on preview |
 | Feedback | `Scripts/UI/GameplayFeedbackPresenter.cs` and presentation catalog; `GameplayInterface.ShowFeedback` for run toasts | PlayerFeedback/FeedbackScheduler or RunSaveService |
+| Objective / dialogue CC | `UI/Screens/GameplayCommunicationView.cs`; `GameplayMessageLayout` reserves separate SafeArea regions, including existing feedback, above controls/quick slots | ObjectiveController / DialoguePlayer; see [authoring workflow](GameplayAuthoring.md) |
 | Restart/reset | `GameplayInterface` builds restart confirmation; `UI/Screens/ProgressResetView.cs` builds reset confirmation | InGameMenuController / ActiveRunController / RunSaveService |
 
 Legacy authored Pause buttons remain in scenes but are hidden by BuildPause. Tests and

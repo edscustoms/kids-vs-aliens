@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class CharacterVisual : MonoBehaviour
 {
+    [SerializeField] private DialogueSpeaker dialogueIdentity;
+    public DialogueSpeaker DialogueIdentity => dialogueIdentity;
     [SerializeField]
     private Animator animator;
 

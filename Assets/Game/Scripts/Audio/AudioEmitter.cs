@@ -9,6 +9,7 @@ public sealed class AudioEmitter : MonoBehaviour
     private AudioSource source;
     private AudioService owner;
     private bool started;
+    public float PlaybackDuration => source != null && source.clip != null ? source.clip.length / Mathf.Max(.01f, Mathf.Abs(source.pitch)) : 0;
 
     private void Awake() { source = GetComponent<AudioSource>(); source.playOnAwake = false; }
     // Defer the first activation until scene services have initialized. Later enables play directly.

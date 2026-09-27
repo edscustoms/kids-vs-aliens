@@ -9,6 +9,8 @@ public sealed class AuthoredEncounter : MonoBehaviour, IRunStateParticipant
     [SerializeField] private BoxCollider entryVolume;
     [Tooltip("Scene-authored, initially inactive enemies with stable RunWorldObject identities.")]
     [SerializeField] private RunWorldObject[] enemies = Array.Empty<RunWorldObject>();
+    [Header("Optional activation actions")]
+    [SerializeField] private GameplayActions onActivated = new();
     private bool triggered;
 
     public bool HasTriggered => triggered;
@@ -59,6 +61,7 @@ public sealed class AuthoredEncounter : MonoBehaviour, IRunStateParticipant
             enemy.GetComponent<EnemyBrain>().InvestigatePosition(player.transform.position);
         }
         run.MarkDirty();
+        onActivated.Execute(player);
         return true;
     }
 

@@ -10,6 +10,14 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
+
+Reusable encounter/trigger prefabs, nonblocking dialogue/CC and persisted objective
+state are available. ConstructionSite Encounter01 uses the reusable prefab; the fresh
+opening objective is FIND A WAY OUT. Authoring workflow: Docs/GameplayAuthoring.md.
+Excavator mission content and device subtitle/voice acceptance remain separate work.
+
+
 IMPLEMENTED — Combat Economy V1 — 26 Sep 2026
 
 Shared Plasma Capsules fund empty-magazine auto reloads; Armor Capsules have separate

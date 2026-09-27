@@ -57,6 +57,7 @@ public sealed class GameplayInterface : MonoBehaviour
         toast.GetComponent<NeonPanel>().radius=100;toast.GetComponent<NeonPanel>().secondary=Green;
         feedback=Text(toast,"Message","",new(.025f,.08f),new(.975f,.92f),25,Green,TextAlignmentOptions.Center);
         toast.gameObject.SetActive(false);RunSaveService.Feedback+=ShowFeedback;
+        GetComponent<GameplayCommunicationView>()?.Build(safe, toast, safe.Find("Feedback") as RectTransform);
         RestyleTutorial();RestyleTouchControls();
         player.gameObject.AddComponent<CompactResourceDisplay>().Build(safe,player.GetComponent<PlayerHealth>());
         var ammo = player.GetComponent<CombatAmmoDisplay>() ?? player.gameObject.AddComponent<CombatAmmoDisplay>();

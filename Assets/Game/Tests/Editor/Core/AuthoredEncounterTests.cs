@@ -30,7 +30,7 @@ public sealed class AuthoredEncounterTests
                 Assert.That(enemy.gameObject.activeSelf, Is.False);
                 Assert.That(enemy.Id, Is.Not.Empty);
                 Assert.That(enemy.GetComponent<EnemyHealth>().MaxHealth, Is.EqualTo(140));
-                Assert.That(PrefabUtility.GetCorrespondingObjectFromSource(enemy.gameObject), Is.EqualTo(
+                Assert.That(PrefabUtility.GetCorrespondingObjectFromOriginalSource(enemy.gameObject), Is.EqualTo(
                     AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefabs/Enemies/PF_Enemy_Melee_POC_V1.prefab")));
                 var equipment = enemy.GetComponent<EnemyEquipment>();
                 Assert.That(equipment.Profile.meleeEnabled, Is.True);

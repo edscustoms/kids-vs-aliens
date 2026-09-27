@@ -57,6 +57,13 @@ was Editor-tested and has not been rebuilt/deployed to the phone.
 
 ## Save contract
 
+Gameplay authoring adds independent objective and dialogue presentation; see
+[GameplayAuthoring.md](GameplayAuthoring.md). Objective state/progress and remembered
+one-shot triggers use existing world participants. Both restore absolutely without
+replaying dialogue/audio/actions. `FIND A WAY OUT` starts only in the fresh branch of
+`ActiveRunController.Start`; Continue retains the saved objective, including completion.
+Transient speech is not saved. Existing system-message behavior remains unchanged.
+
 `Application.persistentDataPath/Saves` contains two checksummed generations each of `permanent` and `active-run`. Writes flush a temporary file before replacing the older generation. A torn/corrupt generation falls back to the other valid generation. Confirmed discard writes tombstones to both generations so the recoverable backup cannot resurrect a discarded run.
 
 Permanent data contains skill IDs, total XP and acknowledgement state. Existing camera settings retain their existing permanent PlayerPrefs storage and are flushed on lifecycle transitions. No settings or permanent progression are deleted by run resets.
