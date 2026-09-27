@@ -11,15 +11,15 @@ using Object = UnityEngine.Object;
 
 public sealed class AuthoredEncounterTests
 {
-    [Test] public void SceneOwnsThreeDormantMeleeEnemiesWithClearConnectedPlacement()
+    [Test] public void SceneOwnsTwoDormantMeleeEnemiesWithClearConnectedPlacement()
     {
         var scene = EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
         try
         {
             var encounter = Object.FindAnyObjectByType<AuthoredEncounter>();
             Assert.That(encounter, Is.Not.Null);
-            Assert.That(encounter.Enemies.Count, Is.EqualTo(3));
-            Assert.That(encounter.Enemies.Select(e => e.Id).Distinct().Count(), Is.EqualTo(3));
+            Assert.That(encounter.Enemies.Count, Is.EqualTo(2));
+            Assert.That(encounter.Enemies.Select(e => e.Id).Distinct().Count(), Is.EqualTo(2));
             var trigger = encounter.GetComponent<BoxCollider>();
             Assert.That(trigger.isTrigger, Is.True);
             Assert.That(trigger.bounds.min.x, Is.GreaterThan(-12.1f + 1.5f), "Commitment beyond the entry partition");
@@ -75,7 +75,7 @@ public sealed class AuthoredEncounterPlayTests
         SessionState.EraseString(Key); Time.timeScale=1;
     }
 
-    [UnityTest] public IEnumerator DormantContinueThenPhysicalEntryAlertsAllThreeOnlyOnce()
+    [UnityTest] public IEnumerator DormantContinueThenPhysicalEntryAlertsAllEnemiesOnlyOnce()
     {
         Assert.That(Encounter.HasTriggered,Is.False);
         Assert.That(Encounter.Enemies.All(e=>!e.gameObject.activeInHierarchy),Is.True);
@@ -106,7 +106,7 @@ public sealed class AuthoredEncounterPlayTests
             Run.GetComponent<PlayerHealth>().RestoreRunHealth(100,50);
             yield return EditorTestFrame.Next();
         }
-        Assert.That(Encounter.Enemies.All(e=>e.GetComponent<EnemyActor>().CurrentTarget==Run.transform),Is.True,"All three navigate from the stair positions and engage Amy");
+        Assert.That(Encounter.Enemies.All(e=>e.GetComponent<EnemyActor>().CurrentTarget==Run.transform),Is.True,"All encounter enemies navigate from their authored positions and engage Amy");
     }
 
     [UnityTest] public IEnumerator PartialAndCompletedDeathsPersistWithoutRespawnAndHardRestartResets()
@@ -123,7 +123,7 @@ public sealed class AuthoredEncounterPlayTests
         Assert.That(Encounter.HasTriggered,Is.True);
         Assert.That(Run.FindWorldObject(ids[0]).IsRemoved,Is.True);
         Assert.That(Run.FindWorldObject(ids[0]).gameObject.activeSelf,Is.False);
-        Assert.That(Encounter.Enemies.Count(e=>e.gameObject.activeSelf),Is.EqualTo(2));
+        Assert.That(Encounter.Enemies.Count(e=>e.gameObject.activeSelf),Is.EqualTo(1));
         Assert.That(Encounter.IsComplete,Is.False);
         Assert.That(Encounter.Enemies.Select(e=>e.Id),Is.EqualTo(ids));
         foreach(var enemy in Encounter.Enemies.Skip(1))
@@ -217,7 +217,7 @@ public sealed class AuthoredEncounterPlayTests
         Run.PrepareToLeave(); Assert.That(RunSaveService.Continue(),Is.True,RunSaveService.LastError);
         yield return EditorTestFrame.Next(); yield return WaitReady();
         Assert.That(Object.FindObjectsByType<AuthoredEncounter>(FindObjectsInactive.Include).Length,Is.EqualTo(1));
-        Assert.That(Encounter.Enemies.Count,Is.EqualTo(3));
+        Assert.That(Encounter.Enemies.Count,Is.EqualTo(2));
         Assert.That(Object.FindAnyObjectByType<InGameMenuController>().IsOpen,Is.True);
     }
     static IEnumerator WaitReady()

@@ -11,7 +11,11 @@ public sealed class PlayerBeamInSequence : MonoBehaviour
     [SerializeField, Min(0f)] private float initialDelay = 0.5f;
     [SerializeField, Min(0.1f)] private float descentDuration = 2f;
     [SerializeField, Min(0f)] private float landingHold = 0.35f;
+    [Tooltip("Optional fresh-arrival CC. Continue skips LevelStart and never replays this line.")]
+    [SerializeField] private DialogueMessage arrivalDialogue;
     private bool started;
+    private BeamTransportController arrivalTransport;
+    private bool destinationReached;
 
     // This component belongs on LevelStart itself. There is deliberately no assignable
     // destination reference: root position is the final player root pose, rotation is yaw.
@@ -72,5 +76,29 @@ public sealed class PlayerBeamInSequence : MonoBehaviour
                 + $"pathClear={transport.IsSegmentClear(transform.position + Vector3.up * startHeight, transform.position)}";
             Debug.LogError("LevelStart arrival could not start. Place the LevelStart root at an unobstructed player-root position with a clear descent path and check scene wiring. " + details, this);
         }
+        else if (arrivalDialogue != null)
+        {
+            arrivalTransport = transport;
+            arrivalTransport.DestinationReached += OnDestinationReached;
+            arrivalTransport.TransportEnded += OnArrivalEnded;
+        }
     }
+
+    private void OnDestinationReached() => destinationReached = true;
+    private void OnArrivalEnded()
+    {
+        UnsubscribeArrival();
+        // TransportEnded also reports cancellation. Only an arrival which reached
+        // its authored endpoint can speak, after the transport has released control.
+        if (!destinationReached || player == null || player.GetComponent<PlayerHealth>().IsDead) return;
+        DialoguePlayer.Instance?.Play(arrivalDialogue, player.GetComponent<PlayerCharacter>().ActiveVisual?.DialogueIdentity);
+    }
+    private void UnsubscribeArrival()
+    {
+        if (arrivalTransport == null) return;
+        arrivalTransport.DestinationReached -= OnDestinationReached;
+        arrivalTransport.TransportEnded -= OnArrivalEnded;
+        arrivalTransport = null;
+    }
+    private void OnDisable() => UnsubscribeArrival();
 }

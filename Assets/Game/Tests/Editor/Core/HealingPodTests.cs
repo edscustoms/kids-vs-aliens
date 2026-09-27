@@ -283,6 +283,10 @@ public sealed class HealingPodTests
         yield return new EnterPlayMode();
         Application.runInBackground = true;
         yield return Seconds(4);
+        var podArrival = Object.FindAnyObjectByType<AuthoredBeamArrival>();
+        Assert.That(podArrival.TryBegin(Object.FindAnyObjectByType<PlayerCharacter>()), Is.True);
+        yield return Seconds(2f);
+        Assert.That(podArrival.HasArrived, Is.True);
         var pod = Object.FindAnyObjectByType<HealingPodController>();
         // Retain the original route/proximity regression independently of the one-use sequence tests.
         ((BoxCollider)new SerializedObject(pod).FindProperty("chamberTrigger").objectReferenceValue).enabled = false;
@@ -296,8 +300,11 @@ public sealed class HealingPodTests
         var capsule = player.GetComponent<CharacterController>();
         var movement = player.GetComponent<StarterAssets.ThirdPersonController>();
         movement.enabled = false;
-        var root = pod.transform.root;
+        var root = pod.transform;
         var approach = root.position + root.forward * 2.5f;
+        // Follow the existing clear aisle beside the excavator, then its north side.
+        yield return Walk(capsule, new Vector3(-22,0,-23));
+        yield return Walk(capsule, new Vector3(-22,0,-9.5f));
         yield return Walk(capsule, approach);
         yield return Seconds(1);
         Assert.That(pod.Openness, Is.EqualTo(1));
@@ -305,6 +312,8 @@ public sealed class HealingPodTests
         Assert.That(Vector3.Distance(new Vector3(player.transform.position.x, 0, player.transform.position.z),
             new Vector3(root.position.x, 0, root.position.z)), Is.LessThan(.15f), "Player can enter the chamber");
         yield return Walk(capsule, approach);
+        yield return Walk(capsule, new Vector3(-22,0,-9.5f));
+        yield return Walk(capsule, new Vector3(-22,0,-23));
         yield return Walk(capsule, arrival.transform.position);
         yield return Seconds(1);
         Assert.That(pod.Openness, Is.Zero);

@@ -14,11 +14,13 @@ public sealed class HealingPodGameplayTests
 {
     private const string Key = "HealingPodGameplayTests";
     private const string PrefabPath = "Assets/Game/Prefabs/Environment/PF_HealingPod.prefab";
-    private HealingPodController pod;
-    private PlayerCharacter player;
-    private PlayerHealth health;
-    private CharacterController capsule;
-    private GameplaySuspensionController suspension;
+    // Rebind runtime references after EnterPlayMode/Continue. Coroutine closures must
+    // not retain the EditMode fixture's pre-domain-reload Unity object references.
+    private static HealingPodController pod;
+    private static PlayerCharacter player;
+    private static PlayerHealth health;
+    private static CharacterController capsule;
+    private static GameplaySuspensionController suspension;
 
     [UnitySetUp]
     public IEnumerator Setup()
@@ -29,6 +31,10 @@ public sealed class HealingPodGameplayTests
         yield return new EnterPlayMode();
         Application.runInBackground = true;
         yield return Seconds(4);
+        var arrival = Object.FindAnyObjectByType<AuthoredBeamArrival>();
+        Assert.That(arrival.TryBegin(Object.FindAnyObjectByType<PlayerCharacter>()), Is.True);
+        yield return Seconds(2f);
+        Assert.That(arrival.HasArrived, Is.True);
         Bind();
         Assert.That(ActiveRunController.Instance.IsReady, Is.True);
         Assert.That(player.GetComponent<BeamTransportController>().IsTransporting, Is.False);
@@ -331,6 +337,8 @@ public sealed class HealingPodGameplayTests
         Assert.That(RunSaveService.Continue(), Is.True, RunSaveService.LastError);
         yield return EditorTestFrame.Next();
         yield return Until(() => ActiveRunController.Instance != null && ActiveRunController.Instance.IsReady, false);
+        // Peer-dependent arrival handoff runs after both world restore passes.
+        yield return EditorTestFrame.Next();
         Bind();
         Assert.That(suspension.IsWorldPaused, Is.True);
         Assert.That(pod.RemainingCapacity, Is.EqualTo(capacity).Within(.0001));
@@ -417,12 +425,12 @@ public sealed class HealingPodGameplayTests
         return 0;
     }
 
-    private static IEnumerator Until(Func<bool> condition, bool resume = true)
+    private static IEnumerator Until(Func<bool> condition, bool resume = true, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
     {
         double deadline = EditorApplication.timeSinceStartup + 15;
         while (!condition() && EditorApplication.timeSinceStartup < deadline)
         { if (resume) Foreground(); yield return EditorTestFrame.Next(); }
-        Assert.That(condition(), Is.True, "Timed out waiting for pod/run phase");
+        Assert.That(condition(), Is.True, $"Timed out waiting for pod/run phase at line {line}");
     }
     private static IEnumerator Seconds(float seconds)
     {

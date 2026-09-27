@@ -10,8 +10,8 @@ suspension system.
 ## Authored tuning
 
 Prefab values and scene-instance overrides are both authoritative. The final-polish
-pass preserves the existing values, markers, moving colliders and ConstructionSite
-file. Do not run a generator or reset these values from C# defaults.
+pass preserves the existing values, markers and moving colliders. Do not run a
+generator or reset these values from C# defaults.
 
 | Phase | Base prefab | ConstructionSite instance |
 | --- | --- | --- |
@@ -26,8 +26,10 @@ file. Do not run a generator or reset these values from C# defaults.
 Totals are 4.4 s / 5.95 s plus frame rounding and any final ground contact.
 Smoothstep absolute poses preserve reversible door motion without drift. Float
 height remains 0.12 m. The indicator stays parented to the lid.
-ConstructionSite retains position (-23.69, 0.176327, -21.39) and the user's current
-yaw -174.51 degrees, near LevelStart.
+ConstructionSite now keeps this tuned instance dormant inside `HealingPod_BeamIn`.
+Its original stable ID and yaw -174.51 degrees are retained; arrival chooses among
+validated points in the strip beyond the first excavator. See the
+[arrival authoring and placement](GameplayAuthoring.md#authored-healing-pod-arrival).
 
 ## Healing capacity and feedback
 
@@ -93,7 +95,8 @@ the existing paused Continue flow. Completion/abort clears only this reservation
 
 Scene repair supplies authored stable IDs. Later spawns use the existing catalog
 and `RunWorldObject.TrackSpawn` contract. Activation need not occur at scene load.
-No Beam-in spawning or Beam transport coupling is implemented.
+`AuthoredBeamArrival` separately gates the ConstructionSite instance's initial
+appearance. HealingPodController has no dependency on Beam transport or arrival state.
 
 ## Visual swap and collision
 

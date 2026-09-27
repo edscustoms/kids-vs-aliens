@@ -7,6 +7,8 @@ public enum ObjectiveAction { None, Start, Update, Complete }
 [Serializable]
 public sealed class GameplayActions
 {
+    [Tooltip("Optional authored world arrival. Rejected/aborted arrivals do not consume a one-shot trigger.")]
+    public AuthoredBeamArrival beamArrival;
     public DialogueMessage dialogue;
     public ObjectiveAction objectiveAction;
     public ObjectiveDefinition objective;
@@ -14,8 +16,12 @@ public sealed class GameplayActions
     [Tooltip("Optional text sent through the existing run/system-message presentation.")]
     public string systemMessage;
 
-    public void Execute(PlayerCharacter player)
+    public bool CanRetry => beamArrival != null && beamArrival.State == AuthoredArrivalState.Available;
+    public bool IsCommitted => beamArrival == null || beamArrival.HasArrived;
+    public void Execute(PlayerCharacter player) => TryExecute(player);
+    public bool TryExecute(PlayerCharacter player)
     {
+        if (beamArrival != null && !beamArrival.TryBegin(player)) return false;
         if (dialogue != null) DialoguePlayer.Instance?.Play(dialogue, player != null ? player.ActiveVisual?.DialogueIdentity : null);
         var owner = ObjectiveController.Instance;
         if (owner != null && objective != null)
@@ -28,5 +34,6 @@ public sealed class GameplayActions
             }
         }
         if (!string.IsNullOrWhiteSpace(systemMessage)) RunSaveService.Notify(systemMessage);
+        return true;
     }
 }

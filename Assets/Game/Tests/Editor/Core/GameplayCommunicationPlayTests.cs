@@ -43,7 +43,7 @@ public sealed class GameplayCommunicationPlayTests
         SessionState.SetString(Key+".Build",JsonUtility.ToJson(new BuildBackup{paths=EditorBuildSettings.scenes.Select(s=>s.path).ToArray(),enabled=EditorBuildSettings.scenes.Select(s=>s.enabled).ToArray()}));
         AssetDatabase.CopyAsset("Assets/Game/Scenes/ConstructionSite.unity",ScenePath);
         var scene=EditorSceneManager.OpenScene(ScenePath);
-        var count=ScriptableObject.CreateInstance<ObjectiveDefinition>(); count.id="test-count"; count.title="REPAIR TEST DEVICE"; count.progressMode=ObjectiveProgressMode.Count; count.targetCount=3;
+        var count=ScriptableObject.CreateInstance<ObjectiveDefinition>(); count.id="test-count"; count.title="REPAIR THE EXCAVATOR"; count.progressMode=ObjectiveProgressMode.Count; count.targetCount=3;
         AssetDatabase.CreateAsset(count,Folder+"/Count.asset");
         var origin=Object.FindAnyObjectByType<PlayerBeamInSequence>().transform.position;
         foreach(string name in new[]{"OneShot","Repeat"})
@@ -122,6 +122,40 @@ public sealed class GameplayCommunicationPlayTests
         Assert.That(Trigger("OneShot").HasFired,Is.False);
     }
 
+    [UnityTest] public IEnumerator CompoundBoxesAreOneVisitAcrossOverlapsAndDisconnectedReentry()
+    {
+        var trigger = Trigger("Repeat");
+        trigger.gameObject.SetActive(false);
+        var volumes = new GameObject("TriggerVolumes").transform;
+        volumes.SetParent(trigger.transform,false);
+        Set(trigger,"triggerVolumes",volumes);
+        trigger.GetComponent<BoxCollider>().enabled=false;
+        for(int i=0;i<3;i++)
+        {
+            var box = new GameObject("Box_"+i).AddComponent<BoxCollider>();
+            box.transform.SetParent(volumes,false);
+            box.transform.localPosition = new Vector3(i*2,1,i==2?2:0);
+            box.size = new Vector3(4,3,4); box.isTrigger=true;
+            Assert.That(box.GetComponents<MonoBehaviour>(),Is.Empty);
+        }
+        trigger.RefreshVolumes(); trigger.gameObject.SetActive(true);
+        Objectives.StartObjective(Count);
+        Vector3 origin=trigger.transform.position;
+        Place(origin+Vector3.left*3); yield return Seconds(.1f);
+        Place(origin); yield return Seconds(.15f);
+        Assert.That(Objectives.ProgressOf(Count),Is.EqualTo(1),"Child physics callbacks reach the single root owner");
+        Place(origin+Vector3.right*2); yield return Seconds(.15f);
+        Place(origin+new Vector3(4,0,2)); yield return Seconds(.15f);
+        Assert.That(Objectives.ProgressOf(Count),Is.EqualTo(1),"Overlaps and leaving A while inside B/C are one visit");
+        Place(origin+Vector3.forward*7); yield return Seconds(.15f);
+        Place(origin+new Vector3(4,0,2)); yield return Seconds(.15f);
+        Assert.That(Objectives.ProgressOf(Count),Is.EqualTo(2),"Only leaving the complete union allows another visit");
+        Set(trigger,"behavior",GameplayTriggerBehavior.OneShot);
+        Place(origin+Vector3.forward*7); yield return Seconds(.15f);
+        Place(origin); yield return Seconds(.15f);
+        Assert.That(Objectives.ProgressOf(Count),Is.EqualTo(2),"One-shot belongs to the root, not each box");
+    }
+
     [UnityTest] public IEnumerator DialogueOnlySystemOnlyEmptyAndMultilineStayNonBlocking()
     {
         var trigger=Trigger("Repeat"); var intro=AssetDatabase.LoadAssetAtPath<DialogueMessage>(GameplayAuthoringSetup.MessagePath);
@@ -169,20 +203,35 @@ public sealed class GameplayCommunicationPlayTests
 
     [UnityTest] public IEnumerator ThreeChannelsAndBothSystemMessagesRemainSeparateAtMobileSizes()
     {
-        Objectives.StartObjective(Count); Objectives.AddProgress(Count);
+        Objectives.StartObjective(Count); Objectives.AddProgress(Count,2);
         var message=ScriptableObject.CreateInstance<DialogueMessage>();
         message.girl.lines=new[]{new DialogueMessage.Line{text="There should be a fuse near the electrical area.",displayDuration=60}};
         Assert.That(Dialogue.Play(message,Player.ActiveVisual.DialogueIdentity),Is.True);
         RunSaveService.Notify("RUN SAVED"); Player.GetComponent<PlayerFeedback>().Report(new GameplayFeedbackEvent(FeedbackCode.HealthAlreadyFull));
         yield return Seconds(.3f);
-        foreach(var size in new[]{new Vector2Int(1600,720),new Vector2Int(1280,720),new Vector2Int(1024,768)}) CaptureAndCheck(size);
+        var sizes = new[]{new Vector2Int(1600,720),new Vector2Int(1280,720),new Vector2Int(1024,768)};
+        var widths = sizes.Select(size=>CaptureAndCheck(size)).ToArray();
+        Objectives.StartObjective(AssetDatabase.LoadAssetAtPath<ObjectiveDefinition>(GameplayAuthoringSetup.ObjectivePath));
+        Dialogue.Stop(); message.girl.lines[0].text="Where am I?";
+        Assert.That(Dialogue.Play(message,Player.ActiveVisual.DialogueIdentity),Is.True);
+        for(int i=0;i<sizes.Length;i++)
+        {
+            var compact=CaptureAndCheck(sizes[i],"opening");
+            Assert.That(compact.x,Is.LessThan(widths[i].x-15),"Short objective fits its content");
+            Assert.That(compact.y,Is.LessThan(widths[i].y-50),"Short CC fits its content");
+        }
+        Count.title="REPAIR THE EXCAVATOR AT THE CONSTRUCTION PLATFORM";
+        Objectives.StartObjective(Count);
+        Dialogue.Stop(); message.girl.lines[0].text="There should be a fuse near the electrical area. I should check the construction platform and follow the cables back to their source.";
+        Assert.That(Dialogue.Play(message,Player.ActiveVisual.DialogueIdentity),Is.True);
+        foreach(var size in sizes) CaptureAndCheck(size,"wrapped");
         var melee=Player.GetComponent<PlayerMeleeController>(); Player.GetComponent<PlayerSkillState>().UnlockSkill(melee.DefaultCombatItem.requiredSkill);
         yield return EditorTestFrame.Next(); Object.FindAnyObjectByType<KnowledgeAcquiredPresenter>().Close(); Resume(); yield return EditorTestFrame.Next();
         Assert.That(melee.SelectCombatItem(melee.DefaultCombatItem),Is.True); Assert.That(melee.TryAttack(),Is.True,"CC does not block combat");
         Assert.That(Player.GetComponent<GameplaySuspensionController>().OwnerCount,Is.Zero);
         Object.Destroy(message);
     }
-    static void CaptureAndCheck(Vector2Int size)
+    static Vector2 CaptureAndCheck(Vector2Int size,string scenario="count")
     {
         var camera=Camera.main; var target=new RenderTexture(size.x,size.y,24); target.Create();
         var previous=camera.targetTexture; camera.targetTexture=target;
@@ -199,6 +248,7 @@ public sealed class GameplayCommunicationPlayTests
                 if(scaler!=null)typeof(CanvasScaler).GetMethod("Handle",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(scaler,null);
             }
             Canvas.ForceUpdateCanvases();
+            Object.FindAnyObjectByType<GameplayCommunicationView>().RefreshLayout(); Canvas.ForceUpdateCanvases();
             var safeRoot=Object.FindAnyObjectByType<GameplayInterface>().transform.Find("SafeArea");
             var names=new[]{"ObjectiveTracker","RunFeedback","Feedback","DialogueCC"};
             var rects=names.Select(n=>(RectTransform)safeRoot.Find(n)).ToArray();
@@ -220,11 +270,18 @@ public sealed class GameplayCommunicationPlayTests
                 foreach(var rect in rects)Assert.That(ScreenRect(rect,camera).Overlaps(ScreenRect((RectTransform)slot.transform,camera)),Is.False,$"{rect.name} overlaps quick slot {i+1}");
             }
             foreach(var control in controls)foreach(var rect in rects)Assert.That(ScreenRect(rect,camera).Overlaps(ScreenRect(control,camera)),Is.False,$"{rect.name} overlaps {control.name}");
+            foreach(string hud in new[]{"Resources","CombatAmmo"})
+                foreach(var rect in rects)Assert.That(ScreenRect(rect,camera).Overlaps(ScreenRect((RectTransform)safeRoot.Find(hud),camera)),Is.False,$"{rect.name} overlaps {hud}");
+            foreach(var button in safeRoot.GetComponentsInChildren<Button>())
+                foreach(var rect in rects)Assert.That(ScreenRect(rect,camera).Overlaps(ScreenRect((RectTransform)button.transform,camera)),Is.False,$"{rect.name} overlaps button {button.name}");
+            Assert.That(ScreenRect(rects[0],camera).height,Is.LessThan(size.y*.10f));
+            Assert.That(ScreenRect(rects[3],camera).height,Is.LessThan(size.y*.16f));
             foreach(var graphic in rects[0].GetComponentsInChildren<Graphic>().Concat(rects[3].GetComponentsInChildren<Graphic>()))Assert.That(graphic.raycastTarget,Is.False);
             camera.Render(); var old=RenderTexture.active; RenderTexture.active=target;
             var texture=new Texture2D(size.x,size.y,TextureFormat.RGB24,false); texture.ReadPixels(new Rect(0,0,size.x,size.y),0,0); texture.Apply();
-            Directory.CreateDirectory("Logs/GameplayAuthoringV1"); File.WriteAllBytes($"Logs/GameplayAuthoringV1/communication-{size.x}x{size.y}.png",texture.EncodeToPNG());
+            Directory.CreateDirectory("Logs/ConstructionPolish"); File.WriteAllBytes($"Logs/ConstructionPolish/communication-{scenario}-{size.x}x{size.y}.png",texture.EncodeToPNG());
             RenderTexture.active=old; Object.DestroyImmediate(texture);
+            return new Vector2(ScreenRect(rects[0],camera).width,ScreenRect(rects[3],camera).width);
         }
         finally
         {
