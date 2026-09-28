@@ -23,6 +23,62 @@ members' existing enemy/world state; no objective or reward is automatically add
 two melee/unarmed members, authored poses, tuning and three stable world identities
 are preserved. No encounter-specific combat or spawning code was added.
 
+## ConstructionSite excavator repair
+
+`_World/ExcavatorRepairMission` owns this level's requirements through
+`ExcavatorRepairMission`. Its `ExcavatorArea_StartAndReturn` child is an instance of
+`PF_GameplayTrigger`, configured Repeatable with the explicit Excavator Repair action.
+Move/resize its BoxCollider to author the visit area. Its ground origin is
+`(29, 0.0003, 37)`, with a `(6, 3, 4)` box centered one metre above it.
+
+The three normal pickup prefab instances start inactive with stable scene identities:
+
+| Pickup | World position | Placement |
+| --- | --- | --- |
+| Battery Cables | (-17.7322, 0.0402, -42.7832) | Electrical building front |
+| Industrial Fuse | (-21.4900, 0.0408, -37.2229) | Electrical building west side |
+| Hydraulic Fluid | (24.8762, 0.2400, -30.4627) | Office floor, clear of the existing table |
+
+The first visit enables them and plays `CS_Excavator_RepairStart` through Amy's Girl
+speaker variant. `CS_FindRepairParts` derives 0–3 distinct requirements from
+`PlayerInventory`; extra copies do not add progress. The two electrical parts unlock
+`CS_Excavator_OfficeClue` once if fluid is still missing. All three complete collection
+and start `CS_ReturnToExcavator`. Returning rechecks possession, consumes one of each,
+then calls the existing swing. Missing parts cannot start or charge for the finale.
+No dialogue acquires input, camera or suspension ownership.
+
+Flow: NotStarted → Collecting → ReturnToExcavator → RunningFinale → Completed.
+The `excavator-repair` run participant owns only mission state and the clue flag;
+normal pickups, inventory and objectives retain their existing save owners. Restore
+waits for both world passes and Active Run readiness before reconciling peers. Removed
+pickups stay removed. RunningFinale saves as Completed after payment, and reserves
+`FinaleSavePoint` at `(30.5, 0.0537, 36)` outside the swept assembly. Saving does not
+move the live player. Continue silently assigns the existing final machinery/rubble
+poses, completes the return objective and retains consumed inventory, without replay.
+Fresh attempts reload the original dormant content and blocked exit.
+
+`ObjectiveController.SetProgress` supports absolute owner-derived counts. Optional
+`CompleteObjective(..., showCompletion: true)` requests a transient presenter-only
+checkmark for 2.5 scaled seconds. Restore and ordinary completions remain silent;
+a new objective replaces the transient display immediately. The check uses two UI
+strokes with the existing cyan color, avoiding font fallback/material changes.
+
+Focused fixtures: `ExcavatorRepairTests` and `ExcavatorRepairPlayTests`. Device pickup
+readability, dialogue pacing and native background/Continue remain manual checks.
+No ambush, new encounter or generic mission framework is included.
+
+Unity 6000.5.6f1: `ExcavatorRepair-02` passed **14/14** mission, generic-item,
+communication and Active Run checks. `ExcavatorRepair-01` also passed all **9/9**
+excavator/authoring checks; its lone failure was an older pickup fixture checking
+deferred destruction before a frame advanced, fixed with `EditorTestFrame.Next` and
+passed in the final batch. Coverage includes physical pickups, every collection save
+stage, exact payment/extra-stack preservation, silent mid-finale Continue, normal
+locomotion through the restored exit, solid rubble, and Hard Restart. The reviewed
+completion capture is `Logs/ExcavatorRepair/completed.png`; XML/logs are under
+`Logs/RepositoryAuditRemediation`. Existing scene records changed only for the new
+mission parent link and completion display duration. `git diff --check` passed;
+no full regression was run.
+
 ## Dialogue and objectives
 
 The scene's `GameplayCommunication` root has two independent owners:

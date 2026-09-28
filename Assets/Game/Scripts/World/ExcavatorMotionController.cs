@@ -149,6 +149,15 @@ public sealed class ExcavatorMotionController : MonoBehaviour
         foreach (var collider in blockingColliders) if (collider != null) collider.enabled = enabled;
     }
 
+    /// <summary>Safe run-restore endpoint. Assigns the existing authored final poses without replay or completion callbacks.</summary>
+    public void RestoreCompletedPose()
+    {
+        ResetToStart();
+        elapsed = CompletionTime;
+        ApplyPose(elapsed);
+        State = ExcavatorMotionState.Completed;
+    }
+
     /// <summary>Explicit authoring/debug reset; never called implicitly at scene load or enable.</summary>
     public void ResetToStart()
     {

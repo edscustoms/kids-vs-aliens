@@ -15,7 +15,9 @@ IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
 Reusable encounter/trigger prefabs, nonblocking dialogue/CC and persisted objective
 state are available. ConstructionSite Encounter01 uses the reusable prefab; the fresh
 opening objective is FIND A WAY OUT. Authoring workflow: Docs/GameplayAuthoring.md.
-Excavator mission content and device subtitle/voice acceptance remain separate work.
+The first excavator repair mission skeleton is implemented: collect three normal
+items, return/pay, existing swing, persisted clear exit. Repair-area ambushes are not
+implemented. Device pickup readability and subtitle/voice acceptance remain pending.
 
 
 IMPLEMENTED — Combat Economy V1 — 26 Sep 2026

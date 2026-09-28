@@ -292,7 +292,7 @@ tool behavior and supported commands. Prefer updating the existing relevant docu
 and comments explaining reasons/contracts over duplicated status documents, obvious C#
 commentary or sprawling architecture essays.
 
-Difficulty/Madness, mission content beyond the opening objective and Bike systems are upcoming work,
+Difficulty/Madness, further mission content beyond the excavator repair and Bike systems are upcoming work,
 not current architecture. Implement them only within an explicit task; apply these same
 ownership/readability rules and update this file with durable contracts when established.
 Keep temporary balance values, feature TODOs, animation/IK wish lists and roadmap history

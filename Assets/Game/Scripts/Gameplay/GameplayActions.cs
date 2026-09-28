@@ -9,6 +9,8 @@ public sealed class GameplayActions
 {
     [Tooltip("Optional authored world arrival. Rejected/aborted arrivals do not consume a one-shot trigger.")]
     public AuthoredBeamArrival beamArrival;
+    [Tooltip("Optional ConstructionSite repair owner. Use a repeatable trigger for start and return visits.")]
+    public ExcavatorRepairMission excavatorRepair;
     public DialogueMessage dialogue;
     public ObjectiveAction objectiveAction;
     public ObjectiveDefinition objective;
@@ -22,6 +24,7 @@ public sealed class GameplayActions
     public bool TryExecute(PlayerCharacter player)
     {
         if (beamArrival != null && !beamArrival.TryBegin(player)) return false;
+        if (excavatorRepair != null && !excavatorRepair.Visit(player)) return false;
         if (dialogue != null) DialoguePlayer.Instance?.Play(dialogue, player != null ? player.ActiveVisual?.DialogueIdentity : null);
         var owner = ObjectiveController.Instance;
         if (owner != null && objective != null)

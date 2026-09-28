@@ -19,6 +19,10 @@ public sealed class GameplayCommunicationView : MonoBehaviour
     private Vector2 lastSafeSize;
     private TMP_Text objectiveText, progressText, speakerText, dialogueText;
     private bool built;
+    [SerializeField, Min(0)] private float completionDuration = 2.5f;
+    private ObjectiveDefinition completedObjective;
+    private float completionRemaining;
+    private RectTransform completionCheck;
 
     public void Build(Transform safe, RectTransform runMessage, RectTransform systemFeedback)
     {
@@ -33,6 +37,11 @@ public sealed class GameplayCommunicationView : MonoBehaviour
         progressText = Label(objectivePanel,"Progress","",new(.83f,.12f),new(.96f,.88f),24);
         progressText.fontStyle = FontStyles.Bold; progressText.color = Cyan;
         progressText.alignment = TextAlignmentOptions.Center;
+        // Two simple UI strokes keep the checkmark independent of font glyph coverage.
+        completionCheck = Rect(progressText.transform,"CompletionCheck",Vector2.zero,Vector2.one);
+        CheckStroke(new Vector2(.3f,.42f),new Vector2(10,3),-45);
+        CheckStroke(new Vector2(.59f,.5f),new Vector2(19,3),45);
+        completionCheck.gameObject.SetActive(false);
         dialoguePanel = Surface(safe,"DialogueCC",false);
         speakerText = Label(dialoguePanel,"Speaker","",new(.03f,.12f),new(.15f,.88f),22);
         speakerText.fontStyle = FontStyles.Bold; speakerText.color = Cyan;
@@ -44,6 +53,24 @@ public sealed class GameplayCommunicationView : MonoBehaviour
         layout.Arrange(objectivePanel,runMessage,systemFeedback,dialoguePanel);
         built = true; Subscribe(); RefreshObjective(); RefreshDialogue();
         Canvas.preWillRenderCanvases += RefreshForScreenSize;
+    }
+    private void CheckStroke(Vector2 anchor, Vector2 size, float angle)
+    {
+        var stroke = Rect(completionCheck,"Stroke",anchor,anchor);
+        stroke.sizeDelta = size; stroke.localRotation = Quaternion.Euler(0,0,angle);
+        var image = stroke.gameObject.AddComponent<Image>(); image.color = Cyan; image.raycastTarget = false;
+    }
+    private void ShowCompletion(ObjectiveDefinition definition)
+    {
+        if (!built || objectives.ActiveObjective != null) return;
+        completedObjective = definition; completionRemaining = completionDuration;
+        DisplayObjective(definition, true);
+    }
+    private void Update()
+    {
+        if (completedObjective == null) return;
+        completionRemaining -= Time.deltaTime;
+        if (completionRemaining <= 0) RefreshObjective();
     }
     private RectTransform Surface(Transform parent, string name, bool objective)
     {
@@ -69,12 +96,18 @@ public sealed class GameplayCommunicationView : MonoBehaviour
     {
         if (!built) return;
         var active = objectives != null ? objectives.ActiveObjective : null;
+        completedObjective = null;
+        DisplayObjective(active, false);
+    }
+    private void DisplayObjective(ObjectiveDefinition active, bool completed)
+    {
         objectivePanel.gameObject.SetActive(active != null);
+        completionCheck.gameObject.SetActive(completed);
         if (active == null) return;
         objectiveText.text = (active.title ?? "").ToUpperInvariant();
         bool count = active.progressMode == ObjectiveProgressMode.Count;
-        progressText.gameObject.SetActive(count);
-        progressText.text = count ? $"{objectives.ProgressOf(active)}/{active.targetCount}" : "";
+        progressText.gameObject.SetActive(count || completed);
+        progressText.text = count && !completed ? $"{objectives.ProgressOf(active)}/{active.targetCount}" : "";
         RefreshLayout();
     }
     private void RefreshDialogue()
@@ -97,7 +130,7 @@ public sealed class GameplayCommunicationView : MonoBehaviour
         lastSafeSize = safeArea.rect.size;
         if (lastSafeSize.x <= 0 || lastSafeSize.y <= 0) return;
         const float padding = 16, gap = 10, iconWidth = 26;
-        float count = progressText.gameObject.activeSelf ? progressText.GetPreferredValues(progressText.text).x : 0;
+        float count = completedObjective != null ? 26 : progressText.gameObject.activeSelf ? progressText.GetPreferredValues(progressText.text).x : 0;
         float objectiveExtras = padding*2 + iconWidth + gap + (count > 0 ? gap+count : 0);
         Rect objectiveRegion = GameplayMessageLayout.ObjectiveRegion;
         Vector2 objectiveSize = Fit(objectiveText,objectiveExtras,objectiveWidth,lastSafeSize.x*objectiveRegion.width,lastSafeSize.y*objectiveRegion.height);
@@ -138,6 +171,7 @@ public sealed class GameplayCommunicationView : MonoBehaviour
     private void Subscribe()
     {
         if (objectives != null) objectives.Changed += RefreshObjective;
+        if (objectives != null) objectives.CompletionPresented += ShowCompletion;
         if (dialogue != null) dialogue.Changed += RefreshDialogue;
     }
     private void OnEnable() { if (built) { Subscribe(); RefreshObjective(); RefreshDialogue(); Canvas.preWillRenderCanvases += RefreshForScreenSize; } }
@@ -145,6 +179,8 @@ public sealed class GameplayCommunicationView : MonoBehaviour
     {
         Canvas.preWillRenderCanvases -= RefreshForScreenSize;
         if (objectives != null) objectives.Changed -= RefreshObjective;
+        if (objectives != null) objectives.CompletionPresented -= ShowCompletion;
+        completedObjective = null;
         if (dialogue != null) dialogue.Changed -= RefreshDialogue;
     }
 }

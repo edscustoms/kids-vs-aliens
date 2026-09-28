@@ -13,6 +13,7 @@ public sealed class ObjectiveController : MonoBehaviour, IRunStateParticipant
     public ObjectiveDefinition ActiveObjective { get; private set; }
     public string RunStateKey => "objectives";
     public event Action Changed;
+    public event Action<ObjectiveDefinition> CompletionPresented;
 
     private void OnEnable()
     {
@@ -40,13 +41,25 @@ public sealed class ObjectiveController : MonoBehaviour, IRunStateParticipant
         if (entry.progress >= definition.targetCount) { CompleteObjective(definition); return; }
         Notify();
     }
-    public void CompleteObjective(ObjectiveDefinition definition)
+    // For requirements whose progress is derived from an existing owner (for example inventory).
+    public void SetProgress(ObjectiveDefinition definition, int progress)
+    {
+        var entry = Find(definition);
+        if (definition == null || definition.progressMode != ObjectiveProgressMode.Count || entry == null || entry.state != ObjectiveState.Active) return;
+        int value = Mathf.Clamp(progress, 0, Mathf.Max(1, definition.targetCount));
+        if (entry.progress == value) return;
+        entry.progress = value;
+        if (value >= definition.targetCount) CompleteObjective(definition);
+        else Notify();
+    }
+    public void CompleteObjective(ObjectiveDefinition definition, bool showCompletion = false)
     {
         if (definition == null || StateOf(definition) != ObjectiveState.Active) return;
         var entry = Find(definition); entry.state = ObjectiveState.Completed;
         if (definition.progressMode == ObjectiveProgressMode.Count) entry.progress = Mathf.Max(1, definition.targetCount);
         if (ActiveObjective == definition) ActiveObjective = null;
         Notify();
+        if (showCompletion) CompletionPresented?.Invoke(definition);
     }
     private void Notify() { Changed?.Invoke(); ActiveRunController.Instance?.MarkDirty(); }
     [Serializable] private sealed class SavedEntry { public string objective; public ObjectiveState state; public int progress; }

@@ -14,7 +14,9 @@ existing enemy/world ownership. DialogueMessage/DialogueSpeaker supply optional
 semantic voice and subtitles; ObjectiveController saves one active objective and
 completed/progress records through Active Run. ConstructionSite starts FIND A WAY OUT
 only on fresh attempts. Existing system feedback remains separate. See
-Docs/GameplayAuthoring.md. Excavator mission content is not implemented.
+Docs/GameplayAuthoring.md. ConstructionSite now has the first excavator repair mission:
+three normal dormant pickups, inventory-derived collection, return/payment, existing
+swing and a deterministic completed Continue endpoint. No repair-area ambush is added.
 
 CURRENT IMPLEMENTATION OVERRIDE — 26 Sep 2026 — Combat Economy V1
 

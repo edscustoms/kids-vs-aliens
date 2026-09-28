@@ -51,7 +51,7 @@ public sealed class GenericItemAssetTests
                 var pickup=Object.Instantiate(item.worldPrefab).GetComponent<PickupItem>();
                 Assert.That(pickup.TryCollect(inventory),Is.True);
                 Assert.That(pickup.TryCollect(inventory),Is.False,"One pickup cannot grant twice.");
-                yield return null;
+                yield return EditorTestFrame.Next();
                 Assert.That(pickup==null,Is.True);
             }
             int index=inventory.Items.ToList().IndexOf(item);

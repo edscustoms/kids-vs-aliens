@@ -58,8 +58,10 @@ are ignored. Scaled time respects pause. The Inspector exposes the pivot/axis, a
 swing ease, impact time, per-piece delay/duration, flight-control and clear markers, plus an optional
 completion event. Editor buttons capture the current start and preview half/impact/target;
 **Reset To Start** restores authored poses and collision. Use **Play Test Swing** in
-Play Mode. Reset any edit-mode preview before saving. This proof deliberately adds no
-mission, automatic trigger, repair logic, player-control ownership or Active Run participant.
+Play Mode. Reset any edit-mode preview before saving. Motion remains independent of
+mission, input and persistence ownership. ConstructionSite's `ExcavatorRepairMission`
+now starts it after item payment and uses `RestoreCompletedPose()` for a silent,
+idempotent Continue endpoint. See [Gameplay authoring](../../../Docs/GameplayAuthoring.md).
 
 Use **Tools > Environment > Excavator Decals**:
 
