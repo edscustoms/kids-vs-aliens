@@ -14,6 +14,12 @@ public sealed class ExcavatorRepairMission : MonoBehaviour, IRunStateParticipant
     [SerializeField] private ExcavatorMotionController excavator;
     [Tooltip("Clear ground outside the swing. Saves during the finale use this endpoint without moving the live player.")]
     [SerializeField] private Transform finaleSavePoint;
+    [Header("Authored combat (optional)")]
+    [Tooltip("The crash-site weapon must be acquired before starting the repair fights.")]
+    [SerializeField] private WeaponItemData requiredWeapon;
+    [SerializeField] private AuthoredEncounter route4Encounter;
+    [SerializeField] private AuthoredEncounter electricalEncounter;
+    [SerializeField] private AuthoredEncounter returnEncounter;
     [Header("Three distinct, reusable items")]
     [SerializeField] private ItemData batteryCables;
     [SerializeField] private ItemData industrialFuse;
@@ -76,7 +82,10 @@ public sealed class ExcavatorRepairMission : MonoBehaviour, IRunStateParticipant
             || player.GetComponent<PlayerHealth>().IsDead || player.GetComponent<GameplaySuspensionController>().IsSuspended) return false;
         if (State == ExcavatorRepairState.NotStarted)
         {
+            if (requiredWeapon != null && inventory.GetWeaponState(requiredWeapon) == null) return false;
             State = ExcavatorRepairState.Collecting;
+            route4Encounter?.Activate();
+            electricalEncounter?.Activate();
             foreach (var pickup in pickups) if (pickup != null && !pickup.IsRemoved) pickup.gameObject.SetActive(true);
             objectives.StartObjective(findParts);
             dialogue.Play(startMessage, player.ActiveVisual?.DialogueIdentity);
@@ -114,6 +123,7 @@ public sealed class ExcavatorRepairMission : MonoBehaviour, IRunStateParticipant
         {
             State = ExcavatorRepairState.ReturnToExcavator;
             objectives.StartObjective(returnToExcavator);
+            returnEncounter?.Activate();
         }
         ActiveRunController.Instance?.MarkDirty();
     }

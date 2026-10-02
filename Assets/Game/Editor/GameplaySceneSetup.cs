@@ -113,6 +113,7 @@ public static class GameplaySceneSetup
             RunInterfaceSetup.ConfigureGameplay(player, presentation);
             EnemyCombatantSetup.ConfigureScene(scene);
             AudioSceneSetup.ConfigureScene(player);
+            ConfigureInteractions(player);
             AlienBikeSetup.ConfigurePlayer(player);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -132,6 +133,12 @@ public static class GameplaySceneSetup
             Undo.RevertAllDownToGroup(undoGroup);
             throw;
         }
+    }
+
+    public static void ConfigureInteractions(PlayerCharacter player)
+    {
+        if (player.GetComponent<KidsVsAliens.Interaction.ProximityInteractor>() == null)
+            Undo.AddComponent<KidsVsAliens.Interaction.ProximityInteractor>(player.gameObject);
     }
 
     private static bool HasBasePlayer(GameObject player, out string missing)

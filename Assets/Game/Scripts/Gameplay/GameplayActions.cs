@@ -11,6 +11,8 @@ public sealed class GameplayActions
     public AuthoredBeamArrival beamArrival;
     [Tooltip("Optional ConstructionSite repair owner. Use a repeatable trigger for start and return visits.")]
     public ExcavatorRepairMission excavatorRepair;
+    [Tooltip("Optional explicit activation of dormant authored enemies.")]
+    public AuthoredEncounter encounter;
     public DialogueMessage dialogue;
     public ObjectiveAction objectiveAction;
     public ObjectiveDefinition objective;
@@ -25,6 +27,7 @@ public sealed class GameplayActions
     {
         if (beamArrival != null && !beamArrival.TryBegin(player)) return false;
         if (excavatorRepair != null && !excavatorRepair.Visit(player)) return false;
+        if (encounter != null) encounter.Activate();
         if (dialogue != null) DialoguePlayer.Instance?.Play(dialogue, player != null ? player.ActiveVisual?.DialogueIdentity : null);
         var owner = ObjectiveController.Instance;
         if (owner != null && objective != null)

@@ -7,6 +7,8 @@ using UnityEngine;
 public sealed class AuthoredEncounter : MonoBehaviour, IRunStateParticipant
 {
     [SerializeField] private BoxCollider entryVolume;
+    [Tooltip("Disable for encounters activated explicitly by a mission or chest action.")]
+    [SerializeField] private bool activateOnEntry = true;
     [Tooltip("Scene-authored, initially inactive enemies with stable RunWorldObject identities.")]
     [SerializeField] private RunWorldObject[] enemies = Array.Empty<RunWorldObject>();
     [Header("Optional activation actions")]
@@ -44,7 +46,7 @@ public sealed class AuthoredEncounter : MonoBehaviour, IRunStateParticipant
 
     public bool TryActivate(PlayerCharacter player)
     {
-        if (triggered || !isActiveAndEnabled || player == null || !player.isActiveAndEnabled) return false;
+        if (!activateOnEntry || triggered || !isActiveAndEnabled || player == null || !player.isActiveAndEnabled) return false;
         var run = ActiveRunController.Instance;
         if (run == null || !run.IsReady || run.gameObject != player.gameObject) return false;
         if (player.GetComponent<PlayerHealth>().IsDead || player.GetComponent<GameplaySuspensionController>().IsSuspended) return false;
@@ -53,14 +55,27 @@ public sealed class AuthoredEncounter : MonoBehaviour, IRunStateParticipant
         Vector3 half = entryVolume.size * .5f;
         if (Mathf.Abs(local.x) > half.x || Mathf.Abs(local.y) > half.y || Mathf.Abs(local.z) > half.z) return false;
 
+        return ActivateMembers(player, true);
+    }
+
+    // Explicit owners activate the authored positions without attracting distant guards to Amy.
+    public bool Activate()
+    {
+        var run = ActiveRunController.Instance;
+        if (triggered || !isActiveAndEnabled || run == null || !run.IsReady) return false;
+        return ActivateMembers(run.GetComponent<PlayerCharacter>(), false);
+    }
+
+    private bool ActivateMembers(PlayerCharacter player, bool investigatePlayer)
+    {
         triggered = true;
         foreach (var enemy in enemies)
         {
             if (enemy == null || enemy.IsRemoved) continue;
             enemy.gameObject.SetActive(true);
-            enemy.GetComponent<EnemyBrain>().InvestigatePosition(player.transform.position);
+            if (investigatePlayer) enemy.GetComponent<EnemyBrain>().InvestigatePosition(player.transform.position);
         }
-        run.MarkDirty();
+        ActiveRunController.Instance.MarkDirty();
         onActivated.Execute(player);
         return true;
     }

@@ -16,7 +16,7 @@ public sealed class AuthoredEncounterTests
         var scene = EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
         try
         {
-            var encounter = Object.FindAnyObjectByType<AuthoredEncounter>();
+            var encounter = Object.FindObjectsByType<AuthoredEncounter>().Single(e=>e.name=="Encounter01_FirstMelee");
             Assert.That(encounter, Is.Not.Null);
             Assert.That(encounter.Enemies.Count, Is.EqualTo(2));
             Assert.That(encounter.Enemies.Select(e => e.Id).Distinct().Count(), Is.EqualTo(2));
@@ -52,7 +52,7 @@ public sealed class AuthoredEncounterTests
 public sealed class AuthoredEncounterPlayTests
 {
     const string Key = "AuthoredEncounterTests.Saves";
-    static AuthoredEncounter Encounter => Object.FindAnyObjectByType<AuthoredEncounter>();
+    static AuthoredEncounter Encounter => Object.FindObjectsByType<AuthoredEncounter>().Single(e=>e.name=="Encounter01_FirstMelee");
     static ActiveRunController Run => ActiveRunController.Instance;
 
     [UnitySetUp] public IEnumerator Setup()
@@ -216,7 +216,7 @@ public sealed class AuthoredEncounterPlayTests
         save.world=save.world.OrderBy(w=>w.id==id?0:1).ToList(); RunSaveService.ActiveStore.Write(save);
         Run.PrepareToLeave(); Assert.That(RunSaveService.Continue(),Is.True,RunSaveService.LastError);
         yield return EditorTestFrame.Next(); yield return WaitReady();
-        Assert.That(Object.FindObjectsByType<AuthoredEncounter>(FindObjectsInactive.Include).Length,Is.EqualTo(1));
+        Assert.That(Object.FindObjectsByType<AuthoredEncounter>(FindObjectsInactive.Include).Count(e=>e.name=="Encounter01_FirstMelee"),Is.EqualTo(1));
         Assert.That(Encounter.Enemies.Count,Is.EqualTo(2));
         Assert.That(Object.FindAnyObjectByType<InGameMenuController>().IsOpen,Is.True);
     }

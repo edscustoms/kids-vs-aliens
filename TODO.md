@@ -26,9 +26,12 @@ IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
 Reusable encounter/trigger prefabs, nonblocking dialogue/CC and persisted objective
 state are available. ConstructionSite Encounter01 uses the reusable prefab; the fresh
 opening objective is FIND A WAY OUT. Authoring workflow: Docs/GameplayAuthoring.md.
-The first excavator repair mission skeleton is implemented: collect three normal
-items, return/pay, existing swing, persisted clear exit. Repair-area ambushes are not
-implemented. Device pickup readability and subtitle/voice acceptance remain pending.
+The excavator repair mission supports collection, return/payment, the existing swing
+and persisted clear exit. The 2 Oct ConstructionSite combat pass adds four authored
+ranged encounters (12 aliens), the Route 5 Rifle/+6 Plasma chest and guaranteed ammo
+for the requested miss budget. The original two-melee encounter is preserved. See
+Docs/GameplayAuthoring.md for activation owners and evidence. Device combat/pickup
+readability and subtitle/voice acceptance remain pending.
 
 
 IMPLEMENTED — Combat Economy V1 — 26 Sep 2026

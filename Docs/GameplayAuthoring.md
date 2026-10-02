@@ -19,6 +19,12 @@ intentionally rejects guns. Equipment, scavenging and loot remain profile-owned.
 Optional activation actions default to None. Completion remains derived from the
 members' existing enemy/world state; no objective or reward is automatically added.
 
+For a mission/chest-owned encounter, disable **Activate On Entry** and its entry
+collider. The owner calls `Activate()` once; distant guards remain at their authored
+positions until normal perception detects Amy. Trigger entry retains its existing
+investigate-player behavior. Restoration assigns the encounter flag only; each
+enemy restores its own active/dead state, so neither world pass reactivates members.
+
 `Encounter01_FirstMelee` is now an instance of this prefab. Its working trigger,
 two melee/unarmed members, authored poses, tuning and three stable world identities
 are preserved. No encounter-specific combat or spawning code was added.
@@ -28,8 +34,9 @@ are preserved. No encounter-specific combat or spawning code was added.
 `_World/ExcavatorRepairMission` owns this level's requirements through
 `ExcavatorRepairMission`. Its `ExcavatorArea_StartAndReturn` child is an instance of
 `PF_GameplayTrigger`, configured Repeatable with the explicit Excavator Repair action.
-Move/resize its BoxCollider to author the visit area. Its ground origin is
-`(29, 0.0003, 37)`, with a `(6, 3, 4)` box centered one metre above it.
+Move/resize its BoxCollider to author the visit area. Its collider center is
+intentionally offset from the root: approximately `(22.11, 1, 46.18)` in world space,
+with size `(6.84, 3, 7.03)`. Use the actual volume when checking entry/return.
 
 The three normal pickup prefab instances start inactive with stable scene identities:
 
@@ -39,7 +46,7 @@ The three normal pickup prefab instances start inactive with stable scene identi
 | Industrial Fuse | (-21.4900, 0.0408, -37.2229) | Electrical building west side |
 | Hydraulic Fluid | (24.8762, 0.2400, -30.4627) | Office floor, clear of the existing table |
 
-The first visit enables them and plays `CS_Excavator_RepairStart` through Amy's Girl
+The first visit after acquiring the crash pistol enables them and plays `CS_Excavator_RepairStart` through Amy's Girl
 speaker variant. `CS_FindRepairParts` derives 0–3 distinct requirements from
 `PlayerInventory`; extra copies do not add progress. The two electrical parts unlock
 `CS_Excavator_OfficeClue` once if fluid is still missing. All three complete collection
@@ -65,9 +72,58 @@ strokes with the existing cyan color, avoiding font fallback/material changes.
 
 Focused fixtures: `ExcavatorRepairTests` and `ExcavatorRepairPlayTests`. Device pickup
 readability, dialogue pacing and native background/Continue remain manual checks.
-No ambush, new encounter or generic mission framework is included.
+The current combat authoring below extends the original repair content.
 
-Unity 6000.5.6f1: `ExcavatorRepair-02` passed **14/14** mission, generic-item,
+### ConstructionSite combat pass
+
+`_World/ConstructionSite_Combat` contains the additional authored encounters.
+The original `Encounter01_FirstMelee` and its two melee members are unchanged.
+
+| Encounter | Activation owner / condition | Members |
+| --- | --- | --- |
+| CS_Repair_Route4 | Repair enters Collecting | 2 Pistol |
+| CS_Repair_Electrical | Repair enters Collecting | 2 Pistol |
+| CS_RifleChest_Ambush | Route 5 chest finishes opening, after loot appears | 2 Pistol + 1 Rifle |
+| CS_Excavator_Return | Repair enters ReturnToExcavator with all three parts | 3 Pistol + 2 Rifle |
+
+Repair holds explicit references to its three encounters and requires possession
+of the crash-site pistol before starting. The chest uses `GameplayActions.encounter`
+from `LootChest.onOpened`; restored open state never replays the action. No new
+kill objective or proximity activation is involved in these four fights.
+
+`CS_Crash_FirstPistol` supplies the first gun with its normal full 12-round magazine.
+The old three loose rifle placements were removed so `CS_Route5_RifleChest` supplies
+the first rifle. Its two unique loot prefabs and min/max count of two guarantee one
+Rifle and one six-Plasma pickup. Pistol Handling is beside the crash pickup; Rifle
+Handling is immediately before the chest. Opening requires the pistol and learned
+Rifle Handling, preserving the first-gun order and immediate rifle usability. A
+rejected proximity hold resets for another approach after the requirements are met.
+Canonical scene repair ensures the existing `ProximityInteractor` marker on the
+player root; ordinary chest proximity holds require it.
+
+Guaranteed Plasma: crash pickup **9**, electrical approach **12**, Route 5 chest
+approach **18**, chest **6**. At zero random drops, the first four enemies budget
+40 pistol shots (12 loaded + three reloads = 48, costing 9 Plasma). The next eight
+budget 192 rifle rounds (28 loaded + six reloads = 196, costing 36 Plasma). This
+allows 20% pistol misses and 25% rifle misses with 8/4 rounds left respectively.
+Enemy drops remain the existing 75% chance of 2–4; they are additional margin,
+not a prerequisite. Weapon stats, reload costs and enemy HP are unchanged.
+
+`ConstructionCombatTests` checks content, loadouts, clearance, navigation and wiring.
+`ConstructionCombatPlayTests` exercises physical chest opening, normal pickup/book
+use, inventory reload payment with that miss budget, Save/Continue at activation
+boundaries, partial deaths, completed repair and Hard Restart. Budget damage is
+applied directly in that test; it does not certify human aim or difficulty. Review
+captures are under `Logs/ConstructionCombat` in the isolated test project.
+
+Unity 6000.5.6f1: `ConstructionCombat-Final` passed **16/16 focused tests**, including
+the original melee encounter, repair lifecycle and interaction repair on disposable
+GamePoc/ConstructionSite scenes. No full regression was run. Reviewed captures are
+also copied to the working project's `Logs/ConstructionCombat/CS_*.png`; results are
+in `Logs/RepositoryAuditRemediation/ConstructionCombat-Final-tests.xml`. Human/device
+combat feel and touch aiming remain manual acceptance checks.
+
+Original repair-pass evidence: `ExcavatorRepair-02` passed **14/14** mission, generic-item,
 communication and Active Run checks. `ExcavatorRepair-01` also passed all **9/9**
 excavator/authoring checks; its lone failure was an older pickup fixture checking
 deferred destruction before a frame advanced, fixed with `EditorTestFrame.Next` and

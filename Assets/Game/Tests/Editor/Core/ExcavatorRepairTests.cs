@@ -8,6 +8,7 @@ using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -36,7 +37,8 @@ public sealed class ExcavatorRepairTests
                 Assert.That(Physics.CheckCapsule(p+Vector3.up*.4f,p+Vector3.up*1.6f,.28f,~0,QueryTriggerInteraction.Ignore),Is.False,pickup.name);
                 if(item.name=="HydraulicFluid")
                 {
-                    Assert.That(ground.collider.name,Is.EqualTo("GB_SiteOffice"));
+                    Assert.That(PrefabUtility.GetCorrespondingObjectFromSource(ground.collider),Is.Not.Null);
+                    Assert.That(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(ground.collider)),Is.EqualTo("Assets/Game/Prefabs/Environment/Buildings/PF_ConstructionSite_Office.prefab"));
                     Assert.That(p.x,Is.InRange(23,28)); Assert.That(p.z,Is.InRange(-33,-28));
                 }
                 else { Assert.That(p.x,Is.InRange(-23,-13)); Assert.That(p.z,Is.InRange(-44,-35)); }
@@ -50,6 +52,24 @@ public sealed class ExcavatorRepairTests
             Assert.That(mission.CaptureRunState(),Is.EqualTo(state));
         }
         finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single); }
+    }
+    internal static Vector3 EntryPoint(GameplayTrigger trigger)
+    {
+        // The authored collider center can differ from the trigger object's origin.
+        // Pick clear ground inside the current authored volume, without retuning it.
+        Physics.SyncTransforms();
+        foreach(var volume in trigger.Volumes)
+        {
+            var b=volume.bounds;
+            for(float z=b.min.z+.6f;z<b.max.z-.3f;z+=.8f)
+            for(float x=b.min.x+.6f;x<b.max.x-.3f;x+=.8f)
+            {
+                if(!NavMesh.SamplePosition(new Vector3(x,0,z),out var hit,.5f,NavMesh.AllAreas))continue;
+                var p=hit.position+Vector3.up*.05f;
+                if(trigger.ContainsPoint(p)&&!Physics.CheckCapsule(p+Vector3.up*.4f,p+Vector3.up*1.5f,.3f,~0,QueryTriggerInteraction.Ignore))return p;
+            }
+        }
+        throw new InvalidOperationException("No clear ground inside the authored excavator trigger");
     }
 }
 
@@ -77,6 +97,7 @@ public sealed class ExcavatorRepairPlayTests
         yield return new EnterPlayMode(); Application.runInBackground=true;
         yield return Ready(); Run.GetComponent<BeamTransportController>().CancelTransport();
         Resume(); yield return EditorTestFrame.Next(); Dialogue.Stop();
+        Assert.That(Object.FindObjectsByType<PickupItem>().Single(p=>p.name=="CS_Crash_FirstPistol").TryCollect(Inventory),Is.True);
     }
     [UnityTearDown] public IEnumerator Cleanup()
     {
@@ -200,7 +221,11 @@ public sealed class ExcavatorRepairPlayTests
         Assert.That(Motion.State,Is.EqualTo(ExcavatorMotionState.Moving)); Assert.That(Mission.OwnedPartCount,Is.Zero);
     }
 
-    static IEnumerator EnterArea() { Place(Trigger.transform.position+Vector3.up*.05f); yield return Seconds(.15f); }
+    static IEnumerator EnterArea()
+    {
+        Assert.That(Inventory.GetWeaponState(AssetDatabase.LoadAssetAtPath<WeaponItemData>("Assets/Game/Items/Weapons/PlasmaPistolItem.asset")),Is.Not.Null,"Crash pistol acquired before repair");
+        Place(ExcavatorRepairTests.EntryPoint(Trigger)); yield return Seconds(.15f);
+    }
     static void CaptureCompletion()
     {
         var camera=Camera.main; var target=new RenderTexture(1280,720,24); target.Create();

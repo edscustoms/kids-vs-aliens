@@ -14,7 +14,7 @@ public sealed class AuthoredEncounterEditor : Editor
     {
         DrawDefaultInspector();
         var encounter=(AuthoredEncounter)target;
-        EditorGUILayout.HelpBox("Use BoxCollider > Edit Collider for the trigger. Move dormant enemy children in Scene view. Each member keeps EnemyEquipment and its existing combat profile.",MessageType.Info);
+        EditorGUILayout.HelpBox("Activate On Entry uses the BoxCollider trigger. Disable it for mission/chest activation. Move dormant enemy children in Scene view; each member keeps EnemyEquipment and its combat profile.",MessageType.Info);
         using(new EditorGUI.DisabledScope(Application.isPlaying))
         {
             memberPrefab=(GameObject)EditorGUILayout.ObjectField("Enemy prefab / archetype",memberPrefab,typeof(GameObject),false);

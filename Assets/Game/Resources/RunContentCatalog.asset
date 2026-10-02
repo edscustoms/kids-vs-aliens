@@ -63,6 +63,8 @@ MonoBehaviour:
     asset: {fileID: 11400000, guid: a34bf4ed7ea49ba48874dd5452c46cb8, type: 2}
   - id: a3bf2f3d7a8e6d841ab23094a36293ca
     asset: {fileID: 1049318778344171827, guid: a3bf2f3d7a8e6d841ab23094a36293ca, type: 3}
+  - id: a76b5aca3a0ebbe44b697601b1a5f64e
+    asset: {fileID: 6558525579276001570, guid: a76b5aca3a0ebbe44b697601b1a5f64e, type: 3}
   - id: a83f5a0e4cb792b46bf779932755bbcf
     asset: {fileID: 11400000, guid: a83f5a0e4cb792b46bf779932755bbcf, type: 2}
   - id: a98acee3ca77fe9409a4fe4b82a9ec30

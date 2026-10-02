@@ -37,10 +37,11 @@ namespace KidsVsAliens.Interaction
             if (chest == null)
                 return;
 
-            chest.Open(
+            if (!chest.TryOpen(
                 interactor != null
                     ? interactor.transform
-                    : null);
+                    : null) && !chest.IsOpen && !chest.IsOpening)
+                trigger.ResetTrigger();
         }
     }
 }

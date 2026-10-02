@@ -71,7 +71,8 @@ namespace KidsVsAliens.Interaction
             ProgressChanged?.Invoke(1f, 0f);
             Completed?.Invoke(activeInteractor);
 
-            if (oneShot)
+            // A consumer can reject completion and reset for another approach.
+            if (oneShot && completed)
                 enabled = false;
         }
 

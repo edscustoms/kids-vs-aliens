@@ -9,6 +9,10 @@ namespace KidsVsAliens.Environment
     [RequireComponent(typeof(ChestVisualRig))]
     public sealed class LootChest : MonoBehaviour
     {
+        [Header("Optional opening requirements and actions")]
+        [SerializeField] private WeaponItemData requiredWeapon;
+        [SerializeField] private SkillData requiredKnowledge;
+        [SerializeField] private GameplayActions onOpened = new();
         [Header("Opening")]
         [SerializeField]
         private float openAngle = -110f;
@@ -139,12 +143,30 @@ namespace KidsVsAliens.Environment
 
         public void Open(Transform opener)
         {
+            TryOpen(opener);
+        }
+
+        public bool TryOpen(Transform opener)
+        {
             if (!enabled || isOpen || isOpening)
             {
-                return;
+                return false;
+            }
+
+            var inventory = opener != null ? opener.GetComponentInParent<PlayerInventory>() : null;
+            if (requiredWeapon != null && (inventory == null || inventory.GetWeaponState(requiredWeapon) == null))
+            {
+                RunSaveService.Notify("Find " + requiredWeapon.itemName + " before opening this chest.");
+                return false;
+            }
+            if (requiredKnowledge != null && (inventory == null || !inventory.GetComponent<PlayerSkillState>().HasSkill(requiredKnowledge)))
+            {
+                RunSaveService.Notify("Learn " + requiredKnowledge.DisplayName + " before opening this chest.");
+                return false;
             }
 
             StartCoroutine(OpenRoutine(opener));
+            return true;
         }
 
         private IEnumerator OpenRoutine(Transform opener)
@@ -176,6 +198,8 @@ namespace KidsVsAliens.Environment
             isOpen = true;
 
             SpawnLoot(opener);
+            // A completed opening owns this action. RestoreRunOpen never replays it.
+            onOpened.Execute(opener != null ? opener.GetComponentInParent<PlayerCharacter>() : null);
             ActiveRunController.Instance?.MarkDirty();
         }
 

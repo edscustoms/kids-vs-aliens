@@ -31,7 +31,12 @@ completed/progress records through Active Run. ConstructionSite starts FIND A WA
 only on fresh attempts. Existing system feedback remains separate. See
 Docs/GameplayAuthoring.md. ConstructionSite now has the first excavator repair mission:
 three normal dormant pickups, inventory-derived collection, return/payment, existing
-swing and a deterministic completed Continue endpoint. No repair-area ambush is added.
+swing and a deterministic completed Continue endpoint. The 2 Oct combat follow-up
+adds four explicit encounters with 12 ranged aliens: two activate when repair starts,
+one after the Rifle chest opens, and one when all three parts are collected. The
+original two-melee fight is preserved. The crash pistol, first-Rifle chest and authored
+Plasma support the sequence without depending on random drops; details and focused
+evidence remain in Docs/GameplayAuthoring.md. Bike systems are unchanged by this pass.
 
 CURRENT IMPLEMENTATION OVERRIDE — 26 Sep 2026 — Combat Economy V1
 
