@@ -15,14 +15,14 @@ public sealed class SuspensionHudBinding : MonoBehaviour
     private void OnEnable()
     {
         if (suspension != null)
-            suspension.SuspensionChanged += Apply;
-        Apply(suspension != null && suspension.IsSuspended);
+            suspension.ControlBlockChanged += Apply;
+        Apply(suspension != null && suspension.BlocksControls);
     }
 
     private void OnDisable()
     {
         if (suspension != null)
-            suspension.SuspensionChanged -= Apply;
+            suspension.ControlBlockChanged -= Apply;
     }
 
     private void Apply(bool paused)

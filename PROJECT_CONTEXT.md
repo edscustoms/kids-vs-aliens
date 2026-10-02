@@ -7,6 +7,21 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE - 2 Oct 2026 - Alien plasma bike V1
+
+ConstructionSite has ten validated atmospheric routes with a three-bike pool and one
+rideable test bike under BikeRide_Test. Both use the same original Blender/FBX visual.
+The rideable owner provides hover physics, charged Jump, Run turbo and safe contextual
+mount/dismount through existing player input, animation, suspension and camera owners.
+Active Run restores the last safe grounded bike pose and Amy on foot beside it, paused.
+Authoring, initial tuning and focused evidence are in Docs/GameplayAuthoring.md.
+The follow-up authors a 70/20/10 low/medium/high route mix and radial mounting with
+six approaches, selecting the nearest clear walk around either end of the hull.
+Final V1 polish adds rideable-only bike/rider lean and control steering with Inspector
+tuning. Existing physics, flybys and saved state remain unchanged. Bike V1 is complete.
+The bike-focused level, bike combat, final interaction animation and device acceptance
+remain future work.
+
 CURRENT IMPLEMENTATION OVERRIDE ? 27 Sep 2026 ? Gameplay authoring V1
 
 PF_AuthoredEncounter and PF_GameplayTrigger provide reusable scene authoring on the

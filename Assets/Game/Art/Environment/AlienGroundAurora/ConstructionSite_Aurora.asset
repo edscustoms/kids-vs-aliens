@@ -15,253 +15,253 @@ MonoBehaviour:
   duration: 96
   poolSize: 14
   events:
-  - position: {x: 15.603233, y: 0.07024414, z: 6.720478}
-    rotation: {x: 0, y: 0.7183226, z: 0, w: 0.6957102}
-    dimensions: {x: 11.2208395, y: 7.2436237}
-    startTime: 0.6992874
-    lifetime: 8.9641
-    fadeIn: 2.6083713
-    fadeOut: 3.597754
-    motionSpeed: 0.3932579
-    phase: 0.17572589
-    intensity: 0.9809746
-    footprint: {x: 0.4, y: 0.85, z: 1.5595121, w: -2.7744408}
+  - position: {x: 18.169762, y: 0.07024414, z: 7.5920753}
+    rotation: {x: 0, y: 0.9790919, z: 0, w: -0.20341843}
+    dimensions: {x: 9.111201, y: 5.236476}
+    startTime: 2.4327545
+    lifetime: 15.315017
+    fadeIn: 3.3432384
+    fadeOut: 3.6463609
+    motionSpeed: 0.35561138
+    phase: 5.4313345
+    intensity: 1.20286
+    footprint: {x: 0.4, y: 0.85, z: -2.2573018, w: 1.1384304}
     tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
-    poolSlot: 1
-  - position: {x: 17.37011, y: 0.07024414, z: -15.143322}
-    rotation: {x: 0, y: 0.9177238, z: 0, w: -0.39721918}
-    dimensions: {x: 9.775845, y: 7.6319475}
-    startTime: 4.68872
-    lifetime: 14.142067
-    fadeIn: 3.3228154
-    fadeOut: 3.0283983
-    motionSpeed: 0.33413154
-    phase: 3.7016637
-    intensity: 0.8819662
-    footprint: {x: 0.4, y: 0.85, z: 1.8680896, w: -1.6254725}
-    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
-    poolSlot: 0
-  - position: {x: -14.894348, y: 0.07024414, z: -4.924595}
-    rotation: {x: 0, y: 0.7027074, z: 0, w: -0.71147895}
-    dimensions: {x: 10.065415, y: 5.1245103}
-    startTime: 6.0486374
-    lifetime: 12.014538
-    fadeIn: 2.70475
-    fadeOut: 3.5264716
-    motionSpeed: 0.40401343
-    phase: 3.740334
-    intensity: 1.1389945
-    footprint: {x: 0.4, y: 0.85, z: 0.48531675, w: -0.7317136}
-    tint: {r: 0.7, g: 0.16, b: 1.15, a: 0.32}
     poolSlot: 2
-  - position: {x: 8.853043, y: 0.07024414, z: 2.2296448}
-    rotation: {x: 0, y: 0.5390145, z: 0, w: 0.8422965}
-    dimensions: {x: 15.601743, y: 4.83667}
-    startTime: 13.827896
-    lifetime: 13.336584
-    fadeIn: 3.4243398
-    fadeOut: 3.9413562
-    motionSpeed: 0.325519
-    phase: 4.247254
-    intensity: 1.1632824
-    footprint: {x: 0.4, y: 0.85, z: 0.7585981, w: -2.2087908}
-    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
+  - position: {x: 9.3160095, y: 0.07024414, z: 25.741165}
+    rotation: {x: 0, y: 0.4595923, z: 0, w: -0.88813}
+    dimensions: {x: 11.182149, y: 6.676344}
+    startTime: 5.09816
+    lifetime: 18.232138
+    fadeIn: 3.2663465
+    fadeOut: 3.5478096
+    motionSpeed: 0.3782162
+    phase: 4.586111
+    intensity: 1.2231814
+    footprint: {x: 0.4, y: 0.85, z: 1.2843629, w: 2.4311604}
+    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
+    poolSlot: 3
+  - position: {x: 24.861053, y: 0.07024414, z: -41.017345}
+    rotation: {x: 0, y: 0.11150815, z: 0, w: 0.9937635}
+    dimensions: {x: 9.292627, y: 5.01877}
+    startTime: 13.281876
+    lifetime: 11.164075
+    fadeIn: 2.823867
+    fadeOut: 3.8528235
+    motionSpeed: 0.32257092
+    phase: 5.6294775
+    intensity: 1.1173552
+    footprint: {x: 0.4, y: 0.85, z: 1.9898429, w: -0.22303158}
+    tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
+    poolSlot: 5
+  - position: {x: 13.419319, y: 0.07024414, z: -10.824646}
+    rotation: {x: 0, y: 0.14410429, z: 0, w: 0.9895625}
+    dimensions: {x: 10.159898, y: 5.460281}
+    startTime: 16.783031
+    lifetime: 17.772268
+    fadeIn: 3.2356148
+    fadeOut: 3.4730082
+    motionSpeed: 0.37940675
+    phase: 2.1462367
+    intensity: 0.8803453
+    footprint: {x: 0.4, y: 0.85, z: 2.1035695, w: 2.61339}
+    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
+    poolSlot: 1
+  - position: {x: 7.6838264, y: 0.07024414, z: 5.8508987}
+    rotation: {x: 0, y: 0.27140749, z: 0, w: 0.9624645}
+    dimensions: {x: 11.175948, y: 6.215773}
+    startTime: 27.47313
+    lifetime: 11.772873
+    fadeIn: 2.5863316
+    fadeOut: 3.0416226
+    motionSpeed: 0.3184904
+    phase: 4.7243323
+    intensity: 0.8814386
+    footprint: {x: 0.4, y: 0.85, z: 1.0782816, w: 2.935662}
+    tint: {r: 0.7, g: 0.16, b: 1.15, a: 0.32}
+    poolSlot: 4
+  - position: {x: 30.70784, y: 0.07024414, z: -41.52102}
+    rotation: {x: 0, y: 0.998778, z: 0, w: -0.04942255}
+    dimensions: {x: 9.189622, y: 7.8339534}
+    startTime: 29.024513
+    lifetime: 10.166921
+    fadeIn: 3.2628095
+    fadeOut: 3.2118855
+    motionSpeed: 0.41576603
+    phase: 0.3329393
+    intensity: 1.0833533
+    footprint: {x: 0.4, y: 0.85, z: -1.3413684, w: -1.9540529}
+    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
+    poolSlot: 6
+  - position: {x: 31.636078, y: 0.07024414, z: 11.60186}
+    rotation: {x: 0, y: 0.7330815, z: 0, w: 0.6801408}
+    dimensions: {x: 10.466444, y: 7.5352545}
+    startTime: 31.462463
+    lifetime: 14.265949
+    fadeIn: 3.094326
+    fadeOut: 3.8378434
+    motionSpeed: 0.38923976
+    phase: 1.8852462
+    intensity: 1.1420194
+    footprint: {x: 0.4, y: 0.85, z: 0.8072748, w: 0.68055224}
+    tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
+    poolSlot: 2
+  - position: {x: 21.956917, y: 0.07024414, z: 26.561562}
+    rotation: {x: 0, y: 0.74389, z: 0, w: -0.6683021}
+    dimensions: {x: 15.787306, y: 5.3363075}
+    startTime: 33.403427
+    lifetime: 10.07815
+    fadeIn: 2.6417406
+    fadeOut: 3.8862033
+    motionSpeed: 0.41027632
+    phase: 2.4672585
+    intensity: 1.0588092
+    footprint: {x: 0.4, y: 0.85, z: 0.4407488, w: -2.5923603}
+    tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
+    poolSlot: 0
+  - position: {x: 22.295593, y: 0.07024414, z: -0.5148392}
+    rotation: {x: 0, y: 0.25805745, z: 0, w: 0.9661296}
+    dimensions: {x: 11.375349, y: 6.598541}
+    startTime: 42.63131
+    lifetime: 12.960831
+    fadeIn: 2.9818032
+    fadeOut: 3.393774
+    motionSpeed: 0.43417054
+    phase: 4.842142
+    intensity: 0.97824746
+    footprint: {x: 0.4, y: 0.85, z: 0.37502038, w: -2.547047}
+    tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
+    poolSlot: 3
+  - position: {x: 14.68055, y: 0.07024414, z: 27.834183}
+    rotation: {x: 0, y: 0.37047917, z: 0, w: -0.92884076}
+    dimensions: {x: 11.202327, y: 7.1590204}
+    startTime: 49.743587
+    lifetime: 14.840054
+    fadeIn: 2.9622629
+    fadeOut: 3.7836027
+    motionSpeed: 0.38053417
+    phase: 0.478334
+    intensity: 0.9386721
+    footprint: {x: 0.4, y: 0.85, z: -1.6102942, w: -0.063586414}
+    tint: {r: 0.7, g: 0.16, b: 1.15, a: 0.32}
     poolSlot: 1
   - position: {x: 29.097305, y: 0.07024414, z: -43.159187}
     rotation: {x: 0, y: 0.08801754, z: 0, w: 0.9961189}
     dimensions: {x: 9.353399, y: 4.653713}
-    startTime: 14.623619
-    lifetime: 19.754927
-    fadeIn: 3.4017713
-    fadeOut: 3.417872
-    motionSpeed: 0.31939894
-    phase: 2.3934753
-    intensity: 1.0537682
-    footprint: {x: 0.4, y: 0.85, z: -1.8936327, w: 1.7083658}
-    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
-    poolSlot: 3
-  - position: {x: 12.869881, y: 0.07024414, z: -15.787365}
-    rotation: {x: 0, y: 0.17225264, z: 0, w: 0.9850528}
-    dimensions: {x: 10.471247, y: 6.3499484}
-    startTime: 23.003593
-    lifetime: 11.177074
-    fadeIn: 2.5592496
-    fadeOut: 3.9357054
-    motionSpeed: 0.37179598
-    phase: 5.0497975
-    intensity: 1.1811558
-    footprint: {x: 0.4, y: 0.85, z: 2.3296444, w: -2.8214371}
-    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
-    poolSlot: 0
-  - position: {x: -15.580715, y: 0.07024414, z: 1.0339012}
-    rotation: {x: 0, y: 0.6125126, z: 0, w: 0.7904608}
-    dimensions: {x: 9.669641, y: 4.5268154}
-    startTime: 23.477455
-    lifetime: 13.480485
-    fadeIn: 3.0862954
-    fadeOut: 3.471762
-    motionSpeed: 0.40108484
-    phase: 5.692005
-    intensity: 0.9945179
-    footprint: {x: 0.4, y: 0.85, z: -1.6065049, w: 1.5370066}
-    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
-    poolSlot: 2
-  - position: {x: 5.4951515, y: 0.07024414, z: 6.906128}
-    rotation: {x: 0, y: 0.52500516, z: 0, w: -0.8510991}
-    dimensions: {x: 9.969903, y: 5.9940004}
-    startTime: 32.89115
-    lifetime: 14.913601
-    fadeIn: 2.603336
-    fadeOut: 3.7676544
-    motionSpeed: 0.3840753
-    phase: 3.6324492
-    intensity: 1.283227
-    footprint: {x: 0.4, y: 0.85, z: -2.6389413, w: 0.0153307915}
-    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
-    poolSlot: 1
-  - position: {x: 13.6594925, y: 0.07024414, z: -4.337002}
-    rotation: {x: 0, y: 0.15888534, z: 0, w: -0.98729706}
-    dimensions: {x: 9.241843, y: 4.5661607}
-    startTime: 38.685238
-    lifetime: 17.126366
-    fadeIn: 2.6169965
-    fadeOut: 3.374292
-    motionSpeed: 0.41497976
-    phase: 4.5206203
-    intensity: 1.1880273
-    footprint: {x: 0.4, y: 0.85, z: -1.4355364, w: 1.0022489}
-    tint: {r: 0.7, g: 0.16, b: 1.15, a: 0.32}
-    poolSlot: 0
-  - position: {x: 21.732147, y: 0.07024414, z: 11.08963}
-    rotation: {x: 0, y: 0.72272193, z: 0, w: 0.6911389}
-    dimensions: {x: 13.761093, y: 5.3386083}
-    startTime: 40.754776
-    lifetime: 17.106495
-    fadeIn: 3.3330603
-    fadeOut: 3.062643
-    motionSpeed: 0.33377594
-    phase: 5.037035
-    intensity: 1.1160301
-    footprint: {x: 0.4, y: 0.85, z: 2.6072896, w: 1.5266962}
-    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
-    poolSlot: 3
-  - position: {x: -15.450653, y: 0.07024414, z: -2.460949}
-    rotation: {x: 0, y: 0.7611877, z: 0, w: -0.6485317}
-    dimensions: {x: 13.867051, y: 4.800608}
-    startTime: 42.942093
-    lifetime: 9.472839
-    fadeIn: 3.1488447
-    fadeOut: 3.3380444
-    motionSpeed: 0.37043914
-    phase: 3.1178906
-    intensity: 1.2706414
-    footprint: {x: 0.4, y: 0.85, z: 1.6203636, w: -0.6348971}
-    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
-    poolSlot: 2
-  - position: {x: 21.145264, y: 0.07024414, z: -17.861809}
-    rotation: {x: 0, y: 0.7714099, z: 0, w: -0.63633853}
-    dimensions: {x: 11.221792, y: 5.5572453}
-    startTime: 55.161335
-    lifetime: 13.532672
-    fadeIn: 2.6349509
-    fadeOut: 3.4533968
-    motionSpeed: 0.34384394
-    phase: 3.5732534
-    intensity: 1.2998893
-    footprint: {x: 0.4, y: 0.85, z: -0.036700845, w: -0.9734021}
+    startTime: 53.981033
+    lifetime: 10.518214
+    fadeIn: 3.3531694
+    fadeOut: 3.3307142
+    motionSpeed: 0.36457247
+    phase: 4.862054
+    intensity: 1.1107433
+    footprint: {x: 0.4, y: 0.85, z: 1.8627115, w: 1.6064769}
     tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
-    poolSlot: 1
-  - position: {x: 9.859356, y: 0.07024414, z: 10.073727}
-    rotation: {x: 0, y: 0.99880725, z: 0, w: -0.048826747}
-    dimensions: {x: 13.108766, y: 7.907588}
-    startTime: 59.355503
-    lifetime: 14.892649
-    fadeIn: 3.226533
-    fadeOut: 3.3285239
-    motionSpeed: 0.30431527
-    phase: 0.68052745
-    intensity: 1.0274758
-    footprint: {x: 0.4, y: 0.85, z: 2.5457926, w: -0.10614842}
-    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
+    poolSlot: 4
+  - position: {x: 21.44558, y: 0.07024414, z: 6.367855}
+    rotation: {x: 0, y: 0.7354682, z: 0, w: 0.67755926}
+    dimensions: {x: 9.101457, y: 7.7593384}
+    startTime: 56.90503
+    lifetime: 15.253888
+    fadeIn: 3.0588188
+    fadeOut: 3.0877385
+    motionSpeed: 0.31378025
+    phase: 2.3472965
+    intensity: 1.2802477
+    footprint: {x: 0.4, y: 0.85, z: 0.77608323, w: -0.29464084}
+    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
     poolSlot: 0
   - position: {x: -14.863426, y: 0.07024414, z: -7.207466}
     rotation: {x: 0, y: 0.70511955, z: 0, w: 0.70908844}
     dimensions: {x: 15.751993, y: 4.6004295}
-    startTime: 60.391075
-    lifetime: 18.70826
-    fadeIn: 2.8750322
-    fadeOut: 3.4158037
-    motionSpeed: 0.39668703
-    phase: 2.058713
-    intensity: 0.9957022
-    footprint: {x: 0.4, y: 0.85, z: -1.7830291, w: -0.51944035}
-    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
-    poolSlot: 2
-  - position: {x: 22.914368, y: 0.07024414, z: -3.2803993}
-    rotation: {x: 0, y: 0.54080766, z: 0, w: -0.8411463}
-    dimensions: {x: 9.840226, y: 5.2404475}
-    startTime: 64.71237
-    lifetime: 16.483194
-    fadeIn: 2.6325638
-    fadeOut: 3.4308634
-    motionSpeed: 0.37449223
-    phase: 3.7989235
-    intensity: 0.9269277
-    footprint: {x: 0.4, y: 0.85, z: 0.008536577, w: -2.6930304}
-    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
-    poolSlot: 3
-  - position: {x: 17.182808, y: 0.07024414, z: 19.600357}
-    rotation: {x: 0, y: 0.02314544, z: 0, w: 0.99973214}
-    dimensions: {x: 10.176837, y: 4.853189}
-    startTime: 74.752625
-    lifetime: 16.769241
-    fadeIn: 3.4880083
-    fadeOut: 3.2689693
-    motionSpeed: 0.41624215
-    phase: 2.855653
-    intensity: 0.98055214
-    footprint: {x: 0.4, y: 0.85, z: -0.42233992, w: -2.454552}
-    tint: {r: 0.7, g: 0.16, b: 1.15, a: 0.32}
-    poolSlot: 1
-  - position: {x: 27.037766, y: 0.07024414, z: -43.408943}
-    rotation: {x: 0, y: 0.026365966, z: 0, w: 0.9996524}
-    dimensions: {x: 9.417849, y: 5.2576637}
-    startTime: 80.07691
-    lifetime: 14.740541
-    fadeIn: 3.1919942
-    fadeOut: 3.5018582
-    motionSpeed: 0.41223732
-    phase: 4.6253533
-    intensity: 1.2240102
-    footprint: {x: 0.4, y: 0.85, z: -2.2260714, w: -2.3680654}
+    startTime: 69.66393
+    lifetime: 10.954403
+    fadeIn: 2.8017795
+    fadeOut: 3.217794
+    motionSpeed: 0.40879834
+    phase: 5.518646
+    intensity: 1.29937
+    footprint: {x: 0.4, y: 0.85, z: -0.19824117, w: -1.6169702}
     tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
-    poolSlot: 0
-  - position: {x: 8.675519, y: 0.08224656, z: -18.710485}
-    rotation: {x: -0.0040571364, y: 0.12323446, z: -0.0009723233, w: -0.9923688}
-    dimensions: {x: 13.919226, y: 4.5073214}
-    startTime: 84.294716
-    lifetime: 12.716045
-    fadeIn: 2.8615754
-    fadeOut: 3.1371012
-    motionSpeed: 0.41822127
-    phase: 0.9564893
-    intensity: 1.2928418
-    footprint: {x: 0.4, y: 0.85, z: 1.4005616, w: 2.8090286}
+    poolSlot: 5
+  - position: {x: 12.071388, y: 0.07024414, z: 27.102287}
+    rotation: {x: 0, y: 0.99769944, z: 0, w: -0.06779216}
+    dimensions: {x: 14.798914, y: 6.469208}
+    startTime: 70.01133
+    lifetime: 11.14854
+    fadeIn: 2.80615
+    fadeOut: 3.1670842
+    motionSpeed: 0.4000936
+    phase: 0.37405825
+    intensity: 1.0178299
+    footprint: {x: 0.4, y: 0.85, z: -0.9901652, w: 1.3469303}
     tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
     poolSlot: 2
-  - position: {x: 29.50245, y: 0.083473906, z: -0.782983}
-    rotation: {x: -0.0025025662, y: 0.99988586, z: 0.004261685, w: -0.014277081}
-    dimensions: {x: 9.453318, y: 7.6163955}
-    startTime: 88.66625
-    lifetime: 14.776408
-    fadeIn: 3.3565872
-    fadeOut: 3.241336
-    motionSpeed: 0.4169609
-    phase: 5.2459416
-    intensity: 1.2544074
-    footprint: {x: 0.4, y: 0.85, z: -1.4008045, w: -1.1663222}
+  - position: {x: 8.173332, y: 0.07024414, z: 8.043236}
+    rotation: {x: 0, y: 0.5207556, z: 0, w: 0.8537058}
+    dimensions: {x: 9.239267, y: 5.7243614}
+    startTime: 71.39642
+    lifetime: 10.166694
+    fadeIn: 2.8056817
+    fadeOut: 3.6161854
+    motionSpeed: 0.34434786
+    phase: 0.880557
+    intensity: 0.88950765
+    footprint: {x: 0.4, y: 0.85, z: 1.3889344, w: 1.7860444}
     tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
     poolSlot: 3
-  bakeSummary: "Assets/Game/Scenes/ConstructionSite.unity\nSeed 73129; 83 validated
-    locations; 19 events / 96 s.\nActive 1\u20134, mean 2.86; fixed pool 14. Terrain/clearance
+  - position: {x: 27.758507, y: 0.07024414, z: 2.8461227}
+    rotation: {x: 0, y: 0.93143946, z: 0, w: 0.36389628}
+    dimensions: {x: 9.3886595, y: 7.332196}
+    startTime: 77.515564
+    lifetime: 17.213207
+    fadeIn: 2.7915535
+    fadeOut: 3.1012683
+    motionSpeed: 0.3976501
+    phase: 2.772179
+    intensity: 1.0322253
+    footprint: {x: 0.4, y: 0.85, z: 1.4206799, w: 1.4435302}
+    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
+    poolSlot: 6
+  - position: {x: 18.398605, y: 0.07024414, z: -16.27538}
+    rotation: {x: 0, y: 0.6163665, z: 0, w: 0.78745943}
+    dimensions: {x: 13.99538, y: 5.0294085}
+    startTime: 78.901505
+    lifetime: 16.304394
+    fadeIn: 3.1889176
+    fadeOut: 3.045672
+    motionSpeed: 0.37083736
+    phase: 5.868033
+    intensity: 0.8799077
+    footprint: {x: 0.4, y: 0.85, z: 0.67098963, w: 1.6996186}
+    tint: {r: 0.08, g: 1.2, b: 1.05, a: 0.42}
+    poolSlot: 1
+  - position: {x: 29.960213, y: 0.07024414, z: -39.5705}
+    rotation: {x: 0, y: 0.0855376, z: 0, w: -0.99633497}
+    dimensions: {x: 10.363616, y: 5.9183483}
+    startTime: 85.06549
+    lifetime: 13.620492
+    fadeIn: 3.3181014
+    fadeOut: 3.0735528
+    motionSpeed: 0.34061745
+    phase: 0.011064292
+    intensity: 1.0835001
+    footprint: {x: 0.4, y: 0.85, z: -2.6841342, w: 0.694371}
+    tint: {r: 0.08, g: 1.1, b: 0.72, a: 0.4}
+    poolSlot: 4
+  - position: {x: -15.580715, y: 0.07024414, z: 1.0339012}
+    rotation: {x: 0, y: 0.6125126, z: 0, w: 0.7904608}
+    dimensions: {x: 9.669641, y: 4.5268154}
+    startTime: 91.12246
+    lifetime: 14.688107
+    fadeIn: 3.4854155
+    fadeOut: 3.412617
+    motionSpeed: 0.36207542
+    phase: 5.002081
+    intensity: 0.86383957
+    footprint: {x: 0.4, y: 0.85, z: -0.1346206, w: -0.13038951}
+    tint: {r: 0.14, g: 1.1, b: 1.5, a: 0.4}
+    poolSlot: 0
+  bakeSummary: "Assets/Game/Scenes/ConstructionSite.unity\nSeed 73129; 128 validated
+    locations; 19 events / 96 s.\nActive 1\u20135, mean 2.67; fixed pool 14. Terrain/clearance
     and all variation baked in Editor."

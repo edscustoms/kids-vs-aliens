@@ -10,6 +10,17 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+COMPLETE - Alien plasma bike V1 - 2 Oct 2026
+
+Shared original bike visual, ten validated ConstructionSite flyby routes, pooled
+world-space audio and one reusable rideable test instance are implemented. Existing
+Jump/Run control charged jumping/turbo; safe mount/dismount and Active Run recovery
+use existing owners. See Docs/GameplayAuthoring.md for authoring and tuning.
+Follow-up: lower cleared flybys and radial mounting through six authored approaches.
+Final polish: smooth rideable-only bike/rider lean and visual control steering.
+Next: device touch/handling, sound mix and performance acceptance; replacement mount/
+rider animation art when available. The Bike level and bike combat are separate work.
+
 IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
 
 Reusable encounter/trigger prefabs, nonblocking dialogue/CC and persisted objective

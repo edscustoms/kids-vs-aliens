@@ -11,6 +11,8 @@ public enum SuspensionReason
     BeamTransport,
     ApplicationLifecycle,
     HealingPod,
+    BikeTransition,
+    BikeRiding,
 }
 
 // One instance per gameplay scene/player. Presentation owns leases, never time.
@@ -61,6 +63,9 @@ public sealed class GameplaySuspensionController : MonoBehaviour
         owners.ContainsValue(SuspensionReason.KnowledgePresentation)
         || owners.ContainsValue(SuspensionReason.Modal);
     public event Action<bool> SuspensionChanged;
+    // Riding retains the on-foot lease but permits the existing move/look/jump/run inputs.
+    public bool BlocksControls => IsSuspended && !(owners.Count == 1 && owners.ContainsValue(SuspensionReason.BikeRiding));
+    public event Action<bool> ControlBlockChanged;
 
     private void Awake()
     {
@@ -94,6 +99,7 @@ public sealed class GameplaySuspensionController : MonoBehaviour
             }
         }
         RefreshWorldPause();
+        RefreshBikeInput();
         if (first) SuspensionChanged?.Invoke(true);
         return new Lease(this, id);
     }
@@ -103,6 +109,7 @@ public sealed class GameplaySuspensionController : MonoBehaviour
         if (!owners.Remove(id))
             return;
         RefreshWorldPause();
+        RefreshBikeInput();
         if (!IsSuspended) Restore();
     }
 
@@ -112,6 +119,7 @@ public sealed class GameplaySuspensionController : MonoBehaviour
             return;
         owners.Clear();
         RefreshWorldPause();
+        RefreshBikeInput();
         Restore();
     }
 
@@ -119,7 +127,8 @@ public sealed class GameplaySuspensionController : MonoBehaviour
     {
         bool shouldPause = false;
         foreach (var reason in owners.Values)
-            if (reason != SuspensionReason.BeamTransport && reason != SuspensionReason.HealingPod)
+            if (reason != SuspensionReason.BeamTransport && reason != SuspensionReason.HealingPod
+                && reason != SuspensionReason.BikeTransition && reason != SuspensionReason.BikeRiding)
             { shouldPause = true; break; }
         if (shouldPause == worldPaused) return;
         worldPaused = shouldPause;
@@ -154,6 +163,12 @@ public sealed class GameplaySuspensionController : MonoBehaviour
                     gameplayBehaviours[i].enabled = previousEnabled[i];
         previousEnabled = null;
         SuspensionChanged?.Invoke(false);
+    }
+
+    private void RefreshBikeInput()
+    {
+        if (input != null) input.SetBikeControlsActive(IsSuspended && !BlocksControls && !previousInputBlocked);
+        ControlBlockChanged?.Invoke(BlocksControls);
     }
 
     private void OnDisable() => ReleaseAll();

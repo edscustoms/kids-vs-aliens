@@ -25,6 +25,39 @@ public class PlayerAnimation : MonoBehaviour
     public bool IsFloating => floating;
     private MonoBehaviour authoredMotionOwner;
     private float speedBeforeAuthoredMotion;
+    private RuntimeAnimatorController controllerBeforeRiding;
+    private Transform riderLeanVisual;
+    private Quaternion rotationBeforeRiderLean;
+    public void SetAuthoredRiderLean(MonoBehaviour owner, float degrees)
+    {
+        if (!OwnsAuthoredMotion(owner) || controllerBeforeRiding == null) return;
+        if (Mathf.Abs(degrees) < .001f)
+        {
+            ClearRiderLean();
+            return;
+        }
+        var visual = playerCharacter != null ? playerCharacter.ActiveVisual : null;
+        if (visual == null) return;
+        if (riderLeanVisual != visual.transform)
+        {
+            ClearRiderLean();
+            // CharacterVisual wraps the Animator: rotate presentation, never the player/capsule root.
+            riderLeanVisual = visual.transform;
+            rotationBeforeRiderLean = riderLeanVisual.localRotation;
+        }
+        riderLeanVisual.localRotation = rotationBeforeRiderLean * Quaternion.AngleAxis(degrees, Vector3.forward);
+    }
+    private void ClearRiderLean()
+    {
+        if (riderLeanVisual != null) riderLeanVisual.localRotation = rotationBeforeRiderLean;
+        riderLeanVisual = null;
+    }
+    public void SetAuthoredRiderController(MonoBehaviour owner, RuntimeAnimatorController controller)
+    {
+        if (!OwnsAuthoredMotion(owner) || controller == null || controllerBeforeRiding != null) return;
+        controllerBeforeRiding = animator.runtimeAnimatorController;
+        animator.runtimeAnimatorController = controller;
+    }
     public bool OwnsAuthoredMotion(MonoBehaviour owner) => owner != null && authoredMotionOwner == owner
         && isActiveAndEnabled && animator != null && animator.isActiveAndEnabled;
 
@@ -55,7 +88,10 @@ public class PlayerAnimation : MonoBehaviour
 
     private void ClearAuthoredMotion()
     {
+        ClearRiderLean();
         if (authoredMotionOwner == null) return;
+        if (controllerBeforeRiding != null && animator != null) animator.runtimeAnimatorController = controllerBeforeRiding;
+        controllerBeforeRiding = null;
         if (animator != null) animator.speed = speedBeforeAuthoredMotion;
         authoredMotionOwner = null;
         ClearFloating();
@@ -157,7 +193,7 @@ public class PlayerAnimation : MonoBehaviour
 
     private void Update()
     {
-        if (driver == null || characterController == null)
+        if (driver == null || characterController == null || controllerBeforeRiding != null)
             return;
 
         // A disabled controller can retain its last walking velocity during beam materialization.

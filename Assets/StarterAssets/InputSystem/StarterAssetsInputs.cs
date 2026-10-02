@@ -23,6 +23,21 @@ namespace StarterAssets
         public event Func<bool> ContextualJumpRequested;
 
         public bool GameplayInputBlocked { get; private set; }
+        public bool BikeControlsActive { get; private set; }
+        public bool CanProcessBikeControls => BikeControlsActive && Time.frameCount > blockedThroughFrame;
+        private bool CanProcessMovementControls => CanProcessGameplayInput || CanProcessBikeControls;
+        public void SetBikeControlsActive(bool active)
+        {
+            if (BikeControlsActive == active) return;
+            BikeControlsActive = active;
+            waitMoveNeutral = rawMove.sqrMagnitude > .001f;
+            waitLookNeutral = rawLook.sqrMagnitude > .001f;
+            waitJumpNeutral = rawJump;
+            waitSprintNeutral = rawSprint;
+            move = look = Vector2.zero;
+            jump = sprint = false;
+            blockedThroughFrame = Time.frameCount;
+        }
         private int blockedThroughFrame = -1;
         private bool rawShoot,
             rawJump,
@@ -128,7 +143,7 @@ namespace StarterAssets
             rawMove = newMoveDirection;
             if (newMoveDirection.sqrMagnitude < 0.001f)
                 waitMoveNeutral = false;
-            if (!CanProcessGameplayInput || waitMoveNeutral)
+            if (!CanProcessMovementControls || waitMoveNeutral)
             {
                 move = Vector2.zero;
                 return;
@@ -141,7 +156,7 @@ namespace StarterAssets
             rawLook = newLookDirection;
             if (newLookDirection.sqrMagnitude < 0.001f)
                 waitLookNeutral = false;
-            if (!CanProcessGameplayInput || waitLookNeutral)
+            if (!CanProcessMovementControls || waitLookNeutral)
             {
                 look = Vector2.zero;
                 return;
@@ -155,12 +170,12 @@ namespace StarterAssets
             rawJump = newJumpState;
             if (!newJumpState)
                 waitJumpNeutral = false;
-            if (!CanProcessGameplayInput || waitJumpNeutral)
+            if (!CanProcessMovementControls || waitJumpNeutral)
             {
                 jump = false;
                 return;
             }
-            if (pressed && ContextualJumpRequested?.Invoke() == true)
+            if (pressed && !BikeControlsActive && ContextualJumpRequested?.Invoke() == true)
             {
                 jump = false;
                 waitJumpNeutral = true;
@@ -174,7 +189,7 @@ namespace StarterAssets
             rawSprint = newSprintState;
             if (!newSprintState)
                 waitSprintNeutral = false;
-            if (!CanProcessGameplayInput || waitSprintNeutral)
+            if (!CanProcessMovementControls || waitSprintNeutral)
             {
                 sprint = false;
                 return;

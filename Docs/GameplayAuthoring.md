@@ -79,6 +79,153 @@ completion capture is `Logs/ExcavatorRepair/completed.png`; XML/logs are under
 mission parent link and completion display duration. `git diff --check` passed;
 no full regression was run.
 
+## Alien plasma bikes
+
+The shared source is `D:\assets\Kids VS Aliens\stylized ray gun 3d model\Alien_PlasmaBike.blend`.
+Only the production FBX is under `Assets/Game/Art/Vehicles/Alien`. It has 4,236 triangles
+and four mesh materials. Cyan, violet and magenta variants share geometry and materials;
+property blocks change emission, and two short trails provide the wake. There are no lights.
+The bike-only URP shader uses fixed ambient/facet shading plus HDR emission so the navy
+hull remains readable in this level's dark lighting; it does not receive realtime shadows.
+
+`Assets/Game/Prefabs/Vehicles/PF_AlienBikeVisual` owns cosmetics only. Its two consumers
+are `PF_AlienFlybyBike` (transform-driven, no colliders/AI/targeting) and
+`PF_RideableAlienBike` (one Rigidbody and one primitive collision volume).
+
+`AlienBikeVisualFeedback` lives only on the rideable wrapper. It observes controller
+steering/forward speed and rotates BikeLeanPivot and its SteeringPivot. Defaults are
+8 degrees bike lean, 10 degrees rider lean and 15 degrees control steering, with
+exponential response rates 8/12, 15% lean at rest and full lean influence at 12 m/s.
+These seven values are Inspector tuning; physics, markers and camera remain upright.
+`PlayerBikeRider` requests the rider offset through its existing `PlayerAnimation`
+authored-motion ownership. Only the CharacterVisual wrapper rotates, with cleanup on
+transition, lease loss, disable, character replacement and release; nothing is saved.
+
+The placeholder FBX has joined geometry. `Bike_RideHull` and `Bike_SteeringControl`
+partition its existing triangles for the rideable instance, preserving the neutral
+model/materials. The shared visual prefab, FBX and flyby prefabs keep their original
+mesh. Future art replaces these cosmetic meshes/pivots without changing gameplay.
+
+ConstructionSite's `AlienFlybys/Paths` contains ten cubic routes with named Start,
+Control1, Control2 and End markers. Duplicate a route, edit those markers, then use its
+Inspector **Validate route** button. Assign geometry/environment roots explicitly on
+the controller. Validation conservatively includes renderer bounds as well as solid
+colliders, a 2.25 m enclosing sphere and a continuous-curve sampling guard. It rejects
+colliderless visual obstructions too. **Tools > Vehicles > Raise Selected Flyby Routes
+To Clearance** is an explicit upward correction, never a runtime path search. Revalidate
+after environment edits; build/play scene processing checks the current geometry again.
+Changing a route's markers or clearance invalidates its bake. Runtime uses a compact
+arc-length table and the exact cubic; no per-frame environment queries occur.
+
+Seven routes have low passes (roughly 2.85–6 m world height, with clearance climbs up
+to 10 m), two use medium 7–7.5 m passes, and one retains its 34–37 m high crossing.
+Uniform route selection gives
+a 70/20/10 low/medium/high mix; the high route is primarily audible ambience. The
+low routes are checked from supported ground positions using the unchanged Action
+gameplay camera. The three-instance pool chooses
+13–23 m/s, 9–23 s event delays, reversible directions and three palettes. Single/pair/
+three-bike events have 70/24/6 percent weights; same-route repeats are excluded when
+alternatives exist. Pairs use the same cleared route with staggered starts. Trails remain
+inside its already-cleared corridor. `Alien_Vehicle_Flyby` follows each moving bike in
+3D, with 4/90 m min/max rolloff distances. Doppler remains disabled by AudioService.
+
+For riding, drag the rideable prefab into a configured gameplay scene, use **Snap parked
+bike to ground**, then author the ordered `mountApproaches` array, SeatPoint and both
+dismount markers. Each array entry pairs an approach with a mount point; adjacent
+approaches form the walking perimeter. The prefab has six approaches around the hull
+and two shared left/right mount points; up to eight approaches are supported. The
+3 m horizontal interaction radius is centered on the bike root, visible in its selected
+gizmo. These are player-root poses, not bone sockets. Inspecting the instance assigns
+its stable RunWorldObject identity. Canonical gameplay repair adds/fills PlayerBikeRider
+and its replaceable rider animation controller without retuning existing values.
+The temporary ConstructionSite instance is under `BikeRide_Test`, near (-32, 1.17, -35).
+It has no objective, encounter or excavator-mission hooks.
+
+`PlayerBikeRider` checks direct entries and both directions around that perimeter, then
+chooses the shortest clear walk to a valid mount. Capsule sweeps, supported ground
+samples and the seating arc reject obstructed or unsafe candidates. RIDE appears from
+any side within the radius when a complete safe approach exists. The rider acquires
+BikeTransition while Amy walks through her CharacterController to those markers;
+each next segment is rechecked before walking it. PlayerAnimation observes that real
+walking velocity, then uses the
+authored Humanoid rider controller for the short hop/sit and seated phase. Replacing that
+controller does not require editing bike physics. BikeRiding retains the on-foot lease
+and allows only move/look/jump/run ingestion. Normal shooting, Beam, melee, inventory
+activation and pickups stay unavailable; the capsule is disabled while seated. The
+player root follows SeatPoint before the existing camera updates. Free look still uses
+ThirdPersonController's camera-target method; camera presets/framing are unchanged.
+
+Joystick vertical accelerates/brakes/reverses; horizontal steers. Jump hold charges and
+release jumps; Run hold consumes turbo. The contextual RIDE/DISMOUNT button also accepts
+desktop E. Dismount requires low speed, stable support and a clear side/capsule sweep.
+Neither clear side means denial. Bike meters sit below the resource panel, away from
+the dialogue region and touch controls.
+
+| Starting tuning | Value |
+| --- | --- |
+| Acceleration / normal speed / reverse speed | 12 m/s² / 12 m/s / 4 m/s |
+| Steering / steering fraction at normal max / lateral damping | 100°/s / .45 / 8 |
+| Hover height / spring / damping | .85 m / 70 / 14 |
+| Jump charge cap / min–max vertical launch speed | 1.4 s / 4–9 m/s |
+| Turbo capacity / recharge / drain | 5 / .65 per second / 1 per second |
+| Turbo acceleration / maximum speed | 21 m/s² / 20 m/s |
+| Maximum dismount speed | 1.2 m/s |
+
+Turbo recharges while mounted and grounded, including idle, and never while consumed.
+Exhaustion requires releasing Run before boosting again. Jump cannot repeat in the air.
+Pause/lifecycle blocking cancels charge/turbo and requires neutral input before reuse.
+`AlienBikeAudio` requests Bike_Hover, Bike_JumpCharge, Bike_JumpRelease and Bike_Turbo
+through AudioEmitter/AudioService. These registered SoundEvents reuse starter clips;
+they are placeholders pending subjective listening and device mix acceptance.
+
+The `alien-bike-v1` participant saves the latest stable bike transform with a validated
+side exit and remaining turbo resource. While mounted or transitioning, the existing
+Active Run safe-point reservation saves Amy at that matching exit. Continue assigns the
+grounded bike absolutely in both world passes and restores Amy on foot, paused. It does
+not replay mounting, resume a charge, preserve airborne motion or duplicate the bike.
+Normal on-foot snapshots retain the existing player contract. Long airborne travel can
+therefore return to the last safe grounded location.
+
+Focused coverage belongs to `AlienBikeTests` and `AlienBikePlayTests`, alongside existing
+input/suspension/audio/camera checks. Android/iOS touch feel, native interruption,
+performance and subjective sound/readability remain device acceptance.
+
+Unity 6000.5.6f1: `AlienBike-Final` passed **46/46** focused bike/input/suspension/audio/
+persistence/camera checks. The final lease-loss and missing-environment safeguards plus
+capture review passed **11/11** in `AlienBike-FinalSafety` (the bike subset, not 11 new
+distinct checks). This includes real airborne Save/Continue returning paused, both
+blocked dismount sides, disable during approach, repeated use, held throttle stopping
+against the existing site fence, pooled flybys and repair preservation in both scenes.
+Both runtime and Editor code compiled in Unity; no Full repository regression ran.
+The final diagonal/high/close capture selection passed **1/1** in `AlienBike-CapturesFinal`.
+
+The lower-flyby/radial-mount follow-up passed **13/13** in `AlienBikeFollowup-Final`
+(`AlienBikeTests;AlienBikePlayTests` only). It revalidates all ten routes, observes all
+seven common passes from supported ground in Action view at 23 m/s, clicks RIDE from
+eight directions, checks left/right choice and blocked-side fallback, rejects unsafe
+mount ground, and checks the walking capsule against the hull. Existing ride, jump,
+turbo, collision, dismount and real Save/Continue checks remain passing. Unity compiled
+the runtime and Editor changes; `git diff --check` passed. No Full regression ran.
+
+Final steering presentation polish passed **16/16** in `AlienBikePolish-Final`
+(`AlienBikeTests;AlienBikePlayTests;AlienBikeVisualFeedbackTests`). Unity compiled the
+changes and verified directional/partial steering, smooth neutral return, rider/bike
+agreement, low-speed response, turbo/jump, leaned dismount/lease-loss cleanup and
+leaned Save/Continue. Neutral geometry/material equivalence and repeat-authoring tuning
+preservation also passed. Action-camera neutral/left/right captures are in
+`Logs/AlienBikePolish/review.html`. No Full regression ran. The polish diff is whitespace
+clean; repository-wide checking flags 32 pre-existing lines in the byte-unchanged
+ConstructionSite scene. Device touch feel/performance remain manual acceptance.
+
+Original V1 captures remain in `Logs/AlienBike/review.html`; its elevated Tactical flyby
+views are superseded by the follow-up ground-level Action views in
+`Logs/AlienBikeFollowup/review.html`. The authored sit/hop is V1 art without exact
+hand/foot IK, and the placeholder loop transitions/mix need listening on
+speakers/headphones and devices.
+Tests explicitly finish the scene's independent opening Beam before exercising bikes.
+The earlier capture-only failures concerned review viewpoints, not route clearance or
+ride behavior. XML/logs remain under `Logs/RepositoryAuditRemediation`.
+
 ## Dialogue and objectives
 
 The scene's `GameplayCommunication` root has two independent owners:

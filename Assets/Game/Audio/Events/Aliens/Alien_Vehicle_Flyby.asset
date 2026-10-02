@@ -14,19 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SoundEvent
   displayName: Alien_Vehicle_Flyby
   category: 5
-  description: 'UNUSED candidate: future vehicle flyby, not a stationary loop.'
-  status: 2
+  description: Moving alien bike pass; original starter audio.
+  status: 1
   variants:
   - {fileID: 8300000, guid: ec5a5f0c3faab3546903534cf692d31b, type: 3}
   volume: {x: 0.5, y: 0.6}
   pitch: {x: 0.97, y: 1.03}
   spatial: 1
-  minDistance: 2
-  maxDistance: 35
+  minDistance: 4
+  maxDistance: 90
   mixerGroup: {fileID: -3083220161806503575, guid: 7a7eb7dc85632ec43b4c5d6ec35e83f5, type: 2}
   priority: 128
   maxVoices: 4
   cooldown: 0
   playDuringPause: 0
-  notes: 'STARTER PACK / TEMPORARY TEST AUDIO. UNUSED candidate: future vehicle flyby,
-    not a stationary loop.'
+  notes: V1 placeholder; distance uses the world-space emitter including altitude.

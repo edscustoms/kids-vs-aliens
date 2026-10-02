@@ -113,6 +113,7 @@ public static class GameplaySceneSetup
             RunInterfaceSetup.ConfigureGameplay(player, presentation);
             EnemyCombatantSetup.ConfigureScene(scene);
             AudioSceneSetup.ConfigureScene(player);
+            AlienBikeSetup.ConfigurePlayer(player);
 
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);

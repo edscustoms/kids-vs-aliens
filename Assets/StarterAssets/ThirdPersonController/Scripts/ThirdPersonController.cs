@@ -183,6 +183,9 @@ namespace StarterAssets
             CameraRotation();
         }
 
+        // The bike owns world movement; the existing camera target still owns free look.
+        public void UpdateMountedCamera() => CameraRotation();
+
         public void ResetMotion()
         {
             _speed = _animationBlend = _verticalVelocity = 0f;

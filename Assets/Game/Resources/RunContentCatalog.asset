@@ -87,6 +87,8 @@ MonoBehaviour:
     asset: {fileID: 11400000, guid: c5f316de8d7282740a480ac2e34c4974, type: 2}
   - id: cb8db852db1c8d8428fd01bc9d1cb136
     asset: {fileID: 11400000, guid: cb8db852db1c8d8428fd01bc9d1cb136, type: 2}
+  - id: d54457f9bb791e44eb18065b3efe115c
+    asset: {fileID: 5236890615131883598, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
   - id: d5eae4514a2ecdc4aa8fc2f894f52dbf
     asset: {fileID: 7082485589758950092, guid: d5eae4514a2ecdc4aa8fc2f894f52dbf, type: 3}
   - id: d7093383cb5ff764e942d8c3bdbe6e9a

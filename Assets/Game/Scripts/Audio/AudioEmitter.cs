@@ -9,6 +9,7 @@ public sealed class AudioEmitter : MonoBehaviour
     private AudioSource source;
     private AudioService owner;
     private bool started;
+    private float basePitch = 1, baseVolume = 1;
     public float PlaybackDuration => source != null && source.clip != null ? source.clip.length / Mathf.Max(.01f, Mathf.Abs(source.pitch)) : 0;
 
     private void Awake() { source = GetComponent<AudioSource>(); source.playOnAwake = false; }
@@ -20,7 +21,16 @@ public sealed class AudioEmitter : MonoBehaviour
     {
         if (!isActiveAndEnabled || source == null) return false;
         Stop(); owner = AudioService.Instance;
-        return owner != null && owner.PlayLocal(source, value, looping);
+        bool played = owner != null && owner.PlayLocal(source, value, looping);
+        if (played) { basePitch = source.pitch; baseVolume = source.volume; }
+        return played;
+    }
+    // Continuous semantic intensity, relative to the event's randomized starting gain/pitch.
+    public void SetResponse(float pitchMultiplier, float volumeMultiplier = 1)
+    {
+        if (source == null || owner == null) return;
+        source.pitch = Mathf.Clamp(basePitch * pitchMultiplier, .01f, 3);
+        source.volume = Mathf.Clamp01(baseVolume * volumeMultiplier);
     }
     public void Stop()
     {

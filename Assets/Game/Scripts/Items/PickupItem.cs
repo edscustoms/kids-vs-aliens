@@ -99,6 +99,7 @@ public class PickupItem : MonoBehaviour, IRunStateParticipant
     public bool TryCollect(PlayerInventory inventory)
     {
         if (collected || inventory == null || !isActiveAndEnabled) return false;
+        if (inventory.TryGetComponent<PlayerBikeRider>(out var rider) && rider.IsBusy) return false;
         if (ActiveRunController.Instance != null && !ActiveRunController.Instance.IsReady) return false;
         if (item is CapsuleItemData capsule)
         {
