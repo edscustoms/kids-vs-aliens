@@ -208,8 +208,53 @@ authored Humanoid rider controller for the short hop/sit and seated phase. Repla
 controller does not require editing bike physics. BikeRiding retains the on-foot lease
 and allows only move/look/jump/run ingestion. Normal shooting, Beam, melee, inventory
 activation and pickups stay unavailable; the capsule is disabled while seated. The
-player root follows SeatPoint before the existing camera updates. Free look still uses
-ThirdPersonController's camera-target method; camera presets/framing are unchanged.
+player root follows SeatPoint before the existing camera updates. Mounted look still
+uses ThirdPersonController's existing input and camera-target method.
+
+`GameplayCameraController` owns temporary bike framing on the existing Cinemachine
+rig. It finds the rider through the authored Follow target's player ancestor; normal
+scene repair already supplies this relationship. `PlayerBikeRider` owns the phases,
+and exposes only its transition duration to the camera. Neither bike physics nor the
+saved Action/Tactical/Isometric preference owns or persists camera blend state.
+
+Tune `GameplayCameraProfile.asset > Bike`: distance **4.8 m**, root height **2.5 m**,
+additional downward pitch **4 degrees**, FOV **70**, look height **0.7 m above SeatPoint**,
+forward look-ahead **2.8 m**, and follow damping **0.12 s**. Position/yaw use the stable
+bike root and seat, independently of cosmetic lean. Input-authored look angles exclude
+rotations inherited from walking/mounting; existing desktop look remains available.
+
+The **0.8 s** mount blend starts only after accepted RIDE, during Approaching. A short
+approach caps its remaining blend to the rider's seating phase. The **0.6 s** return
+starts at Dismounting and is capped by that phase so foot framing returns with control.
+The normal preset continues to drive the underlying rig throughout. Bike presentation
+blends its position, orientation and lens after the existing pipeline stages, leaving
+noise, render feedback and occlusion with their existing owners. Isometric uses a
+temporary projection-matrix blend; it releases that matrix at either endpoint and on
+disable. Abort recovery uses unscaled time when the rider is back on foot, including
+death/pause cleanup. Continue restores the usual saved on-foot preset, paused.
+The existing occlusion owner uses its player-relative sample fallback while Amy's
+seated capsule is disabled (disabled collider bounds are empty). While mounted, the
+ten context samples protect the hull between root and seat; the five body samples
+still protect Amy. The low-prop cutoff uses the bike root. On-foot sampling, thresholds,
+fade rules and authoritative colliders are unchanged. ConstructionSite's two pipe
+stacks have CameraOcclusionGroup and live under LevelGeometry for its startup cache;
+reparenting preserves all world poses. No runtime cache rebuild or obstruction owner
+was added.
+
+`BikeCameraTests` covers all three preset round trips, interrupted mounts, disabled
+bike/rider, lease loss, death, paused Continue, stable yaw/look and cosmetic lean,
+plus foreground container/pipe fades. It reuses the existing ride/jump/turbo/collision
+and airborne Continue flows. The fixture removes atmospheric flybys only from its
+transient processed scenes: the unchanged Path_07 currently fails clearance against
+`Fence_Perimeter_Right_22 (8)`, and a processing exception can abort Play Mode setup
+without a failed test result. Completion guards reject that false pass. Production
+route validation remains active; this pass does not repair or retune flybys.
+
+Unity 6000.5.6f1: `BikeCamera-Acceptance` passed **18/18** focused checks
+(`BikeCameraTests;MenuCameraTests;CameraOcclusionSilhouetteTests`), with graphics and
+runtime/Editor compilation. The five transition stages and close-obstruction views
+are in `Logs/BikeCamera/review.html`. `git diff --check` passed. No Full regression
+ran; Android/iOS touch feel, lifecycle and device rendering remain manual acceptance.
 
 Joystick vertical accelerates/brakes/reverses; horizontal steers. Jump hold charges and
 release jumps; Run hold consumes turbo. The contextual RIDE/DISMOUNT button also accepts

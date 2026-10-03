@@ -6587,6 +6587,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 269442573}
+  - component: {fileID: 9300100101}
   m_Layer: 0
   m_Name: SmallPipe_Stack
   m_TagString: Untagged
@@ -6594,6 +6595,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &9300100101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 269442572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13f7cce3c9191e642941db29334aaca0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CameraOcclusionGroup
 --- !u!4 &269442573
 Transform:
   m_ObjectHideFlags: 0
@@ -14697,7 +14710,6 @@ Transform:
   - {fileID: 1509112816}
   - {fileID: 1755551117}
   - {fileID: 260209685}
-  - {fileID: 903321743}
   - {fileID: 1604100962}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -29113,13 +29125,13 @@ Transform:
   m_GameObject: {fileID: 903321742}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.13384, y: 1.71047, z: 0.17962}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1397427628}
   - {fileID: 269442573}
-  m_Father: {fileID: 592447608}
+  m_Father: {fileID: 1757800890}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &904329706
 PrefabInstance:
@@ -39780,6 +39792,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1397427628}
+  - component: {fileID: 9300100100}
   m_Layer: 0
   m_Name: BigPipe_Stack
   m_TagString: Untagged
@@ -39787,6 +39800,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &9300100100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397427627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13f7cce3c9191e642941db29334aaca0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CameraOcclusionGroup
 --- !u!4 &1397427628
 Transform:
   m_ObjectHideFlags: 0
@@ -47882,6 +47907,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8100000000002}
+  - {fileID: 903321743}
   m_Father: {fileID: 592447608}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1757800893

@@ -12,6 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7541f609180855d4f9708945a850de04, type: 3}
   m_Name: GameplayCameraProfile
   m_EditorClassIdentifier: Assembly-CSharp::GameplayCameraProfile
+  bike:
+    distance: 4.8
+    height: 2.5
+    pitch: 4
+    fieldOfView: 70
+    targetHeight: 0.7
+    forwardLookAhead: 2.8
+    followDamping: 0.12
+    mountBlendDuration: 0.8
+    dismountBlendDuration: 0.6
   tactical:
     projection: 2
     fieldOfView: 45

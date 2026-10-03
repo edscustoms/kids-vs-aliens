@@ -107,6 +107,12 @@ public sealed class CameraOcclusionController : MonoBehaviour
     [SerializeField, Range(.75f, 4f)] private float silhouetteWidthPixels = 1.5f;
 
     private CharacterController playerController;
+    private PlayerBikeRider bikeRider;
+    // Keep the ten context rays and low-prop cutoff around the vehicle while seated.
+    // The five body rays still protect Amy; on-foot sampling stays unchanged.
+    private bool HasBikeContext => bikeRider != null && bikeRider.Bike != null
+        && playerController != null && !playerController.enabled;
+    private Vector3 ContextRoot => HasBikeContext ? bikeRider.Bike.transform.position : player.position;
 
     // Collider -> logical occlusion object.
     private readonly Dictionary<Collider, OcclusionTarget> colliderToTarget =
@@ -202,6 +208,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
         if (player != null)
         {
             playerController = player.GetComponent<CharacterController>();
+            bikeRider = player.GetComponent<PlayerBikeRider>();
         }
 
         BuildLevelCache();
@@ -396,12 +403,15 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
     private void BuildSamplePositions()
     {
-        Vector3 playerRoot = player.position;
+        Vector3 playerRoot = ContextRoot;
+        Vector3 ringCenter = HasBikeContext
+            ? Vector3.Lerp(playerRoot, bikeRider.Bike.seatPoint.position, .5f)
+            : playerRoot + Vector3.up * visibilityHeight;
 
         Vector3 center =
-            playerController != null
+            playerController != null && playerController.enabled
                 ? playerController.bounds.center
-                : playerRoot + Vector3.up * visibilityHeight;
+                : ringCenter;
 
         Vector3 cameraForward = gameplayCamera.transform.forward;
 
@@ -424,8 +434,6 @@ public sealed class CameraOcclusionController : MonoBehaviour
         }
 
         cameraRight.Normalize();
-
-        Vector3 ringCenter = playerRoot + Vector3.up * visibilityHeight;
 
         float diagonal = footprintRadius * 0.70710678f;
 
@@ -454,7 +462,9 @@ public sealed class CameraOcclusionController : MonoBehaviour
     {
         Bounds bounds;
 
-        if (playerController != null)
+        // Seated riders disable their capsule; Unity then returns empty world bounds.
+        // Use the existing player-relative fallback without changing the sample rules.
+        if (playerController != null && playerController.enabled)
         {
             bounds = playerController.bounds;
         }
@@ -533,7 +543,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
         targetsHitThisRay.Clear();
 
-        float preserveHeight = player.position.y + preserveBelowHeight;
+        float preserveHeight = ContextRoot.y + preserveBelowHeight;
 
         bool blocked = false;
 

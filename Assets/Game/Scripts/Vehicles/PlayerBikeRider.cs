@@ -51,6 +51,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
     }
     public bool IsDriving => Phase == BikeRidePhase.Riding;
     public bool IsBusy => Phase != BikeRidePhase.OnFoot;
+    public float TransitionDuration => transitionDuration;
     public Vector2 DrivingInput => input != null && input.CanProcessBikeControls ? input.move : Vector2.zero;
     public AlienBikeController NearbyBike
     {

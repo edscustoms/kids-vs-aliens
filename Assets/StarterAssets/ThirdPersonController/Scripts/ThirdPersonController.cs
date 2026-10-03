@@ -186,6 +186,9 @@ namespace StarterAssets
         // The bike owns world movement; the existing camera target still owns free look.
         public void UpdateMountedCamera() => CameraRotation();
 
+        // Input-authored angles exclude rotations inherited from walking/mounting/steering.
+        public Vector2 CameraLookAngles => new Vector2(_cinemachineTargetYaw, _cinemachineTargetPitch);
+
         public void ResetMotion()
         {
             _speed = _animationBlend = _verticalVelocity = 0f;
