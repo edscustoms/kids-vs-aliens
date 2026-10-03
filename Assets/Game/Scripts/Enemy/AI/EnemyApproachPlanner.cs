@@ -106,6 +106,8 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
         if (target == null)
             return false;
 
+        Vector3 navigationTarget = NavigationTarget(target);
+
         Vector3 delta =
             target.position -
             transform.position;
@@ -118,7 +120,7 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
             slotActivationDistance)
         {
             if (NavMesh.SamplePosition(
-                    target.position,
+                    navigationTarget,
                     out NavMeshHit directHit,
                     sampleRadius,
                     NavMesh.AllAreas))
@@ -130,7 +132,7 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
             }
 
             position =
-                target.position;
+                navigationTarget;
 
             return true;
         }
@@ -185,8 +187,21 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
                 angle,
                 0f);
 
+        Vector3 center = NavigationTarget(target);
+        var rider = target.GetComponent<PlayerBikeRider>();
+        if (rider != null && rider.OccupiedBike != null)
+        {
+            var hull = rider.OccupiedBike.GetComponent<Collider>();
+            if (hull != null)
+            {
+                // Approach the occupied hull, rather than requesting a slot inside it.
+                center = hull.ClosestPoint(center + rotation * Vector3.forward * 4);
+                center.y = transform.position.y;
+                radius = Mathf.Max(.1f, radius - (target.GetComponent<CharacterController>()?.radius ?? 0));
+            }
+        }
         Vector3 desired =
-            target.position +
+            center +
             rotation *
             Vector3.forward *
             radius;
@@ -203,6 +218,14 @@ public sealed class EnemyApproachPlanner : MonoBehaviour
 
         position = desired;
         return true;
+    }
+
+    private Vector3 NavigationTarget(Transform target)
+    {
+        var rider = target.GetComponent<PlayerBikeRider>();
+        var point = target.position;
+        if (rider != null && rider.OccupiedBike != null) point.y = transform.position.y;
+        return point;
     }
 
     private static int ClaimSlot(

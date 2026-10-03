@@ -50,4 +50,6 @@ public sealed class BikeCameraFraming
     [Min(.01f)] public float mountBlendDuration = .8f;
     [Tooltip("Capped by the rider's dismount phase so on-foot framing returns with control.")]
     [Min(.01f)] public float dismountBlendDuration = .6f;
+    [Tooltip("Maximum yaw speed during mount/dismount. Large turns can outlast the position/lens blend.")]
+    [Min(1)] public float transitionYawSpeed = 110;
 }

@@ -646,6 +646,7 @@ GameObject:
   - component: {fileID: 5533549417460090765}
   - component: {fileID: 39352823094276349}
   - component: {fileID: 8034706089186492410}
+  - component: {fileID: 8044706089186492410}
   m_Layer: 0
   m_Name: PF_RideableAlienBike
   m_TagString: Untagged
@@ -653,6 +654,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &8044706089186492410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5236890615131883598}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6f407189b7049269886be1f52998020, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  minimumImpactSpeed: 4.5
+  maximumDamageSpeed: 20
+  minimumImpactDamage: 20
+  maximumImpactDamage: 140
+  horizontalKnockback: 9
+  upwardKnockback: 3.8
+  repeatHitCooldown: 0.65
 --- !u!4 &8734190676465584489
 Transform:
   m_ObjectHideFlags: 0

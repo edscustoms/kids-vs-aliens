@@ -115,6 +115,9 @@ public static class GameplaySceneSetup
             AudioSceneSetup.ConfigureScene(player);
             ConfigureInteractions(player);
             AlienBikeSetup.ConfigurePlayer(player);
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var bike in root.GetComponentsInChildren<AlienBikeController>(true))
+                    AlienBikeSetup.ConfigureRideable(bike);
 
             EditorSceneManager.MarkSceneDirty(scene);
             Undo.CollapseUndoOperations(undoGroup);

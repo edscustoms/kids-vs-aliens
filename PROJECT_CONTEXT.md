@@ -19,8 +19,11 @@ The follow-up authors a 70/20/10 low/medium/high route mix and radial mounting w
 six approaches, selecting the nearest clear walk around either end of the hull.
 Final V1 polish adds rideable-only bike/rider lean and control steering with Inspector
 tuning. Existing physics, flybys and saved state remain unchanged. Bike V1 is complete.
-The bike-focused level, bike combat, final interaction animation and device acceptance
-remain future work.
+The focused V1 cleanup adds a separately speed-limited camera transition yaw, repairs
+Path_07 clearance, preserves mounted enemy targeting and routes occupied-hull hits to
+PlayerHealth. AlienBikeImpact handles speed-based rams; EnemyMotor owns temporary
+knockback and its safe ground save endpoint. The bike-focused level, bike shooting,
+final interaction animation and device acceptance remain future work.
 
 CURRENT IMPLEMENTATION OVERRIDE ? 27 Sep 2026 ? Gameplay authoring V1
 

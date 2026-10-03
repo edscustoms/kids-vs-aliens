@@ -14,6 +14,11 @@ public static class AlienBikeSetup
     public const string Prefabs = "Assets/Game/Prefabs/Vehicles";
     public const string PosePath = Art + "/BikeRider.controller";
     private const string Audio = "Assets/Game/Audio/Events/Vehicles";
+    public static void ConfigureRideable(AlienBikeController bike)
+    {
+        if (bike.GetComponent<AlienBikeImpact>() == null)
+            Undo.AddComponent<AlienBikeImpact>(bike.gameObject);
+    }
     public static void ConfigurePlayer(PlayerCharacter player)
     {
         var rider = player.GetComponent<PlayerBikeRider>() ?? Undo.AddComponent<PlayerBikeRider>(player.gameObject);
@@ -175,6 +180,7 @@ public static class AlienBikeSetup
                 collider.center = new(0, .75f, .11f);
                 collider.size = new(1.8f, 1.8f, 3.5f);
                 var controller = root.AddComponent<AlienBikeController>();
+                root.AddComponent<AlienBikeImpact>();
                 var approach = Marker(root.transform, "ApproachPoint", new(-1.45f, -.85f, -.35f));
                 var mount = Marker(root.transform, "MountPoint", new(-1.2f, -.85f, -.35f));
                 CreateMountApproaches(controller, approach, mount);

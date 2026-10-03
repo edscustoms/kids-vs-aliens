@@ -246,13 +246,15 @@ public sealed class EnemyPerception : MonoBehaviour
     private void BuildTargetSamples(
         Transform targetTransform)
     {
+        var rider = targetTransform.GetComponent<PlayerBikeRider>();
+        if (rider != null && rider.TryGetMountedTargetSamples(targetSamples)) return;
         CharacterController controller =
             target == targetTransform
                 ? targetController
                 : targetTransform
                     .GetComponent<CharacterController>();
 
-        if (controller != null)
+        if (controller != null && controller.enabled)
         {
             Bounds bounds =
                 controller.bounds;
@@ -459,7 +461,7 @@ public sealed class EnemyPerception : MonoBehaviour
         return
             hitTransform == targetTransform ||
             hitTransform.IsChildOf(
-                targetTransform);
+                targetTransform) || PlayerBikeRider.IsOccupiedTargetCollider(targetTransform, collider);
     }
 
     private void TryFindCandidate()

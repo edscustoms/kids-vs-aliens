@@ -37,7 +37,8 @@ public struct MeleeContactShape
         for(int i=0;i<count;i++)
         {
             Transform hit=buffer[i].collider.transform;
-            if(hit==attacker || hit.IsChildOf(attacker) || hit==target || hit.IsChildOf(target)) continue;
+            if(hit==attacker || hit.IsChildOf(attacker) || hit==target || hit.IsChildOf(target)
+                || PlayerBikeRider.IsOccupiedTargetCollider(target,buffer[i].collider)) continue;
             return false;
         }
         return true;

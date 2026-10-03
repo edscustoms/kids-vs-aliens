@@ -7,4 +7,5 @@ public enum EnemyMovementLockReason
     HitReaction = 1 << 0,
     Stun = 1 << 1,
     MeleeAttack = 1 << 2,
+    ExternalImpact = 1 << 3,
 }

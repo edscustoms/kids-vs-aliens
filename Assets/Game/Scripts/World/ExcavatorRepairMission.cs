@@ -5,7 +5,7 @@ public enum ExcavatorRepairState { NotStarted, Collecting, ReturnToExcavator, Ru
 
 /// <summary>ConstructionSite's repair requirements; inventory, objectives and machinery retain their own state.</summary>
 [DisallowMultipleComponent, RequireComponent(typeof(RunWorldObject))]
-public sealed class ExcavatorRepairMission : MonoBehaviour, IRunStateParticipant
+public sealed class ExcavatorRepairMission : MonoBehaviour, IRunStateParticipant, IGameplayAction
 {
     [Header("Existing owners")]
     [SerializeField] private PlayerInventory inventory;
@@ -74,6 +74,8 @@ public sealed class ExcavatorRepairMission : MonoBehaviour, IRunStateParticipant
     }
 
     // Called by the authored repeatable GameplayTrigger at the excavator.
+    bool IGameplayAction.TryExecute(PlayerCharacter player) => Visit(player);
+
     public bool Visit(PlayerCharacter player)
     {
         var run = ActiveRunController.Instance;

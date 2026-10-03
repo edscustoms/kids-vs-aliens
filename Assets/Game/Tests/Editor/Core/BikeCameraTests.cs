@@ -7,8 +7,6 @@ using NUnit.Framework;
 using StarterAssets;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -17,7 +15,6 @@ using Object = UnityEngine.Object;
 public sealed class BikeCameraTests
 {
     private const string Key = "BikeCameraTests";
-    internal const string IsolateFlybys = Key + "IsolateFlybys";
     private static void Completed() => SessionState.SetBool(Key + "Completed", true);
     private static PlayerBikeRider Rider => Object.FindAnyObjectByType<PlayerBikeRider>();
     private static AlienBikeController Bike => Object.FindAnyObjectByType<AlienBikeController>();
@@ -28,7 +25,6 @@ public sealed class BikeCameraTests
     {
         SessionState.SetString(Key, Environment.GetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY") ?? "");
         SessionState.SetInt(Key + "Mode", (int)GameplayCameraSettings.Mode);
-        SessionState.SetBool(IsolateFlybys, true);
         SessionState.SetBool(Key + "Completed", false);
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY", Path.GetFullPath("Logs/BikeCamera/Saves-" + Guid.NewGuid().ToString("N")));
         EditorSceneManager.OpenScene("Assets/Game/Scenes/ConstructionSite.unity");
@@ -48,7 +44,110 @@ public sealed class BikeCameraTests
     [UnityTest] public IEnumerator TacticalRoundTrip() { yield return RoundTrip(GameplayCameraMode.Tactical); }
     [UnityTest] public IEnumerator IsometricRoundTripWithoutProjectionCut() { yield return RoundTrip(GameplayCameraMode.Isometric); }
 
-    // Reuse the existing bike acceptance flows within the same guarded, flyby-isolated fixture.
+    [UnityTest] public IEnumerator SmallTransitionYawSettlesWithTheNormalBlend() { yield return CheckYaw(10); }
+    [UnityTest] public IEnumerator QuarterTurnKeepsRiderFramed() { yield return CheckYaw(90); }
+    [UnityTest] public IEnumerator HalfTurnYawOutlastsPositionAndLensWithoutPhaseSnaps() { yield return CheckYaw(180); }
+    [UnityTest] public IEnumerator MovingBikeKeepsRiderFramedDuringBothTransitions() { yield return CheckYaw(180, true); }
+    private static IEnumerator CheckYaw(float angle, bool moving = false)
+    {
+        Bike.Secure();
+        float footYaw = Rig.State.RawOrientation.eulerAngles.y;
+        Bike.Body.rotation = Quaternion.Euler(0, footYaw + angle, 0);
+        Bike.transform.rotation = Bike.Body.rotation;
+        Teleport(Bike.mountApproaches[0].approachPoint.position - Bike.transform.right * .4f + Vector3.up * .1f);
+        yield return Seconds(.2f);
+        var probe = BeginProbe();
+        probe.moveBike = moving ? Bike : null;
+        Assert.That(Rider.TryMount(Bike), Is.True);
+        yield return Seconds(.85f);
+        Assert.That(Owner.BikeBlend, Is.EqualTo(1).Within(.001), "Position/lens keep the existing deadline");
+        Assert.That(Camera.main.fieldOfView, Is.EqualTo(70).Within(.01));
+        float remaining = Mathf.Abs(Mathf.DeltaAngle(Rig.State.RawOrientation.eulerAngles.y, Bike.transform.eulerAngles.y));
+        if (angle > 100) Assert.That(remaining, Is.GreaterThan(35));
+        if (angle < 20) Assert.That(remaining, Is.LessThan(1));
+        yield return Until(() => Rider.IsDriving, 5);
+        Bike.Secure(); yield return Seconds(1.7f);
+        Assert.That(Mathf.Abs(Mathf.DeltaAngle(Rig.State.RawOrientation.eulerAngles.y, Bike.transform.eulerAngles.y)), Is.LessThan(.1));
+        Assert.That(probe.maximumRate, Is.LessThan(111), "No forced yaw snap at Riding");
+        probe.AssertFramed();
+        if (moving) Assert.That(probe.movedDistance, Is.GreaterThan(.05f));
+        probe.Begin();
+        Assert.That(Rider.TryDismount(), Is.True);
+        yield return Until(() => !Rider.IsBusy, 3);
+        Assert.That(Owner.BikeBlend, Is.Zero);
+        if (angle > 100)
+            Assert.That(Mathf.Abs(Mathf.DeltaAngle(Rig.State.RawOrientation.eulerAngles.y, footYaw)), Is.GreaterThan(45), "Yaw continues after OnFoot");
+        yield return Seconds(1.8f);
+        Assert.That(Mathf.Abs(Mathf.DeltaAngle(Rig.State.RawOrientation.eulerAngles.y, footYaw)), Is.LessThan(.1));
+        Assert.That(probe.maximumRate, Is.LessThan(111), "No forced yaw snap at OnFoot");
+        probe.AssertFramed();
+        if (moving) Assert.That(probe.movedDistance, Is.GreaterThan(.05f));
+        Completed();
+    }
+
+    private static BikeTransitionYawProbe BeginProbe()
+    {
+        var probe = Owner.gameObject.AddComponent<BikeTransitionYawProbe>();
+        probe.rig = Rig; probe.rider = Rider; probe.owner = Owner; probe.Begin();
+        return probe;
+    }
+
+    [UnityTest] public IEnumerator RidingAccelerationStoppingAndTurningUseDynamicFollow()
+    {
+        Assert.That(Rider.TryMount(Bike), Is.True);
+        yield return Until(() => Rider.IsDriving, 6);
+        yield return Seconds(2);
+        var input = Rider.GetComponent<StarterAssetsInputs>();
+        Vector3 rest = Camera.main.WorldToViewportPoint(Rider.transform.position + Vector3.up * .7f);
+        Capture("dynamic-rest");
+        input.MoveInput(Vector2.up);
+        yield return Seconds(.5f);
+        Assert.That(Bike.Speed, Is.GreaterThan(2), "Exercise actual acceleration");
+        float lag = ForwardCameraLag();
+        Assert.That(lag, Is.GreaterThan(.15f), "World-space follow damping lets acceleration lead the camera");
+        Vector3 accelerating = Camera.main.WorldToViewportPoint(Rider.transform.position + Vector3.up * .7f);
+        Assert.That(Mathf.Abs(accelerating.y - rest.y), Is.GreaterThan(.003f), "Rider composition must not be pinned");
+        Capture("dynamic-accelerating");
+        input.MoveInput(Vector2.zero);
+        yield return Seconds(.12f);
+        Assert.That(ForwardCameraLag(), Is.GreaterThan(.05f), "Follow lag settles rather than resetting on release");
+        Capture("dynamic-slowing");
+        yield return Seconds(1.6f);
+        Assert.That(Mathf.Abs(ForwardCameraLag()), Is.LessThan(.08f));
+        Vector3 stopped = Camera.main.WorldToViewportPoint(Rider.transform.position + Vector3.up * .7f);
+        Assert.That(Mathf.Abs(stopped.y - rest.y), Is.LessThan(.01f));
+        Capture("dynamic-stopped");
+        input.MoveInput(Vector2.right);
+        yield return Seconds(.35f);
+        float lateralLag = Mathf.Abs(Vector3.Dot(Rig.State.RawPosition - Bike.transform.position, Bike.transform.right));
+        Assert.That(lateralLag, Is.GreaterThan(.15f), "Turning retains the world-space follower's curved response");
+        Capture("dynamic-turning");
+        input.MoveInput(Vector2.zero);
+        yield return Seconds(.8f);
+        var probe = BeginProbe();
+        Assert.That(Rider.TryDismount(), Is.True);
+        yield return Until(() => !Rider.IsBusy, 3);
+        yield return Seconds(2);
+        probe.AssertFramed();
+        Completed();
+    }
+
+    private static float ForwardCameraLag()
+    {
+        Vector3 desired = Bike.transform.position + Vector3.up * 2.5f - Bike.transform.forward * 4.8f;
+        return Vector3.Dot(desired - Rig.State.RawPosition, Bike.transform.forward);
+    }
+
+    [UnityTest] public IEnumerator MountedEnemyPerceptionPhysicalShotsAndMelee()
+    { yield return BikeCombatPlayChecks.MountedCombat(); Completed(); }
+    [UnityTest] public IEnumerator RamThresholdDedupLaunchLandingAndDeath()
+    { yield return BikeCombatPlayChecks.Ram(); Completed(); }
+    [UnityTest] public IEnumerator RamStopsAtCoverAndKeepsSafeGround()
+    { yield return BikeCombatPlayChecks.RamObstructions(); Completed(); }
+    [UnityTest] public IEnumerator RamSaveContinueRestoresGroundedLivingAndDeadEnemies()
+    { yield return BikeCombatPlayChecks.SaveContinue(); Completed(); }
+
+    // Reuse the existing bike acceptance flows within the same guarded fixture with real scene build processing.
     [UnityTest] public IEnumerator ExistingRideJumpTurboAndDismount()
     {
         yield return new AlienBikePlayTests().MountDriveJumpTurboCollisionDismountAndRepeatedUse();
@@ -75,6 +174,7 @@ public sealed class BikeCameraTests
         Assert.That(ortho, Is.EqualTo(mode == GameplayCameraMode.Isometric), "Selected preset reached the output camera");
         Assert.That(Owner.BikeBlend, Is.Zero, "Proximity never starts camera transition");
         Capture(mode + "-on-foot");
+        var probe = BeginProbe();
         Assert.That(Rider.TryMount(Bike), Is.True);
         Assert.That(Rider.Phase, Is.EqualTo(BikeRidePhase.Approaching));
         yield return Seconds(.18f);
@@ -102,7 +202,7 @@ public sealed class BikeCameraTests
         Capture(mode + "-mid-dismount");
         yield return Until(() => !Rider.IsBusy, 3);
         Assert.That(Owner.BikeBlend, Is.Zero, "On-foot camera restored with control");
-        yield return Seconds(.2f); Capture(mode + "-restored");
+        yield return Seconds(1.8f); Capture(mode + "-restored");
         Assert.That(GameplayCameraSettings.Mode, Is.EqualTo(mode));
         Assert.That(Camera.main.orthographic, Is.EqualTo(ortho));
         Assert.That(body.m_FollowOffset, Is.EqualTo(offset)); Assert.That(body.m_BindingMode, Is.EqualTo(binding));
@@ -110,6 +210,7 @@ public sealed class BikeCameraTests
         Assert.That(Rig.m_Lens.ModeOverride, Is.EqualTo(lens.ModeOverride));
         Assert.That(Quaternion.Angle(Rig.transform.localRotation, rotation), Is.LessThan(.001));
         Assert.That(Camera.main.projectionMatrix.m33, Is.EqualTo(ortho ? 1 : 0).Within(.001));
+        probe.AssertFramed();
         Completed();
     }
 
@@ -290,7 +391,6 @@ public sealed class BikeCameraTests
     }
     [UnityTearDown] public IEnumerator Cleanup()
     {
-        SessionState.EraseBool(IsolateFlybys);
         if (Application.isPlaying) { ActiveRunController.Instance?.PrepareToLeave(); yield return new ExitPlayMode(); }
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         Environment.SetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY", SessionState.GetString(Key, "")); SessionState.EraseString(Key);
@@ -298,21 +398,63 @@ public sealed class BikeCameraTests
         SessionState.EraseInt(Key + "Mode"); Time.timeScale = 1;
         bool completed = SessionState.GetBool(Key + "Completed", false);
         SessionState.EraseBool(Key + "Completed");
-        Assert.That(completed, Is.True, "Camera test body must finish; aborted Play Mode setup is not a pass");
+        if (TestContext.CurrentContext.Result.Outcome.Status != NUnit.Framework.Interfaces.TestStatus.Failed)
+            Assert.That(completed, Is.True, "Camera test body must finish; aborted Play Mode setup is not a pass");
     }
 }
 
-// Isolate unrelated atmospheric routes only in this fixture's transient processed scenes,
-// including Continue reloads. No production scene/prefab bytes or clearance rules change.
-// ConstructionSite currently has a Path_07/fence clearance failure before Play Mode starts.
-public sealed class BikeCameraTestSceneProcessor : IProcessSceneWithReport
+[DefaultExecutionOrder(10000)]
+public sealed class BikeTransitionYawProbe : MonoBehaviour
 {
-    public int callbackOrder => -1;
-    public void OnProcessScene(Scene scene, BuildReport report)
+    public CinemachineVirtualCamera rig;
+    public PlayerBikeRider rider;
+    public GameplayCameraController owner;
+    public AlienBikeController moveBike;
+    public float maximumRate;
+    public float movedDistance;
+    private Vector3 viewportMin, viewportMax, previousOffset;
+    private float previousWeight, maximumEndpointOffsetSpeed;
+    private int samples;
+    private float previous;
+    public void Begin()
     {
-        if (report != null || !SessionState.GetBool(BikeCameraTests.IsolateFlybys, false)) return;
-        foreach (var root in scene.GetRootGameObjects())
-            foreach (var flybys in root.GetComponentsInChildren<AlienFlybyController>(true))
-                Object.DestroyImmediate(flybys.gameObject);
+        previous = rig.State.RawOrientation.eulerAngles.y; maximumRate = movedDistance = 0;
+        viewportMin = Vector3.one * float.PositiveInfinity;
+        viewportMax = Vector3.one * float.NegativeInfinity;
+        previousWeight = owner.BikeBlend; previousOffset = LocalOffset();
+        maximumEndpointOffsetSpeed = 0; samples = 0;
+    }
+    private Vector3 LocalOffset() => Quaternion.Inverse(Quaternion.Euler(0, rig.State.RawOrientation.eulerAngles.y, 0))
+        * (rig.State.RawPosition - rider.transform.position);
+    private void FixedUpdate()
+    {
+        // Controlled platform motion exercises live anchors without changing production controls.
+        if (moveBike == null || (rider.Phase != BikeRidePhase.Mounting && rider.Phase != BikeRidePhase.Dismounting)) return;
+        Vector3 movement = moveBike.transform.forward * (.25f * Time.fixedDeltaTime);
+        moveBike.Body.position += movement;
+        movedDistance += movement.magnitude;
+    }
+    private void LateUpdate()
+    {
+        if (rig == null || Time.deltaTime <= 0) return;
+        float yaw = rig.State.RawOrientation.eulerAngles.y;
+        maximumRate = Mathf.Max(maximumRate, Mathf.Abs(Mathf.DeltaAngle(previous, yaw)) / Time.deltaTime);
+        previous = yaw;
+        Vector3 viewport = Camera.main.WorldToViewportPoint(rider.transform.position + Vector3.up * .7f);
+        viewportMin = Vector3.Min(viewportMin, viewport); viewportMax = Vector3.Max(viewportMax, viewport);
+        Vector3 offset = LocalOffset();
+        if (owner.BikeBlend == previousWeight && (previousWeight == 0 || previousWeight == 1))
+            maximumEndpointOffsetSpeed = Mathf.Max(maximumEndpointOffsetSpeed, (offset - previousOffset).magnitude / Time.deltaTime);
+        previousWeight = owner.BikeBlend; previousOffset = offset; samples++;
+    }
+    public void AssertFramed()
+    {
+        Assert.That(samples, Is.GreaterThan(15), "Sample every rendered frame, including both settling boundaries");
+        Assert.That(viewportMin.z, Is.GreaterThan(.1f));
+        Assert.That(viewportMin.x, Is.GreaterThan(.15f), viewportMin.ToString());
+        Assert.That(viewportMin.y, Is.GreaterThan(.15f), viewportMin.ToString());
+        Assert.That(viewportMax.x, Is.LessThan(.85f), viewportMax.ToString());
+        Assert.That(viewportMax.y, Is.LessThan(.85f), viewportMax.ToString());
+        Assert.That(maximumEndpointOffsetSpeed, Is.LessThan(12), "No position jump during the yaw tail or endpoint handoff");
     }
 }

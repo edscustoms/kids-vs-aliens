@@ -33,7 +33,7 @@ are preserved. No encounter-specific combat or spawning code was added.
 
 `_World/ExcavatorRepairMission` owns this level's requirements through
 `ExcavatorRepairMission`. Its `ExcavatorArea_StartAndReturn` child is an instance of
-`PF_GameplayTrigger`, configured Repeatable with the explicit Excavator Repair action.
+`PF_GameplayTrigger`, configured Repeatable with its Action Target assigned to the mission.
 Move/resize its BoxCollider to author the visit area. Its collider center is
 intentionally offset from the root: approximately `(22.11, 1, 46.18)` in world space,
 with size `(6.84, 3, 7.03)`. Use the actual volume when checking entry/return.
@@ -173,6 +173,11 @@ after environment edits; build/play scene processing checks the current geometry
 Changing a route's markers or clearance invalidates its bake. Runtime uses a compact
 arc-length table and the exact cubic; no per-frame environment queries occur.
 
+The intentional right perimeter fence required lifting Path_07's authored route root
+by **1.9 m** (controls retain their local positions). Its lowest pass is now about
+**4.75 m**, still in the common low category. All ten routes retain the full 2.25 m
+clearance radius; no fence or other route was changed.
+
 Seven routes have low passes (roughly 2.85–6 m world height, with clearance climbs up
 to 10 m), two use medium 7–7.5 m passes, and one retains its 34–37 m high crossing.
 Uniform route selection gives
@@ -226,6 +231,15 @@ rotations inherited from walking/mounting; existing desktop look remains availab
 The **0.8 s** mount blend starts only after accepted RIDE, during Approaching. A short
 approach caps its remaining blend to the rider's seating phase. The **0.6 s** return
 starts at Dismounting and is capped by that phase so foot framing returns with control.
+`Transition Yaw Speed` caps mount/dismount yaw at **110 degrees/s** independently of
+distance, height and lens. Position and view share that capped heading around Amy's
+live presentation anchor, including while mounting and dismounting. The offsets blend
+in heading space during transitions. Small turns settle within the normal blend;
+large turns retain their yaw tail through Riding or OnFoot. Riding resumes the original
+world-space position/rotation damping, allowing acceleration, stopping and turning to
+shift the composition. A remaining mount yaw tail rotates that dynamic pose without
+pinning the rider. Each handoff preserves the incoming pose; normal OnFoot releases
+the orbit to its preset. The transient yaw is not saved.
 The normal preset continues to drive the underlying rig throughout. Bike presentation
 blends its position, orientation and lens after the existing pipeline stages, leaving
 noise, render feedback and occlusion with their existing owners. Isometric uses a
@@ -244,11 +258,9 @@ was added.
 `BikeCameraTests` covers all three preset round trips, interrupted mounts, disabled
 bike/rider, lease loss, death, paused Continue, stable yaw/look and cosmetic lean,
 plus foreground container/pipe fades. It reuses the existing ride/jump/turbo/collision
-and airborne Continue flows. The fixture removes atmospheric flybys only from its
-transient processed scenes: the unchanged Path_07 currently fails clearance against
-`Fence_Perimeter_Right_22 (8)`, and a processing exception can abort Play Mode setup
-without a failed test result. Completion guards reject that false pass. Production
-route validation remains active; this pass does not repair or retune flybys.
+and airborne Continue flows. Following the Path_07 repair, these tests use normal scene
+build processing with all flybys present. Completion guards still reject aborted
+Play Mode setup as a false pass.
 
 Unity 6000.5.6f1: `BikeCamera-Acceptance` passed **18/18** focused checks
 (`BikeCameraTests;MenuCameraTests;CameraOcclusionSilhouetteTests`), with graphics and
@@ -261,6 +273,46 @@ release jumps; Run hold consumes turbo. The contextual RIDE/DISMOUNT button also
 desktop E. Dismount requires low speed, stable support and a clear side/capsule sweep.
 Neither clear side means denial. Bike meters sit below the resource panel, away from
 the dialogue region and touch controls.
+
+Mounted combat retains Amy as the target. `PlayerBikeRider.OccupiedBike` and its torso,
+upper-body, side and seat samples replace the disabled CharacterController's empty
+bounds for enemy perception/aiming. The occupied hull counts as that target in LOS;
+world cover and the nearest physical shot collision remain authoritative. Melee
+approaches the hull perimeter with the same authored surface reach. `AlienBikeImpact`
+on the rideable wrapper implements IDamageable only to forward enemy-originated hits
+on an occupied hull to the rider's existing PlayerHealth. Empty bikes take no damage.
+
+`AlienBikeImpact` also owns physical collision-to-enemy rams, deduplicated by EnemyActor.
+Below 4.5 m/s there is no damage/launch. Otherwise `t = Clamp01((speed - 4.5) / 15.5)`;
+damage is `Lerp(20, 140, t)`. Inspector fields expose both speed thresholds, both damage
+endpoints, horizontal/upward knockback and repeat cooldown (0.65 s). The default
+9 m/s horizontal and 3.8 m/s upward impulses scale from 55%/65% to 100% with `t`.
+Only a player-driven rideable wrapper dispatches rams; shared art and flybys remain
+non-combat. Canonical scene repair fills a missing impact component without retuning.
+
+`EnemyMotor` owns the brief external-impact movement lock and swept ballistic motion,
+temporarily disabling its NavMeshAgent. Capsule sweeps stop world obstruction and
+connected NavMesh probes retain a safe ground endpoint. Living enemies settle there
+and resume navigation; lethal hits still use EnemyHealth/EnemyDeathSequence while the
+launch remains visible. Damage goes through CombatHitResolver, including normal hit
+reaction, health UI, loot/death and run removal. RunWorldObject captures the motor's
+ground endpoint during flight; restore clears the transient displacement before
+assigning state. Neither impulse nor an airborne pose is persisted.
+
+Four-fix validation (Unity 6000.5.6f1): `BikeFourFixes-Acceptance` passed **35/36**;
+the remaining airborne Save/Continue fixture selected arbitrary actors and placed
+victims together. It now selects 140-HP authored actors on separate clear native
+ground. `BikeFourFixes-RamFinal` passed **3/3**, including that real reload, physical
+Rigidbody impacts, low/normal/turbo damage, multi-collider deduplication, living/dead
+launches, navigation recovery, wall sweeps and ground edges. Together these cover
+**37 distinct passing focused checks**, including small/180-degree yaw, all three
+camera presets, existing ride/jump/turbo/dismount, occlusion, on-foot combat/cover,
+mounted ranged/melee damage, empty-bike exclusion, all routes/build processing and
+repeat repair preservation. The camera fixture no longer bypasses flyby validation.
+XML/logs are under `Logs/RepositoryAuditRemediation/BikeFourFixes-*`; launch captures
+are in `Logs/BikeFourFixes`. `git diff --check` passes. No full regression or device
+run was performed; subjective camera/impact feel and Android/iOS acceptance remain
+manual checks.
 
 | Starting tuning | Value |
 | --- | --- |
@@ -385,6 +437,11 @@ become satisfied while inside. Repeatable visits rearm after leaving the volume.
 `GameplayActions.Execute(player)` is the same small Inspector block used by encounter
 activation; gameplay owners can also call `DialoguePlayer.Play`,
 `ObjectiveController.StartObjective/AddProgress/CompleteObjective` directly.
+For another component-owned action, implement `IGameplayAction.TryExecute(player)` and
+assign that component to **Action Target**. Execution is synchronous; returning false
+rejects the visit before encounter/dialogue/objective actions. Invalid component assignments
+log an error and reject execution. `ExcavatorRepairMission` delegates this contract to
+its existing prerequisite-checked `Visit`; the reusable container has no mission dependency.
 
 Scene identities are assigned when inspecting these prefab instances and by
 **Tools > Setup > Setup or Repair Active Gameplay Scene**. Prefab assets retain blank

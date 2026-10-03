@@ -71,8 +71,15 @@ public sealed class EnemyMeleeAttack : MonoBehaviour
     {
         if(candidate==null || !candidate.gameObject.activeInHierarchy || Interrupted)return false;
         if(active)return true; // Finish the committed animation; do not resume chase mid-punch.
-        Vector3 delta=candidate.position-transform.position;delta.y=0;
-        return delta.sqrMagnitude<=attackRange*attackRange;
+        var rider=candidate.GetComponent<PlayerBikeRider>();
+        var occupied=rider!=null ? rider.OccupiedBike : null;
+        var body=occupied!=null ? occupied.GetComponent<Collider>() : null;
+        Vector3 point=body!=null ? body.ClosestPoint(transform.position+Vector3.up*.9f) : candidate.position;
+        Vector3 delta=point-transform.position;delta.y=0;
+        // attackRange was authored against Amy's body centre. Retain that same
+        // surface reach when substituting the much wider occupied hull.
+        float targetRadius=body!=null ? candidate.GetComponent<CharacterController>()?.radius ?? 0 : 0;
+        return delta.magnitude+targetRadius<=attackRange;
     }
     public bool TryAttack(Transform candidate)
     {
@@ -136,6 +143,9 @@ public sealed class EnemyMeleeAttack : MonoBehaviour
     }
     private static Collider FindTargetCollider(Transform candidate)
     {
+        var rider=candidate.GetComponent<PlayerBikeRider>();
+        if(rider!=null && rider.OccupiedBike!=null)
+            return rider.OccupiedBike.GetComponent<Collider>();
         Collider body=candidate.GetComponent<Collider>();
         if(body!=null&&body.enabled&&!body.isTrigger)return body;
         foreach(var child in candidate.GetComponentsInChildren<Collider>())

@@ -9,8 +9,8 @@ public sealed class GameplayActions
 {
     [Tooltip("Optional authored world arrival. Rejected/aborted arrivals do not consume a one-shot trigger.")]
     public AuthoredBeamArrival beamArrival;
-    [Tooltip("Optional ConstructionSite repair owner. Use a repeatable trigger for start and return visits.")]
-    public ExcavatorRepairMission excavatorRepair;
+    [Tooltip("Optional component implementing IGameplayAction. Executes synchronously; false rejects this visit.")]
+    public MonoBehaviour actionTarget;
     [Tooltip("Optional explicit activation of dormant authored enemies.")]
     public AuthoredEncounter encounter;
     public DialogueMessage dialogue;
@@ -25,8 +25,14 @@ public sealed class GameplayActions
     public void Execute(PlayerCharacter player) => TryExecute(player);
     public bool TryExecute(PlayerCharacter player)
     {
+        var action = actionTarget != null ? actionTarget as IGameplayAction : null;
+        if (actionTarget != null && action == null)
+        {
+            Debug.LogError("Gameplay Action Target must implement IGameplayAction.", actionTarget);
+            return false;
+        }
         if (beamArrival != null && !beamArrival.TryBegin(player)) return false;
-        if (excavatorRepair != null && !excavatorRepair.Visit(player)) return false;
+        if (action != null && !action.TryExecute(player)) return false;
         if (encounter != null) encounter.Activate();
         if (dialogue != null) DialoguePlayer.Instance?.Play(dialogue, player != null ? player.ActiveVisual?.DialogueIdentity : null);
         var owner = ObjectiveController.Instance;

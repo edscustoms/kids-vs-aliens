@@ -47,7 +47,7 @@ public sealed class RunWorldObject : MonoBehaviour
         var brain = GetComponent<EnemyBrain>();
         var snapshot = new SavedWorldObject {
             id = stableId, prefab = prefabId, parent = parentId,
-            position = transform.position, rotation = transform.rotation,
+            position = GetComponent<EnemyMotor>()?.RunPosition ?? transform.position, rotation = transform.rotation,
             active = gameObject.activeSelf, removed = removed || (health != null && health.IsDead),
             health = health != null ? health.CurrentHealth : 0,
             chestOpen = GetComponent<LootChest>()?.IsOpen ?? false,
@@ -69,6 +69,7 @@ public sealed class RunWorldObject : MonoBehaviour
         stableId = snapshot.id; prefabId = snapshot.prefab; parentId = snapshot.parent; removed = snapshot.removed;
         if (removed) { gameObject.SetActive(false); return; }
         gameObject.SetActive(snapshot.active);
+        GetComponent<EnemyMotor>()?.EndExternalImpact();
         var agent = GetComponent<NavMeshAgent>();
         bool navigating = agent != null && agent.enabled;
         if (navigating) agent.enabled = false;

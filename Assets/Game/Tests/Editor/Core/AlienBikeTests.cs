@@ -43,9 +43,11 @@ public sealed class AlienBikeTests
         Assert.That(ride.GetComponent<Rigidbody>(),Is.Not.Null);
         Assert.That(ride.GetComponentsInChildren<WheelCollider>(),Is.Empty);
         Assert.That(ride.GetComponent<RunWorldObject>(),Is.Not.Null);
+        Assert.That(ride.GetComponent<AlienBikeImpact>(),Is.Not.Null);
         var fly=AssetDatabase.LoadAssetAtPath<GameObject>(AlienBikeSetup.Prefabs+"/PF_AlienFlybyBike.prefab");
         Assert.That(fly.GetComponentsInChildren<Rigidbody>(true),Is.Empty);
         Assert.That(fly.GetComponentsInChildren<Collider>(true),Is.Empty);
+        Assert.That(fly.GetComponentsInChildren<AlienBikeImpact>(true),Is.Empty);
         var mesh=visual.GetComponentInChildren<MeshFilter>().sharedMesh;
         Assert.That(mesh.triangles.Length/3,Is.LessThan(6000));
     }
@@ -71,6 +73,7 @@ public sealed class AlienBikeTests
                 Assert.That(Vector3.Distance(end,path.end.position),Is.LessThan(.001));
                 Assert.That(tangent.sqrMagnitude,Is.EqualTo(1).Within(.001));
             }
+            Assert.DoesNotThrow(() => new AlienFlybyBuildValidation().OnProcessScene(owner.gameObject.scene, null));
             var p=paths[0];p.control1.position+=Vector3.right;
             Assert.That(p.IsValidated,Is.False,"Moving an authored marker requires validation again");
             var blocker=GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -136,6 +139,17 @@ public sealed class AlienBikeTests
             Assert.That(player.GetComponents<PlayerBikeRider>().Length,Is.EqualTo(1));
             Assert.That(data.FindProperty("walkSpeed").floatValue,Is.EqualTo(1.23f));
             Assert.That(data.FindProperty("riderAnimation").objectReferenceValue,Is.Not.Null);
+            foreach(var bike in Object.FindObjectsByType<AlienBikeController>(FindObjectsInactive.Include))
+            {
+                AlienBikeSetup.ConfigureRideable(bike);
+                var impact = bike.GetComponent<AlienBikeImpact>();
+                var tuning = new SerializedObject(impact);
+                tuning.FindProperty("maximumImpactDamage").floatValue = 123;
+                tuning.ApplyModifiedPropertiesWithoutUndo();
+                AlienBikeSetup.ConfigureRideable(bike); AlienBikeSetup.ConfigureRideable(bike);
+                Assert.That(bike.GetComponents<AlienBikeImpact>().Length, Is.EqualTo(1));
+                tuning.Update(); Assert.That(tuning.FindProperty("maximumImpactDamage").floatValue, Is.EqualTo(123));
+            }
         }finally{EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);}
     }
 }

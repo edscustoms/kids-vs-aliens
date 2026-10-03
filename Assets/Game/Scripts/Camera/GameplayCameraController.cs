@@ -31,12 +31,16 @@ public sealed class GameplayCameraController : CinemachineExtension
     private StarterAssets.ThirdPersonController playerLook;
     private BikeRidePhase observedPhase;
     private float bikeWeight, blendFrom, blendTo, blendElapsed, blendDuration;
+    private Vector3 bikeOffset;
     private Vector3 bikePosition, bikeLookPoint;
     private Quaternion bikeRotation;
     private Quaternion footRotation;
     private Vector2 entryLook;
     private LensSettings footLens;
     private bool customProjection;
+    private bool transitionYawActive;
+    private float presentedYaw;
+    private int yawFrame = -1;
     public float BikeBlend => bikeWeight;
     private BikeCameraFraming BikeFraming => profile != null ? profile.bike : null;
 
@@ -65,6 +69,7 @@ public sealed class GameplayCameraController : CinemachineExtension
         CinemachineCore.CameraUpdatedEvent.RemoveListener(OnCameraUpdated);
         bikeWeight = blendFrom = blendTo = 0;
         observedPhase = BikeRidePhase.OnFoot;
+        transitionYawActive = false;
         ResetProjection();
         Apply(GameplayCameraSettings.Mode);
     }
@@ -128,9 +133,16 @@ public sealed class GameplayCameraController : CinemachineExtension
                         BlendBikeTo(1, Mathf.Min(tuning.mountBlendDuration, bikeRider.TransitionDuration));
                     break;
                 case BikeRidePhase.Riding:
+                    // Seed the original world-space follower from the transition endpoint.
+                    // Thereafter acceleration/turning can move the bike within the frame again.
+                    bikePosition = bikeRider.transform.position + Vector3.up * tuning.targetHeight
+                        + Quaternion.Euler(0, bikeRotation.eulerAngles.y, 0) * bikeOffset;
                     bikeWeight = blendFrom = blendTo = 1;
                     break;
                 case BikeRidePhase.Dismounting:
+                    // Preserve the live follower's lag at entry; do not cut to a rigid offset.
+                    bikeOffset = Quaternion.Inverse(Quaternion.Euler(0, bikeRotation.eulerAngles.y, 0))
+                        * (bikePosition - bikeRider.transform.position - Vector3.up * tuning.targetHeight);
                     BlendBikeTo(0, Mathf.Min(tuning.dismountBlendDuration, bikeRider.TransitionDuration));
                     break;
                 case BikeRidePhase.OnFoot:
@@ -155,6 +167,7 @@ public sealed class GameplayCameraController : CinemachineExtension
 
     private void BlendBikeTo(float target, float duration)
     {
+        transitionYawActive = true;
         blendFrom = bikeWeight;
         blendTo = target;
         blendElapsed = 0;
@@ -174,11 +187,17 @@ public sealed class GameplayCameraController : CinemachineExtension
             + yaw * (Vector3.back * Mathf.Max(.5f, tuning.distance));
         Vector3 look = bike.seatPoint.position + Vector3.up * tuning.targetHeight
             + yaw * (Vector3.forward * tuning.forwardLookAhead);
+        // Store an offset from Amy's live presentation anchor, in heading space.
+        // SeatPoint belongs to the stable bike root, never the cosmetic lean pivot.
+        Vector3 offset = Vector3.up * (tuning.height - tuning.targetHeight)
+            - (bike.seatPoint.position - bike.transform.position)
+            + yaw * (Vector3.back * Mathf.Max(.5f, tuning.distance));
         Quaternion rotation = Quaternion.LookRotation(look - position, Vector3.up)
             * Quaternion.Euler(tuning.pitch + lookPitch, 0, 0);
         float t = dt <= 0 || tuning.followDamping <= 0 ? 1 : 1 - Mathf.Exp(-dt / tuning.followDamping);
-        bikePosition = Vector3.Lerp(bikePosition, position, t);
+        bikeOffset = Vector3.Lerp(bikeOffset, Quaternion.Inverse(yaw) * offset, t);
         bikeRotation = Quaternion.Slerp(bikeRotation, rotation, t);
+        bikePosition = Vector3.Lerp(bikePosition, position, t);
         bikeLookPoint = look;
     }
 
@@ -194,14 +213,11 @@ public sealed class GameplayCameraController : CinemachineExtension
     protected override void PostPipelineStageCallback(CinemachineVirtualCameraBase vcam,
         CinemachineCore.Stage stage, ref CameraState state, float deltaTime)
     {
-        if (!isActiveAndEnabled || bikeWeight <= 0 || BikeFraming == null)
+        if (!isActiveAndEnabled || BikeFraming == null)
             return;
-        if (stage == CinemachineCore.Stage.Body)
+        if (stage == CinemachineCore.Stage.Body && bikeWeight > 0)
         {
             footLens = state.Lens;
-            state.RawPosition = Vector3.Lerp(state.RawPosition, bikePosition, bikeWeight);
-            state.ReferenceLookAt = state.HasLookAt
-                ? Vector3.Lerp(state.ReferenceLookAt, bikeLookPoint, bikeWeight) : bikeLookPoint;
             var lens = state.Lens;
             lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, BikeFraming.fieldOfView, bikeWeight);
             lens.NearClipPlane = Mathf.Lerp(lens.NearClipPlane, .1f, bikeWeight);
@@ -209,7 +225,53 @@ public sealed class GameplayCameraController : CinemachineExtension
             state.Lens = lens;
         }
         if (stage == CinemachineCore.Stage.Aim)
-            state.RawOrientation = Quaternion.Slerp(state.RawOrientation, bikeRotation, bikeWeight);
+        {
+            float footYaw = state.RawOrientation.eulerAngles.y;
+            float bikeYaw = bikeRotation.eulerAngles.y;
+            float desiredYaw = Mathf.LerpAngle(footYaw, bikeYaw, bikeWeight);
+            bool orbit = bikeRider != null && (transitionYawActive
+                || (bikeWeight > 0 && observedPhase != BikeRidePhase.Riding));
+            if (transitionYawActive)
+            {
+                // Cinemachine can evaluate a rig more than once in a frame. Consume time once.
+                if (yawFrame != Time.frameCount)
+                {
+                    float dt = observedPhase == BikeRidePhase.OnFoot ? Time.unscaledDeltaTime : Time.deltaTime;
+                    presentedYaw = Mathf.MoveTowardsAngle(presentedYaw, desiredYaw, BikeFraming.transitionYawSpeed * dt);
+                    yawFrame = Time.frameCount;
+                }
+                // Keep the yaw tail across Riding/OnFoot; ordinary riding look/steering stays unchanged.
+                if ((observedPhase == BikeRidePhase.Riding || observedPhase == BikeRidePhase.OnFoot)
+                    && bikeWeight == blendTo && Mathf.Abs(Mathf.DeltaAngle(presentedYaw, desiredYaw)) < .001f)
+                    transitionYawActive = false;
+            }
+            else presentedYaw = desiredYaw;
+            if (orbit)
+            {
+                Vector3 anchor = bikeRider.transform.position + Vector3.up * BikeFraming.targetHeight;
+                var footHeading = Quaternion.Euler(0, footYaw, 0);
+                var bikeHeading = Quaternion.Euler(0, bikeYaw, 0);
+                var heading = Quaternion.Euler(0, presentedYaw, 0);
+                Vector3 footOffset = Quaternion.Inverse(footHeading) * (state.RawPosition - anchor);
+                // During a remaining mount yaw tail, rotate the dynamic Riding pose:
+                // retain its world-space damping instead of pinning Amy to the anchor.
+                Vector3 offset = observedPhase == BikeRidePhase.Riding
+                    ? Quaternion.Inverse(bikeHeading) * (bikePosition - anchor) : bikeOffset;
+                var pitch = Quaternion.Slerp(Quaternion.Inverse(footHeading) * state.RawOrientation,
+                    Quaternion.Inverse(bikeHeading) * bikeRotation, bikeWeight);
+                // Position and view always share the capped heading, including the yaw tail
+                // after the position/lens blend ends. Both endpoints follow Amy every frame.
+                state.RawPosition = anchor + heading * Vector3.Lerp(footOffset, offset, bikeWeight);
+                state.RawOrientation = heading * pitch;
+                state.ReferenceLookAt = anchor + heading * Vector3.forward * (BikeFraming.forwardLookAhead * bikeWeight);
+            }
+            else if (observedPhase == BikeRidePhase.Riding)
+            {
+                state.RawPosition = bikePosition;
+                state.RawOrientation = bikeRotation;
+                state.ReferenceLookAt = bikeLookPoint;
+            }
+        }
         // Noise, render feedback and the existing occlusion owner retain their stages.
     }
 

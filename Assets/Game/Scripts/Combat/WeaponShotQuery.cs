@@ -23,6 +23,7 @@ public static class WeaponShotQuery
     {
         Vector3 delta = end - start;
         return !Cast(owner, start, delta.normalized, delta.magnitude, buffer, out var hit)
-            || hit.transform == target || hit.transform.IsChildOf(target);
+            || hit.transform == target || hit.transform.IsChildOf(target)
+            || PlayerBikeRider.IsOccupiedTargetCollider(target, hit.collider);
     }
 }

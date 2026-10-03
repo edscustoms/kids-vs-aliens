@@ -150,8 +150,10 @@ public sealed class EnemyRangedAttack : MonoBehaviour
     }
     private static Vector3 AimPoint(Transform other)
     {
+        var rider = other.GetComponent<PlayerBikeRider>();
+        if (rider != null && rider.OccupiedBike != null) return rider.MountedAimPoint;
         var body = other.GetComponent<Collider>();
-        return body != null ? body.bounds.center : other.position + Vector3.up * .9f;
+        return body != null && body.enabled ? body.bounds.center : other.position + Vector3.up * .9f;
     }
     private bool HasClearMuzzle(Transform other, Vector3 aim)
     {

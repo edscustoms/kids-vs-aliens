@@ -22,6 +22,7 @@ MonoBehaviour:
     followDamping: 0.12
     mountBlendDuration: 0.8
     dismountBlendDuration: 0.6
+    transitionYawSpeed: 110
   tactical:
     projection: 2
     fieldOfView: 45

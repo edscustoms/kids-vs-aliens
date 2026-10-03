@@ -6595,18 +6595,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &9300100101
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 269442572}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13f7cce3c9191e642941db29334aaca0, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CameraOcclusionGroup
 --- !u!4 &269442573
 Transform:
   m_ObjectHideFlags: 0
@@ -33608,7 +33596,7 @@ Transform:
   m_GameObject: {fileID: 1090940479}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1.9, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -33638,10 +33626,10 @@ MonoBehaviour:
   clearanceRadius: 2.25
   validated: 1
   bakedPoints:
-  - {x: 35, y: 6, z: -55}
-  - {x: 33, y: 1.8, z: -25}
-  - {x: 33, y: 1.8, z: 8}
-  - {x: 36, y: 6, z: 48}
+  - {x: 35, y: 7.9, z: -55}
+  - {x: 33, y: 3.6999998, z: -25}
+  - {x: 33, y: 3.6999998, z: 8}
+  - {x: 36, y: 7.9, z: 48}
   distances:
   - 0
   - 1.4247247
@@ -34926,7 +34914,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.0000005
+      value: -9.82
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.y
@@ -34934,7 +34922,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -10
+      value: 2.72
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalRotation.w
@@ -38395,7 +38383,7 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5246115473536090645, guid: e19a2daa70fd71c478b205f7ef3ff54b, type: 3}
-      propertyPath: actions.excavatorRepair
+      propertyPath: actions.actionTarget
       value: 
       objectReference: {fileID: 1755551118}
     - target: {fileID: 6660319692942224154, guid: e19a2daa70fd71c478b205f7ef3ff54b, type: 3}
@@ -39011,6 +38999,26 @@ PrefabInstance:
     - target: {fileID: 5236890615131883598, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
       propertyPath: m_Name
       value: PF_RideableAlienBike
+      objectReference: {fileID: 0}
+    - target: {fileID: 5533549417460090765, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
+      propertyPath: maxSpeed
+      value: 22
+      objectReference: {fileID: 0}
+    - target: {fileID: 5533549417460090765, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
+      propertyPath: acceleration
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5533549417460090765, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
+      propertyPath: reverseSpeed
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5533549417460090765, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
+      propertyPath: turboMaxSpeed
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 5533549417460090765, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
+      propertyPath: turboAcceleration
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 8133452142430800951, guid: d54457f9bb791e44eb18065b3efe115c, type: 3}
       propertyPath: stableId
@@ -39800,18 +39808,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &9300100100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1397427627}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13f7cce3c9191e642941db29334aaca0, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CameraOcclusionGroup
 --- !u!4 &1397427628
 Transform:
   m_ObjectHideFlags: 0
@@ -45229,7 +45225,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.0000005
+      value: -5.11
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.y
@@ -45237,7 +45233,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2
+      value: -9.96
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalRotation.w
@@ -52468,7 +52464,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2
+      value: -3.25
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.y
@@ -52476,7 +52472,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5
+      value: -3.75
       objectReference: {fileID: 0}
     - target: {fileID: 5009070832634316790, guid: a2bdfdffa2722d74b93b156303cb38c5, type: 3}
       propertyPath: m_LocalRotation.w
@@ -58988,6 +58984,30 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2144670170}
   m_CullTransparentMesh: 1
+--- !u!114 &9300100100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397427627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13f7cce3c9191e642941db29334aaca0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraOcclusionGroup
+--- !u!114 &9300100101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 269442572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13f7cce3c9191e642941db29334aaca0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraOcclusionGroup
 --- !u!1 &8100000000001
 GameObject:
   m_ObjectHideFlags: 0

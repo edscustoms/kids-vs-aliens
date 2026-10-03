@@ -5,6 +5,7 @@ using UnityEngine.AI;
 /// Thin NavMeshAgent wrapper.
 /// Dynamic chase destinations are updated by EnemyBrain.
 /// Idle/wander destinations are set once per wander decision.
+/// External impacts temporarily own swept movement and retain a safe ground save pose.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(NavMeshAgent))]
@@ -37,6 +38,14 @@ public sealed class EnemyMotor : MonoBehaviour
 
     private NavMeshAgent agent;
     private EnemyMovementLockReason movementLocks;
+    private EnemyHealth health;
+    private Vector3 impactVelocity, impactGround;
+    private Transform impactSource;
+    private bool externalImpact, resumeAgent;
+    private float impactElapsed;
+    private readonly RaycastHit[] impactHits = new RaycastHit[32];
+    public bool IsExternallyDisplaced => externalImpact;
+    public Vector3 RunPosition => externalImpact ? impactGround : transform.position;
 
     public NavMeshAgent Agent => agent;
     public bool MovementLocked =>
@@ -101,9 +110,101 @@ public sealed class EnemyMotor : MonoBehaviour
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        health = GetComponent<EnemyHealth>();
 
         ApplyPerEnemyVariation();
     }
+
+    /// <summary>Temporary swept ballistic movement. Navigation retains the safe ground endpoint.</summary>
+    public bool ApplyExternalImpact(Vector3 velocity, Transform source)
+    {
+        if (!externalImpact && !IsReady) return false;
+        if (!externalImpact)
+        {
+            impactGround = transform.position;
+            resumeAgent = agent.enabled;
+            SetMovementLock(EnemyMovementLockReason.ExternalImpact, true);
+            agent.enabled = false;
+        }
+        externalImpact = true;
+        impactVelocity = velocity;
+        impactSource = source;
+        impactElapsed = 0;
+        return true;
+    }
+
+    private void Update()
+    {
+        if (!externalImpact || Time.deltaTime <= 0) return;
+        // Bounded substeps keep the sweep/ground projection useful after a slow mobile frame.
+        float remaining = Mathf.Min(Time.deltaTime, .2f);
+        while (externalImpact && remaining > 0)
+        {
+            float dt = Mathf.Min(remaining, .02f);
+            remaining -= dt;
+            StepExternalImpact(dt);
+        }
+    }
+
+    private void StepExternalImpact(float dt)
+    {
+        impactElapsed += dt;
+        impactVelocity += Physics.gravity * dt;
+        Vector3 step = impactVelocity * dt;
+        Vector3 groundCandidate = impactGround + Vector3.ProjectOnPlane(step, Vector3.up);
+        // Stay above connected walkable ground. A failed landing probe must never leave a
+        // living alien stranded off the NavMesh or save an airborne pose for Continue.
+        bool safe = NavMesh.SamplePosition(groundCandidate, out var ground, .5f, agent.areaMask)
+            && Vector3.ProjectOnPlane(ground.position - groundCandidate, Vector3.up).sqrMagnitude <= .0025f
+            && Mathf.Abs(ground.position.y - impactGround.y) < .4f
+            && !NavMesh.Raycast(impactGround, ground.position, out _, agent.areaMask);
+        if (!safe) { step.x = step.z = 0; impactVelocity.x = impactVelocity.z = 0; }
+        float distance = step.magnitude;
+        float radius = Mathf.Max(.1f, agent.radius);
+        Vector3 bottom = transform.position + Vector3.up * (radius + .03f);
+        Vector3 top = transform.position + Vector3.up * Mathf.Max(radius + .03f, agent.height - radius);
+        int count = distance > .00001f ? Physics.CapsuleCastNonAlloc(bottom, top, radius, step / distance,
+            impactHits, distance + .02f, ~0, QueryTriggerInteraction.Ignore) : 0;
+        float travel = distance;
+        if (count == impactHits.Length) travel = 0;
+        for (int i = 0; i < count; i++)
+        {
+            var hit = impactHits[i];
+            var obstacle = hit.collider.transform;
+            if (obstacle.IsChildOf(transform) || (impactSource != null && obstacle.IsChildOf(impactSource))) continue;
+            travel = Mathf.Min(travel, Mathf.Max(0, hit.distance - .02f));
+        }
+        if (travel < distance)
+        {
+            transform.position += step.normalized * travel;
+            impactVelocity.x = impactVelocity.z = 0;
+            if (impactVelocity.y > 0) impactVelocity.y = 0;
+        }
+        else
+        {
+            transform.position += step;
+            if (safe) impactGround = ground.position;
+        }
+        if ((impactVelocity.y <= 0 && transform.position.y <= impactGround.y + .04f) || impactElapsed >= 2)
+            EndExternalImpact();
+    }
+
+    public void EndExternalImpact()
+    {
+        if (!externalImpact) return;
+        externalImpact = false;
+        transform.position = impactGround;
+        impactVelocity = Vector3.zero;
+        impactSource = null;
+        if (resumeAgent && (health == null || !health.IsDead))
+        {
+            agent.enabled = true;
+            if (agent.isOnNavMesh) agent.Warp(impactGround);
+        }
+        SetMovementLock(EnemyMovementLockReason.ExternalImpact, false);
+    }
+
+    private void OnDisable() => EndExternalImpact();
 
     public bool SetDestination(
         Vector3 destination)

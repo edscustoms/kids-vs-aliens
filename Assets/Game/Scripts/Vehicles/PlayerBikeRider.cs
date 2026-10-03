@@ -51,6 +51,27 @@ public sealed class PlayerBikeRider : MonoBehaviour
     }
     public bool IsDriving => Phase == BikeRidePhase.Riding;
     public bool IsBusy => Phase != BikeRidePhase.OnFoot;
+    // The disabled walking capsule is intentional. Combat uses the occupied hull
+    // during authored seating/dismount, without changing Amy's target identity.
+    public AlienBikeController OccupiedBike => Bike != null && capsule != null && !capsule.enabled ? Bike : null;
+    public Vector3 MountedAimPoint => transform.position + Vector3.up * .65f;
+    public static bool IsOccupiedTargetCollider(Transform target, Collider collider)
+    {
+        var rider = target != null ? target.GetComponent<PlayerBikeRider>() : null;
+        var occupied = rider != null ? rider.OccupiedBike : null;
+        return occupied != null && collider != null && collider.transform.IsChildOf(occupied.transform);
+    }
+    public bool TryGetMountedTargetSamples(Vector3[] samples)
+    {
+        var occupied = OccupiedBike;
+        if (occupied == null) return false;
+        samples[0] = MountedAimPoint;
+        samples[1] = MountedAimPoint + Vector3.up * .45f;
+        samples[2] = MountedAimPoint + transform.right * .25f;
+        samples[3] = MountedAimPoint - transform.right * .25f;
+        samples[4] = occupied.seatPoint.position;
+        return true;
+    }
     public float TransitionDuration => transitionDuration;
     public Vector2 DrivingInput => input != null && input.CanProcessBikeControls ? input.move : Vector2.zero;
     public AlienBikeController NearbyBike

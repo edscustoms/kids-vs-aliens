@@ -45,7 +45,8 @@ public sealed class ExcavatorRepairTests
             }
             var trigger=mission.GetComponentInChildren<GameplayTrigger>();
             Assert.That(new SerializedObject(trigger).FindProperty("behavior").enumValueIndex,Is.EqualTo((int)GameplayTriggerBehavior.Repeatable));
-            Assert.That(new SerializedObject(trigger).FindProperty("actions.excavatorRepair").objectReferenceValue,Is.SameAs(mission));
+            Assert.That(new SerializedObject(trigger).FindProperty("actions.actionTarget").objectReferenceValue,Is.SameAs(mission));
+            Assert.That(mission, Is.InstanceOf<IGameplayAction>());
             var ids=mission.GetComponentsInChildren<RunWorldObject>(true).Select(o=>o.Id).ToArray();
             Assert.That(ids.All(id=>!string.IsNullOrEmpty(id)) && ids.Distinct().Count()==ids.Length,Is.True);
             var state=mission.CaptureRunState(); mission.RestoreRunState(state); mission.RestoreRunState(state);

@@ -18,8 +18,10 @@ Jump/Run control charged jumping/turbo; safe mount/dismount and Active Run recov
 use existing owners. See Docs/GameplayAuthoring.md for authoring and tuning.
 Follow-up: lower cleared flybys and radial mounting through six authored approaches.
 Final polish: smooth rideable-only bike/rider lean and visual control steering.
-Next: device touch/handling, sound mix and performance acceptance; replacement mount/
-rider animation art when available. The Bike level and bike combat are separate work.
+Focused cleanup: independent transition yaw, Path_07 clearance, mounted enemy targeting
+and rideable-only ram damage/knockback. Next: device touch/handling, sound mix and
+performance acceptance; replacement mount/rider animation art when available.
+The Bike level and bike shooting are separate work.
 
 IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
 
