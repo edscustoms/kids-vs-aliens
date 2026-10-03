@@ -10,6 +10,15 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+READY FOR MANUAL PLAYTEST - BikeRoute V3 - 3 Oct 2026
+
+The flat pass was rejected. Open Assets/Game/Scenes/BikeRoute.unity and review V3's
+close corridors, elevation, markings, forest/service dressing and enlarged ramps.
+Drive the main route and both shortcuts; judge speed feel (especially open section
+05), boundaries, jump response and camera readability. Saved 22/35 tuning is unchanged.
+See Docs/GameplayAuthoring.md for ownership and focused validation. Combat, final art
+and the level transition remain separate work.
+
 COMPLETE - Alien plasma bike V1 - 2 Oct 2026
 
 Shared original bike visual, ten validated ConstructionSite flyby routes, pooled
@@ -21,7 +30,7 @@ Final polish: smooth rideable-only bike/rider lean and visual control steering.
 Focused cleanup: independent transition yaw, Path_07 clearance, mounted enemy targeting
 and rideable-only ram damage/knockback. Next: device touch/handling, sound mix and
 performance acceptance; replacement mount/rider animation art when available.
-The Bike level and bike shooting are separate work.
+Bike shooting remains separate work; BikeRoute manual acceptance is listed above.
 
 IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
 

@@ -7,6 +7,15 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE - 3 Oct 2026 - BikeRoute V3
+
+BikeRoute is an independently playable Level 2 graybox using existing bike/camera,
+input/HUD and Active Run owners. V3 adds elevation, close physical corridors, road
+paint, coarse imported trees/signs, service blocks and four larger ramps to the eight
+mixed sections/two shortcuts. Saved 22/35 m/s bike tuning is unchanged. The earlier
+flat pass failed manual feel review; V3 manual acceptance is pending. No combat or
+level transition is attached. Workflow: Docs/GameplayAuthoring.md, BikeRoute graybox.
+
 CURRENT IMPLEMENTATION OVERRIDE - 2 Oct 2026 - Alien plasma bike V1
 
 ConstructionSite has ten validated atmospheric routes with a three-bike pool and one

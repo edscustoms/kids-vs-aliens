@@ -379,6 +379,90 @@ Tests explicitly finish the scene's independent opening Beam before exercising b
 The earlier capture-only failures concerned review viewpoints, not route clearance or
 ride behavior. XML/logs remain under `Logs/RepositoryAuditRemediation`.
 
+## BikeRoute graybox
+
+Open `Assets/Game/Scenes/BikeRoute.unity`, enter Play Mode, use RIDE and follow the
+route to the green finish stripe. V3 replaces the rejected flat environment with
+close terrain cuts, forest clusters and service buildings. **Manual driving acceptance
+is pending.** Existing bike/camera, HUD/input and Active Run owners are unchanged;
+there is no combat, mission, pickup or ConstructionSite transition.
+
+The eight sections retain approximately **5.23 km** of primary progression, or
+**4.64 km** using both shortcuts. Asphalt-only sections 01/03/05/08 alternate with
+mandatory dirt 04/07 and road/dirt choices 02/06. A Direct Wash is **613 m** versus
+02's **952 m**; B Underpass is **692 m** versus 06's **944 m**. Both rejoin forward.
+Asphalt widths remain **5.5-11 m**, dirt **6-8 m**. Road elevations now span roughly
+**6-58 m**: an initial climb, high sweeper, descending narrow S, wash climb/descent,
+wide turbo bowl, elevated crossing, rolling ridge and downhill finish. The lower
+shortcut runs beneath the supported upper road; there is no mandatory bridge gap.
+
+Most corridor sides are **5.5-9 m from the centerline**; 05 opens to **17.5 m**.
+Steep banks and matching static cut-face colliders enforce the sides, with deliberate
+openings at forks/rejoins. Local retaining ends close the start pocket and finish
+run-out. The bridge has a full-width shoulder deck beneath its asphalt; only this exposed
+span uses invisible safety planes above its low parapets.
+These are local boundaries, not a world-sized enclosure. Collision probes cover
+normal riding and 7.2 m above the road; they do not prove every airborne escape impossible.
+
+`LevelGeometry` contains `Corridor Boundaries`, **70 Forest Clusters / 339 trees**
+from Conifers [BOTD] URP, **9 Road Signs** from Road Sign - Big Pack, **7 Service
+Buildings**, bridge supports and `JumpTests`. Trees use imported prefab LODs;
+signs use a scene-local URP material with the imported atlas. Vendor assets are
+unchanged. Buildings are primitive shells/roofs, not final art. Close trunks and
+bank faces supply parallax; 05's open middle remains the main place to judge whether
+speed still feels too slow. Mobile rendering/performance remains unmeasured.
+
+| Ramp | Length x width x rise |
+| --- | --- |
+| Wash embankment | 18 x 7 x 2.5 m |
+| Ridge mound | 16 x 7 x 2.25 m |
+| Crossover launch | 26 x 8 x 4.5 m |
+| Hero embankment | 28 x 9 x 5.5 m |
+
+These are solid, curved launch meshes with safe ground/deck below, not gaps requiring
+a jump. Bike tuning is preserved: **22 m/s** normal, **35 m/s** turbo, acceleration
+**18/35 m/s^2**, reverse **6 m/s**. V1 can lose substantial speed climbing a ramp without
+Jump. Charge on the flat approach and release before the slope; late release can
+lose eligibility. Slope attitude, launch and landing polish remain bike limitations.
+
+EasyRoads3D Free remains Editor-only: native markers/source meshes live beneath
+inactive `EditorOnly` `_RoadAuthoring`; runtime roads use `LevelGeometry/BakedAsphalt`.
+Dirt is the scene's Unity Terrain. Each asphalt section has one collider-free paint
+mesh: **18 cm** white edges inset **25 cm**, and **16 cm** yellow center dashes
+(**4 m paint / 6 m gap**) where the road is at least 6 m wide. Paint follows the
+native strip's exact edges/heights; no runtime marking system is involved.
+
+To reshape this scene:
+
+1. Activate `_RoadAuthoring`, hide `LevelGeometry/BakedAsphalt`, and edit native markers
+   through EasyRoads' Inspector. Preserve matching source/baked names and transforms.
+2. Run **Tools > Level Authoring > Update BikeRoute Asphalt Meshes**. The scene-only
+   helper updates asphalt, colliders and markings in place, preserving asset GUIDs;
+   it hides source authoring and enables the baked roads.
+3. Conform/repaint the isolated Terrain and reposition/rebuild affected boundary
+   meshes, trees, signs, buildings and ramps. **The mesh update does not move those
+   objects or reshape Terrain.** Keep both rejoin surfaces and the underpass clear.
+4. Save, run focused `BikeRouteGrayboxTests;BikeRouteGrayboxPlayTests;BikeRouteCorridorTests`,
+   then drive all changed sections and both shortcuts. Check boundaries, jump
+   approaches/landings, camera readability and turbo sightlines.
+
+Avoid Free's destructive **Build Terrain/Finalize** workflow. Temporary authoring and
+driving probes are archived outside Assets under `Logs/BikeRouteV3`; they are not
+runtime generators. Focused test evidence is recorded there and under
+`Logs/RepositoryAuditRemediation`. Automated traversal and screenshots establish
+technical checks, not human driving feel or a stopwatch acceptance time. No full
+regression or device validation is part of this pass.
+
+V3 focused review: `BikeRouteV3FinalDrive` passed **8/8** (scene/startup, boundaries,
+paint alignment, repeat bake and physics-driven main/both shortcut traversals). The
+main route took about **4:11 simulated**, peaking at **34.6 m/s**. An earlier 6/6 pass
+traversed all ramps without Jump; charged-jump review also completed, but V1 launch
+quality still needs human review. Two repeated asphalt/paint updates caused no mesh
+asset churn. The supported bridge shoulders, corrected deck-level warning sign and
+lower shortcut passed the 7/7 `BikeRouteV3BridgeConfirm` follow-up. After removing
+temporary probes, `BikeRouteV3Retained` passed 5/5 with a clean Editor exit. These
+checks do not replace manual acceptance.
+
 ## Dialogue and objectives
 
 The scene's `GameplayCommunication` root has two independent owners:
