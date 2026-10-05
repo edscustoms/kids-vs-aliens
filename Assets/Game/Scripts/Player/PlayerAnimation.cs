@@ -26,8 +26,70 @@ public class PlayerAnimation : MonoBehaviour
     private MonoBehaviour authoredMotionOwner;
     private float speedBeforeAuthoredMotion;
     private RuntimeAnimatorController controllerBeforeRiding;
+    private AnimatorCullingMode cullingBeforeRiding;
     private Transform riderLeanVisual;
     private Quaternion rotationBeforeRiderLean;
+    [Header("Mounted Pistol Presentation")]
+    [SerializeField, Min(.01f)] private float mountedArmBlendTime = .18f;
+    [SerializeField, Min(0)] private float mountedAimHoldTime = .35f;
+    private PlayerBikeRider bikeRider;
+    private PlayerAim playerAim;
+    private StarterAssetsInputs input;
+    private Transform rightUpperArm, rightLowerArm, rightHand;
+    private float mountedArmBlend, mountedAimUntil;
+    private int mountedIKFrame = -1;
+    public float MountedAimWeight => Mathf.SmoothStep(0, 1, mountedArmBlend);
+    public bool MountedPistolReady => controllerBeforeRiding != null && mountedArmBlend >= .999f
+        && mountedIKFrame == Time.frameCount;
+
+    public void RequestMountedPistolAim() => mountedAimUntil = Time.time + mountedAimHoldTime;
+    public void CancelMountedPistolAim() => mountedAimUntil = float.NegativeInfinity;
+
+    private void UpdateMountedPistol()
+    {
+        if (bikeRider == null || !bikeRider.IsBusy) return;
+        bool aiming = bikeRider.CanShootMounted && (input.shoot || Time.time < mountedAimUntil);
+        mountedArmBlend = Mathf.MoveTowards(mountedArmBlend, aiming ? 1 : 0, Time.deltaTime / mountedArmBlendTime);
+        bool visible = mountedArmBlend > 0 && playerEquipment.EquippedWeapon != null
+            && playerEquipment.EquippedWeapon.animationStyle == WeaponAnimationStyle.Pistol;
+        if (playerEquipment.IsEquippedWeaponVisible != visible)
+            playerEquipment.SetEquippedWeaponPresentationVisible(visible);
+    }
+
+    private void ApplyMountedPistolIK(int layer)
+    {
+        if (layer != 0 || controllerBeforeRiding == null || rightHand == null
+            || bikeRider == null || bikeRider.Bike == null) return;
+        var weapon = playerEquipment.EquippedWeaponInstance;
+        float weight = weapon != null && weapon.Muzzle != null ? MountedAimWeight : 0;
+        animator.SetIKPositionWeight(AvatarIKGoal.RightHand, weight);
+        animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 0);
+        animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, weight);
+        if (weight <= 0) return;
+        Vector3 direction = bikeRider.MountedForward;
+        if (playerAim != null && playerAim.HasAimPoint)
+            direction = (playerAim.AimPoint - rightUpperArm.position).normalized;
+        float reach = (Vector3.Distance(rightUpperArm.position, rightLowerArm.position)
+            + Vector3.Distance(rightLowerArm.position, rightHand.position)) * .93f;
+        animator.SetIKPosition(AvatarIKGoal.RightHand, rightUpperArm.position + direction * reach);
+        animator.SetIKHintPosition(AvatarIKHint.RightElbow,
+            rightUpperArm.position + bikeRider.Bike.transform.right * .3f - Vector3.up * .35f);
+        mountedIKFrame = Time.frameCount;
+        // Left arm, torso and legs retain the authored seated pose; existing visual lean remains outside this IK.
+    }
+    private void AlignMountedPistolGrip()
+    {
+        if (mountedIKFrame != Time.frameCount || mountedArmBlend <= 0 || bikeRider == null || bikeRider.Bike == null) return;
+        var weapon = playerEquipment.EquippedWeaponInstance;
+        if (weapon == null || weapon.Muzzle == null) return;
+        Vector3 direction = playerAim != null && playerAim.HasAimPoint
+            ? (playerAim.AimPoint - weapon.Muzzle.position).normalized : bikeRider.MountedForward;
+        // IK solves the arm first. Align the actual grip after bone transforms are evaluated:
+        // Humanoid IK goal axes are not the avatar's hand-bone/socket axes.
+        Quaternion handToMuzzle = Quaternion.Inverse(rightHand.rotation) * weapon.Muzzle.rotation;
+        Quaternion aimedHand = Quaternion.LookRotation(direction, Vector3.up) * Quaternion.Inverse(handToMuzzle);
+        rightHand.rotation = Quaternion.Slerp(rightHand.rotation, aimedHand, MountedAimWeight);
+    }
     public void SetAuthoredRiderLean(MonoBehaviour owner, float degrees)
     {
         if (!OwnsAuthoredMotion(owner) || controllerBeforeRiding == null) return;
@@ -56,6 +118,9 @@ public class PlayerAnimation : MonoBehaviour
     {
         if (!OwnsAuthoredMotion(owner) || controller == null || controllerBeforeRiding != null) return;
         controllerBeforeRiding = animator.runtimeAnimatorController;
+        cullingBeforeRiding = animator.cullingMode;
+        // Mounted firing reads the post-IK muzzle even when a renderer is culled.
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         animator.runtimeAnimatorController = controller;
     }
     public bool OwnsAuthoredMotion(MonoBehaviour owner) => owner != null && authoredMotionOwner == owner
@@ -88,9 +153,16 @@ public class PlayerAnimation : MonoBehaviour
 
     private void ClearAuthoredMotion()
     {
+        mountedArmBlend = 0;
+        mountedIKFrame = -1;
+        CancelMountedPistolAim();
         ClearRiderLean();
         if (authoredMotionOwner == null) return;
-        if (controllerBeforeRiding != null && animator != null) animator.runtimeAnimatorController = controllerBeforeRiding;
+        if (controllerBeforeRiding != null && animator != null)
+        {
+            animator.runtimeAnimatorController = controllerBeforeRiding;
+            animator.cullingMode = cullingBeforeRiding;
+        }
         controllerBeforeRiding = null;
         if (animator != null) animator.speed = speedBeforeAuthoredMotion;
         authoredMotionOwner = null;
@@ -118,6 +190,9 @@ public class PlayerAnimation : MonoBehaviour
 
     private void Awake()
     {
+        bikeRider = GetComponent<PlayerBikeRider>();
+        playerAim = GetComponent<PlayerAim>();
+        input = GetComponent<StarterAssetsInputs>();
         characterController = GetComponent<CharacterController>();
         locomotion = GetComponent<ThirdPersonController>();
         transport = GetComponent<BeamTransportController>();
@@ -172,7 +247,10 @@ public class PlayerAnimation : MonoBehaviour
         animator = visual != null ? visual.Animator : null;
         driver = animator != null ? new CharacterAnimatorDriver(animator, visual.AnimationActions) : null;
         relay = animator != null ? animator.GetComponent<CharacterAnimationEventRelay>() : null;
-        if (relay != null) relay.Marker += HandleMarker;
+        if (relay != null) { relay.Marker += HandleMarker; relay.AnimatorIK += ApplyMountedPistolIK; }
+        rightUpperArm = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightUpperArm) : null;
+        rightLowerArm = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightLowerArm) : null;
+        rightHand = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
 
         ApplyWeaponStyle();
         driver?.SetCombatStance(combatStance);
@@ -188,11 +266,13 @@ public class PlayerAnimation : MonoBehaviour
 
     private void ApplyWeaponStyle()
     {
+        if (controllerBeforeRiding != null) return;
         driver?.SetWeaponStyle(currentWeaponStyle);
     }
 
     private void Update()
     {
+        UpdateMountedPistol();
         if (driver == null || characterController == null || controllerBeforeRiding != null)
             return;
 
@@ -258,6 +338,7 @@ public class PlayerAnimation : MonoBehaviour
 
     private void LateUpdate()
     {
+        AlignMountedPistolGrip();
         UpdateFloating();
         if (!waitingForMarker || Time.timeScale <= 0f) return;
         if (animator == null || !animator.isActiveAndEnabled || !animator.fireEvents || animator.speed <= 0f
@@ -373,7 +454,7 @@ public class PlayerAnimation : MonoBehaviour
 
     private void DetachRelay()
     {
-        if (relay != null) relay.Marker -= HandleMarker;
+        if (relay != null) { relay.Marker -= HandleMarker; relay.AnimatorIK -= ApplyMountedPistolIK; }
         relay = null;
     }
 }

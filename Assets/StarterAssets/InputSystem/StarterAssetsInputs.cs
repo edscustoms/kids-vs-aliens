@@ -36,6 +36,8 @@ namespace StarterAssets
             waitSprintNeutral = rawSprint;
             move = look = Vector2.zero;
             jump = sprint = false;
+            waitShootNeutral = rawShoot || shoot;
+            CancelShootInput();
             blockedThroughFrame = Time.frameCount;
         }
         private int blockedThroughFrame = -1;
@@ -200,7 +202,7 @@ namespace StarterAssets
         public void ShootInput(bool newShootState)
         {
             rawShoot = newShootState;
-            if (!CanProcessGameplayInput)
+            if (!CanProcessGameplayInput && !CanProcessBikeControls)
             {
                 waitShootNeutral = newShootState;
                 return;

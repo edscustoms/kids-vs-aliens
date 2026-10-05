@@ -42,7 +42,29 @@ public sealed class GameplayCameraController : CinemachineExtension
     private float presentedYaw;
     private int yawFrame = -1;
     public float BikeBlend => bikeWeight;
+    public bool RearView { get; private set; }
+    public float RearViewYaw => rearYaw;
+    public Camera OutputCamera => outputCamera;
+    private float rearYaw;
+    private Vector3 forwardViewPosition;
+    private Quaternion forwardViewRotation = Quaternion.identity;
+    private float forwardViewFov = 70;
     private BikeCameraFraming BikeFraming => profile != null ? profile.bike : null;
+
+    public void SetRearViewHeld(bool held)
+    {
+        RearView = held && bikeRider != null && bikeRider.IsDriving && Time.timeScale > 0;
+        rearYaw = RearView ? 180 : 0;
+    }
+    // Weapon acquisition uses the normal riding presentation before the view-only
+    // rear orbit. No second camera, pistol cone or change to steering/aim input.
+    public Vector3 ForwardBikeViewportPoint(Vector3 point)
+    {
+        Vector3 local = Quaternion.Inverse(forwardViewRotation) * (point - forwardViewPosition);
+        float halfHeight = Mathf.Tan(forwardViewFov * .5f * Mathf.Deg2Rad) * Mathf.Max(.001f, local.z);
+        float aspect = outputCamera != null ? outputCamera.aspect : 16f / 9f;
+        return new Vector3(.5f + local.x / (2 * halfHeight * aspect), .5f + local.y / (2 * halfHeight), local.z);
+    }
 
     public void Configure(GameplayCameraProfile value) => profile = value;
 
@@ -70,6 +92,7 @@ public sealed class GameplayCameraController : CinemachineExtension
         bikeWeight = blendFrom = blendTo = 0;
         observedPhase = BikeRidePhase.OnFoot;
         transitionYawActive = false;
+        RearView = false; rearYaw = 0;
         ResetProjection();
         Apply(GameplayCameraSettings.Mode);
     }
@@ -115,6 +138,7 @@ public sealed class GameplayCameraController : CinemachineExtension
         var bike = bikeRider != null ? bikeRider.Bike : null;
         if (bike == null || !bike.isActiveAndEnabled)
             phase = BikeRidePhase.OnFoot;
+        if (phase != BikeRidePhase.Riding || Time.timeScale <= 0) SetRearViewHeld(false);
         if (phase != observedPhase)
         {
             if (observedPhase == BikeRidePhase.OnFoot && phase != BikeRidePhase.OnFoot)
@@ -270,6 +294,17 @@ public sealed class GameplayCameraController : CinemachineExtension
                 state.RawPosition = bikePosition;
                 state.RawOrientation = bikeRotation;
                 state.ReferenceLookAt = bikeLookPoint;
+            }
+            forwardViewPosition = state.RawPosition;
+            forwardViewRotation = state.RawOrientation;
+            forwardViewFov = state.Lens.FieldOfView;
+            if (observedPhase == BikeRidePhase.Riding && rearYaw != 0)
+            {
+                var turn = Quaternion.Euler(0, rearYaw, 0);
+                Vector3 anchor = bikeRider.transform.position + Vector3.up * BikeFraming.targetHeight;
+                state.RawPosition = anchor + turn * (state.RawPosition - anchor);
+                state.RawOrientation = turn * state.RawOrientation;
+                state.ReferenceLookAt = anchor + turn * (state.ReferenceLookAt - anchor);
             }
         }
         // Noise, render feedback and the existing occlusion owner retain their stages.

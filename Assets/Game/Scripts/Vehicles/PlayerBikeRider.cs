@@ -19,6 +19,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
     private StarterAssetsInputs input;
     private PlayerAnimation animationOwner;
     private PlayerEquipment equipment;
+    private PlayerInventory inventory;
     private PlayerHealth health;
     private GameplaySuspensionController suspension;
     private ActiveRunController run;
@@ -50,6 +51,13 @@ public sealed class PlayerBikeRider : MonoBehaviour
         get; private set;
     }
     public bool IsDriving => Phase == BikeRidePhase.Riding;
+    public bool CanShootMounted => IsDriving && Bike != null && health != null && !health.IsDead
+        && suspension != null && !suspension.BlocksControls && input != null && input.CanProcessBikeControls
+        && equipment != null && equipment.EquippedWeapon != null
+        && inventory != null && inventory.SelectedItem == equipment.EquippedWeapon
+        && equipment.EquippedWeapon.animationStyle == WeaponAnimationStyle.Pistol
+        && equipment.EquippedWeapon.fireMode == WeaponFireMode.SemiAuto;
+    public Vector3 MountedForward => Bike != null ? Bike.transform.forward : transform.forward;
     public bool IsBusy => Phase != BikeRidePhase.OnFoot;
     // The disabled walking capsule is intentional. Combat uses the occupied hull
     // during authored seating/dismount, without changing Amy's target identity.
@@ -86,6 +94,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
         input = GetComponent<StarterAssetsInputs>();
         animationOwner = GetComponent<PlayerAnimation>();
         equipment = GetComponent<PlayerEquipment>();
+        inventory = GetComponent<PlayerInventory>();
         health = GetComponent<PlayerHealth>();
         suspension = GetComponent<GameplaySuspensionController>();
         run = GetComponent<ActiveRunController>();
@@ -140,6 +149,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
         RefreshSavePoint();
         if (suspension.BlocksControls && IsDriving)
         {
+            Bike.SetDriveInput(this, Vector2.zero);
             Bike.CancelCharge();
             return;
         }
@@ -163,12 +173,13 @@ public sealed class PlayerBikeRider : MonoBehaviour
                 }
                 break;
             case BikeRidePhase.Riding:
+                Bike.SetDriveInput(this, DrivingInput);
                 Bike.TickControls(Time.deltaTime, input.jump, input.sprint);
                 if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
                     UseBike();
                 break;
             case BikeRidePhase.Dismounting:
-                if (MoveTransition(exit, Bike.transform.rotation))
+                if (MoveTransition(exit, Quaternion.Euler(0, Bike.transform.eulerAngles.y, 0)))
                     ReleasePlayer();
                 break;
         }
@@ -195,7 +206,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
     public void RefreshSavePoint()
     {
         if (savePoint != null && Bike != null)
-            savePoint.SetPositionAndRotation(Bike.SafeExit, Bike.SafeRotation);
+            savePoint.SetPositionAndRotation(Bike.SafeExit, Bike.SafePlayerRotation);
     }
     public bool TryMount(AlienBikeController bike)
     {
@@ -208,7 +219,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
             return false;
         Bike = bike;
         var point = new GameObject("BikeSafeExit").transform;
-        point.SetPositionAndRotation(exit, bike.transform.rotation);
+        point.SetPositionAndRotation(exit, Quaternion.Euler(0, bike.transform.eulerAngles.y, 0));
         if (run != null && !run.TryReservePlayerSavePoint(this, point))
         {
             Destroy(point.gameObject);
@@ -462,7 +473,7 @@ public sealed class PlayerBikeRider : MonoBehaviour
         {
             Bike.RestoreSafePose();
             if (PoseClear(Bike.SafeExit, false))
-                transform.SetPositionAndRotation(Bike.SafeExit, Bike.SafeRotation);
+                transform.SetPositionAndRotation(Bike.SafeExit, Bike.SafePlayerRotation);
         }
         ReleasePlayer();
     }

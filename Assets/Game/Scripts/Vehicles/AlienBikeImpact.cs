@@ -33,6 +33,9 @@ public sealed class AlienBikeImpact : MonoBehaviour, IDamageable
             return false;
         var enemy = collider.GetComponentInParent<EnemyActor>();
         if (enemy == null || !enemy.IsAlive || !enemy.isActiveAndEnabled) return false;
+        // Occupied enemy bikes exchange real Rigidbody impulses; do not launch their
+        // navigation motor or turn incidental bike contact into the on-foot ram attack.
+        if (enemy.GetComponent<AlienBikeController>() != null) return false;
         Vector3 horizontal = Vector3.ProjectOnPlane(velocity, Vector3.up);
         float speed = horizontal.magnitude;
         if (speed < Mathf.Max(.01f, minimumImpactSpeed) || (nextImpact.TryGetValue(enemy, out float next) && Time.time < next))

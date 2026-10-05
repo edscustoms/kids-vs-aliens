@@ -67,6 +67,12 @@ public class PlayerAim : MonoBehaviour
     [SerializeField]
     private MobileAimSettings mobileAimSettings;
 
+    [Header("Mounted Aim")]
+    [Tooltip("Maximum horizontal angle to either side of the bike's stable forward direction.")]
+    [SerializeField, Range(0, 89)] private float mountedAimMaxAngle = 70f;
+    private PlayerBikeRider rider;
+    private bool Mounted => rider != null && rider.IsDriving;
+
     [Header("Mobile Free Look")]
     [Tooltip("Right-stick input below this magnitude is ignored.")]
     [Range(0f, 0.95f)]
@@ -141,6 +147,7 @@ public class PlayerAim : MonoBehaviour
 
     private void Awake()
     {
+        rider = GetComponent<PlayerBikeRider>();
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -161,6 +168,7 @@ public class PlayerAim : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (Mounted) return; // Updated before Humanoid IK; mounted look input continues to belong to the camera.
         if (InputModeController.IsMobile)
         {
             MobileAim();
@@ -185,6 +193,18 @@ public class PlayerAim : MonoBehaviour
         {
             RotateTowardsMovementInput();
         }
+    }
+
+    private void Update()
+    {
+        if (Mounted) MobileAim();
+    }
+
+    private void OnDisable()
+    {
+        if (rider == null || !rider.IsBusy) return;
+        CurrentTarget = freeLookShotTarget = null;
+        HasAimPoint = isFreeLooking = manualSwitchConsumed = false;
     }
 
     // =====================================================
@@ -314,7 +334,7 @@ public class PlayerAim : MonoBehaviour
     private void MobileAim()
     {
         Vector2 freeLookInput =
-            starterAssetsInputs != null ? starterAssetsInputs.look : Vector2.zero;
+            !Mounted && starterAssetsInputs != null ? starterAssetsInputs.look : Vector2.zero;
 
         float deadZoneSquared = freeLookDeadZone * freeLookDeadZone;
         bool hasFreeLookInput = freeLookInput.sqrMagnitude > deadZoneSquared;
@@ -528,7 +548,7 @@ public class PlayerAim : MonoBehaviour
         shotAimPoint = AimPoint;
 
         // Desktop keeps the exact mouse-derived aim point.
-        if (!InputModeController.IsMobile)
+        if (!InputModeController.IsMobile && !Mounted)
         {
             return HasAimPoint;
         }
@@ -536,6 +556,7 @@ public class PlayerAim : MonoBehaviour
         // While free-looking, only use a target if the stick is actually
         // pointing toward one. This prevents Amy from visually looking away
         // while shots secretly keep homing toward the old sticky lock.
+        if (Mounted) MobileAim(); // A moving bike may cross the cone/LOS boundary since the last aim update.
         AimTarget shotTarget = isFreeLooking ? freeLookShotTarget : CurrentTarget;
 
         if (
@@ -543,7 +564,7 @@ public class PlayerAim : MonoBehaviour
             || !TryGetValidMobileTargetPoint(shotTarget, out Vector3 visibleTargetPoint)
         )
         {
-            shotAimPoint = shotOrigin + transform.forward * mobileNoTargetAimDistance;
+            shotAimPoint = shotOrigin + (Mounted ? rider.MountedForward : transform.forward) * mobileNoTargetAimDistance;
 
             return true;
         }
@@ -724,7 +745,7 @@ public class PlayerAim : MonoBehaviour
         bestVisiblePoint = Vector3.zero;
         bestScreenDistanceSquared = Mathf.Infinity;
 
-        if (mainCamera == null || target == null)
+        if (mainCamera == null || target == null || !InsideMountedCone(target))
             return false;
 
         BuildMobileVisibilitySamples(target);
@@ -855,6 +876,8 @@ public class PlayerAim : MonoBehaviour
 
             if (hit.collider == null)
                 continue;
+            if (Mounted && hit.collider.transform.IsChildOf(rider.Bike.transform))
+                continue;
 
             if (IsVisionTransparent(hit.collider))
             {
@@ -891,6 +914,7 @@ public class PlayerAim : MonoBehaviour
 
     private Vector3 GetLineOfSightOrigin()
     {
+        if (Mounted) return rider.MountedAimPoint;
         if (characterController != null)
         {
             Bounds bounds = characterController.bounds;
@@ -991,6 +1015,7 @@ public class PlayerAim : MonoBehaviour
 
     private void RotateTowardsDirection(Vector3 direction, float rotationSpeed)
     {
+        if (rider != null && rider.IsBusy) return;
         direction.y = 0f;
 
         if (direction.sqrMagnitude < 0.001f)
@@ -1003,5 +1028,15 @@ public class PlayerAim : MonoBehaviour
             targetRotation,
             rotationSpeed * Time.deltaTime
         );
+    }
+
+    private bool InsideMountedCone(AimTarget target)
+    {
+        if (!Mounted) return true;
+        Vector3 direction = target.BodyCenter - rider.Bike.transform.position;
+        direction.y = 0;
+        Vector3 forward = rider.MountedForward;
+        forward.y = 0;
+        return direction.sqrMagnitude > .0001f && Vector3.Angle(forward, direction) <= mountedAimMaxAngle;
     }
 }

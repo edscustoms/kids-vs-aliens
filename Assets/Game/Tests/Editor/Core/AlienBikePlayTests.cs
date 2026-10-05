@@ -66,7 +66,7 @@ public sealed class AlienBikePlayTests
         yield return Seconds(.4f);Capture("mounted-idle");
         Assert.That(Rider.GetComponent<CharacterController>().enabled,Is.False);
         Assert.That(Rider.GetComponent<ThirdPersonController>().enabled,Is.False);
-        Assert.That(Rider.GetComponent<PlayerShooter>().enabled,Is.False);
+        Assert.That(Rider.GetComponent<PlayerShooter>().enabled,Is.True,"Existing shooter is permitted for mounted pistols only");
         Assert.That(Rider.GetComponent<PlayerInventory>().enabled,Is.False);
         AssertNeutralFeedback();
     }
@@ -80,7 +80,7 @@ public sealed class AlienBikePlayTests
         var right=Object.Instantiate(left);right.transform.position=Bike.dismountRight.position+Vector3.up;
         Physics.SyncTransforms();Assert.That(Rider.TryDismount(),Is.False,"Both sides obstructed");
         Object.Destroy(left);Object.Destroy(right);yield return EditorTestFrame.Next();
-        Input.ShootInput(true);Assert.That(Input.shoot,Is.False);
+        Input.ShootInput(true);Assert.That(Input.shoot,Is.True);Input.ShootInput(false);
         Input.MoveInput(new(.15f,1));yield return Seconds(.8f);Capture("driving");
         Assert.That(Bike.Speed,Is.GreaterThan(1));Assert.That(Rider.TryDismount(),Is.False);
         float charge=Bike.Turbo01;Input.SprintInput(true);yield return Seconds(.5f);Capture("turbo");
@@ -154,7 +154,8 @@ public sealed class AlienBikePlayTests
         yield return Seconds(4);
         float travelled=Vector3.Dot(Bike.transform.position-origin,forward);
         Assert.That(travelled,Is.GreaterThan(1),"Actually drove toward the existing environment");
-        Assert.That(travelled,Is.LessThan(barrier.distance),"Rigidbody must not cross the existing fence");
+        Assert.That(travelled,Is.LessThan(barrier.distance),"Rigidbody must not cross the existing fence " + barrier.collider.name
+            + " bike=" + Bike.transform.position + " support=" + Bike.SupportNormal + " velocity=" + Bike.Body.linearVelocity);
         Assert.That(Bike.Speed,Is.LessThan(1.2f),"Held throttle is stopped by physical contact");
         Capture("fence-contact");Input.MoveInput(Vector2.zero);
         Input.MoveInput(new(.7f,0));yield return Seconds(.3f);

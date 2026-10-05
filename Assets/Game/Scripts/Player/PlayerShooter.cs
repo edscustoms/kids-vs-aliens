@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using StarterAssets;
 using UnityEngine;
 
+[DefaultExecutionOrder(30)]
 public class PlayerShooter : MonoBehaviour
 {
     [SerializeField]
@@ -81,6 +82,9 @@ public class PlayerShooter : MonoBehaviour
     private SkillData reportedMissingSkill;
     private PlayerInventory inventory;
     private bool dryFireReported;
+    private PlayerBikeRider rider;
+    private PlayerAnimation animationOwner;
+    private bool mountedShotPending;
 
     private readonly RaycastHit[] muzzleSafetyHits = new RaycastHit[16];
 
@@ -95,6 +99,8 @@ public class PlayerShooter : MonoBehaviour
 
     private void Awake()
     {
+        rider = GetComponent<PlayerBikeRider>();
+        animationOwner = GetComponent<PlayerAnimation>();
         inventory = GetComponent<PlayerInventory>();
         feedback = GetComponent<PlayerFeedback>();
         shootMask = ~LayerMask.GetMask("Player");
@@ -145,6 +151,7 @@ public class PlayerShooter : MonoBehaviour
 
         if (fireBlocked)
             return;
+        if (rider != null && rider.IsBusy && !rider.CanShootMounted) return;
 
         if (equippedWeapon == null || muzzle == null)
         {
@@ -205,7 +212,37 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
+        if (rider != null && rider.IsDriving)
+        {
+            // A tap survives the short arm raise, but never a pause, weapon change or dismount.
+            animationOwner?.RequestMountedPistolAim();
+            mountedShotPending = true;
+        }
+        else Shoot();
+    }
+
+    private void LateUpdate()
+    {
+        if (!mountedShotPending) return;
+        if (rider == null || !rider.CanShootMounted || fireBlocked || Time.timeScale <= 0
+            || animationOwner == null || !CanUseEquippedWeapon())
+        { CancelMountedShot(); return; }
+        if (!animationOwner.MountedPistolReady) return;
+        mountedShotPending = false;
+        // Humanoid IK and the live seat/lean transforms have now placed the real pistol muzzle.
         Shoot();
+    }
+
+    private void CancelMountedShot()
+    {
+        mountedShotPending = false;
+        animationOwner?.CancelMountedPistolAim();
+    }
+
+    private void OnDisable()
+    {
+        CancelMountedShot();
+        triggerHeld = shootWasPressed = false;
     }
 
     // =====================================================
@@ -475,6 +512,7 @@ public class PlayerShooter : MonoBehaviour
 
     private Vector3 GetShotSafetyOrigin()
     {
+        if (rider != null && rider.IsDriving) return rider.MountedAimPoint;
         if (characterController != null)
         {
             return characterController.bounds.center;
@@ -490,7 +528,8 @@ public class PlayerShooter : MonoBehaviour
 
         Transform hitTransform = collider.transform;
 
-        return hitTransform == transform || hitTransform.IsChildOf(transform);
+        return hitTransform == transform || hitTransform.IsChildOf(transform)
+            || (rider != null && rider.OccupiedBike != null && hitTransform.IsChildOf(rider.OccupiedBike.transform));
     }
 
     // =====================================================
@@ -587,6 +626,12 @@ public class PlayerShooter : MonoBehaviour
             reportedMissingSkill = null;
     }
 
+    public void CancelTrigger()
+    {
+        triggerHeld = shootWasPressed = false;
+        CancelMountedShot();
+    }
+
     public void SetFireBlocked(bool blocked)
     {
         fireBlocked = blocked;
@@ -594,12 +639,15 @@ public class PlayerShooter : MonoBehaviour
         if (!blocked)
             return;
 
+        CancelMountedShot();
+
         triggerHeld = false;
         shootWasPressed = false;
     }
 
     public void EquipWeapon(WeaponItemData weapon, Transform weaponMuzzle)
     {
+        CancelMountedShot();
         var inventory = GetComponent<PlayerInventory>();
         var state = inventory != null ? inventory.GetWeaponState(weapon) : null;
         if (state == null) throw new System.InvalidOperationException("Equip requires an inventory-owned weapon.");
@@ -612,6 +660,7 @@ public class PlayerShooter : MonoBehaviour
 
     public void UnequipWeapon()
     {
+        CancelMountedShot();
         equippedWeapon = null;
         muzzle = null;
         weaponState = null;

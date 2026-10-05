@@ -12,6 +12,8 @@ public sealed class CameraFeedbackController : MonoBehaviour
 {
     [SerializeField] private ThirdPersonController player;
     [SerializeField] private GameplaySuspensionController suspension;
+    [SerializeField] private PlayerBikeRider mountedPlayer;
+    public void ConfigureMountedPlayer(PlayerBikeRider rider) => mountedPlayer = rider;
     private Camera output;
     private bool backgrounded, unfocused, poseApplied;
     private Vector3 savedPosition;
@@ -23,9 +25,13 @@ public sealed class CameraFeedbackController : MonoBehaviour
     }
     private readonly Impulse[] impulses = new Impulse[16];
     private int count;
+    // BikeRiding is a suspension lease for the foot motor, not a world pause.
+    // Only explicitly wired scenes may accept render feedback during that lease.
+    private bool MountedDriving => mountedPlayer != null && mountedPlayer.isActiveAndEnabled && mountedPlayer.IsDriving;
     private bool CanPlay => isActiveAndEnabled && output != null && output.isActiveAndEnabled
         && CameraFeedbackSettings.Enabled && Time.timeScale > 0f && !backgrounded && !unfocused
-        && player != null && player.isActiveAndEnabled && (suspension == null || !suspension.IsSuspended);
+        && player != null && (player.isActiveAndEnabled || MountedDriving)
+        && (suspension == null || !suspension.IsSuspended || MountedDriving && !suspension.BlocksControls);
 
     public void Configure(ThirdPersonController localPlayer, GameplaySuspensionController owner)
     {

@@ -51,6 +51,20 @@ public sealed class EnemyRangedAttack : MonoBehaviour
     }
     private void OnLocks(EnemyMovementLockReason value) { if (value != EnemyMovementLockReason.None) Cancel(); }
     public void Cancel() { target = null; requested = false; burst = 0; reloadAt = 0; Decision = PositionDecision.None; nextDecision = 0; }
+    // Mounted movement belongs to the shared bike. Reuse this attack's muzzle, LOS,
+    // magazine and cadence without requesting NavMesh movement or rotating the chassis.
+    public void TickMountedTarget(Transform candidate, float acquisitionDelay)
+    {
+        if (candidate == null || Interrupted || equipment == null || !equipment.HasWeapon || Profile == null || !Profile.rangedEnabled)
+        { Cancel(); return; }
+        if (target != candidate)
+        {
+            Cancel(); target = candidate;
+            readyAt = Time.time + Profile.aimDelay + Mathf.Max(0, acquisitionDelay);
+        }
+        equipment.SetRangedPresentation(true);
+        requested = HasClearMuzzle(candidate, AimPoint(candidate));
+    }
     private static float Sample(Vector2 range) => UnityEngine.Random.Range(Mathf.Min(range.x, range.y), Mathf.Max(range.x, range.y));
     private void Hold(bool settle)
     {
@@ -178,7 +192,7 @@ public sealed class EnemyRangedAttack : MonoBehaviour
         }
         Vector3 aim = AimPoint(target);
         Vector3 flat = Vector3.ProjectOnPlane(aim - transform.position, Vector3.up).normalized;
-        if (Vector3.Angle(transform.forward, flat) > Profile.facingTolerance) return;
+        if (Vector3.Angle(Vector3.ProjectOnPlane(transform.forward, Vector3.up), flat) > Profile.facingTolerance) return;
         Physics.SyncTransforms();
         if (!HasClearMuzzle(target, aim)) return;
         Vector3 start = equipment.Muzzle.position, direction = (aim - start).normalized;

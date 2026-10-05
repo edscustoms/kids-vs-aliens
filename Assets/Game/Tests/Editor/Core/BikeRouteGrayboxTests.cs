@@ -17,7 +17,7 @@ public sealed class BikeRouteGrayboxTests
     public const string ScenePath = "Assets/Game/Scenes/BikeRoute.unity";
 
     [Test]
-    public void SceneHasExistingRideFoundationWithoutMissionContent()
+    public void SceneRetainsRideFoundationAlongsideAuthoredChase()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath);
         try
@@ -34,17 +34,17 @@ public sealed class BikeRouteGrayboxTests
             Assert.That(components.OfType<BeamTransportController>(), Is.Empty);
             Assert.That(components.OfType<PlayerBeamInSequence>(), Is.Empty);
             Assert.That(components.OfType<MonoBehaviour>().Any(component => component.isActiveAndEnabled
-                && (component is EnemyActor || component is PickupItem || component is AuthoredEncounter
+                && (component is AuthoredEncounter
                     || component is GameplayTrigger || component is ExcavatorRepairMission)), Is.False,
-                "The graybox has no active combat, pickup or mission layer");
+                "No unrelated mission/encounter layer");
             Assert.That(components.OfType<ObjectiveController>().All(owner =>
                 new SerializedObject(owner).FindProperty("openingObjective").objectReferenceValue == null), Is.True);
-            var bike = components.OfType<AlienBikeController>().Single();
-            Assert.That(bike.acceleration, Is.EqualTo(18));
-            Assert.That(bike.maxSpeed, Is.EqualTo(22));
+            var bike = components.OfType<BikeRouteChaseDirector>().Single().PlayerBike;
+            Assert.That(bike.acceleration, Is.EqualTo(28));
+            Assert.That(bike.maxSpeed, Is.EqualTo(40.6f));
             Assert.That(bike.reverseSpeed, Is.EqualTo(6));
-            Assert.That(bike.turboAcceleration, Is.EqualTo(35));
-            Assert.That(bike.turboMaxSpeed, Is.EqualTo(35));
+            Assert.That(bike.turboAcceleration, Is.EqualTo(53));
+            Assert.That(bike.turboMaxSpeed, Is.EqualTo(70.1f));
             Assert.That(bike.steeringStrength, Is.EqualTo(100));
             Assert.That(bike.steeringAtMaxSpeed, Is.EqualTo(.45f));
             Assert.That(bike.lateralGrip, Is.EqualTo(8));
@@ -70,7 +70,7 @@ public sealed class BikeRouteGrayboxPlayTests
 {
     private const string Key = "BikeRouteGrayboxPlayTests";
     private static PlayerBikeRider Rider => Object.FindAnyObjectByType<PlayerBikeRider>();
-    private static AlienBikeController Bike => Object.FindAnyObjectByType<AlienBikeController>();
+    private static AlienBikeController Bike => Object.FindAnyObjectByType<BikeRouteChaseDirector>().PlayerBike;
 
     [UnitySetUp]
     public IEnumerator Setup()
@@ -87,6 +87,7 @@ public sealed class BikeRouteGrayboxPlayTests
         GameplayCameraSettings.Mode = GameplayCameraMode.Action;
         yield return Until(() => ActiveRunController.Instance != null && ActiveRunController.Instance.IsReady, 10);
         Foreground();
+        Object.FindAnyObjectByType<BikeRouteChaseDirector>().enabled = false; // Startup geometry smoke; chase has its own focused tests.
         yield return Until(() => Rider.NearbyBike == Bike, 4);
     }
 

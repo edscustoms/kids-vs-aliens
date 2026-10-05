@@ -63,7 +63,7 @@ public sealed class GameplayInterface : MonoBehaviour
         var ammo = player.GetComponent<CombatAmmoDisplay>() ?? player.gameObject.AddComponent<CombatAmmoDisplay>();
         ammo.Build(safe, player.GetComponent<PlayerInventory>());
         var rider = player.GetComponent<PlayerBikeRider>();
-        if (rider != null) gameObject.AddComponent<BikeHud>().Build(safe, rider);
+        if (rider != null) gameObject.AddComponent<BikeHud>().Build(safe, rider, GetComponentInChildren<ManualPauseButton>(true)?.transform as RectTransform);
         var oldHealth=FindAnyObjectByType<PlayerHealthUI>();if(oldHealth!=null)oldHealth.HideLegacyBars();
         var quick=FindAnyObjectByType<InventoryUI>();if(quick!=null)quick.ApplyPresentation(theme);
     }

@@ -111,7 +111,7 @@ public sealed class AlienBikeTests
                 yield return EditorTestFrame.Next();
                 Assert.That(input.CanProcessGameplayInput,Is.False);
                 input.MoveInput(Vector2.up);input.JumpInput(true);input.SprintInput(true);input.ShootInput(true);
-                Assert.That(input.move,Is.EqualTo(Vector2.up));Assert.That(input.jump&&input.sprint,Is.True);Assert.That(input.shoot,Is.False);
+                Assert.That(input.move,Is.EqualTo(Vector2.up));Assert.That(input.jump&&input.sprint,Is.True);Assert.That(input.shoot,Is.True);
                 using(var pause=owner.Acquire(SuspensionReason.ManualPause))
                 {
                     Assert.That(owner.IsWorldPaused,Is.True);Assert.That(input.CanProcessBikeControls,Is.False);
@@ -139,6 +139,8 @@ public sealed class AlienBikeTests
             Assert.That(player.GetComponents<PlayerBikeRider>().Length,Is.EqualTo(1));
             Assert.That(data.FindProperty("walkSpeed").floatValue,Is.EqualTo(1.23f));
             Assert.That(data.FindProperty("riderAnimation").objectReferenceValue,Is.Not.Null);
+            var controller = data.FindProperty("riderAnimation").objectReferenceValue as UnityEditor.Animations.AnimatorController;
+            Assert.That(controller.layers[0].iKPass, Is.True, "Mounted pistol uses the existing rider controller's Humanoid IK pass");
             foreach(var bike in Object.FindObjectsByType<AlienBikeController>(FindObjectsInactive.Include))
             {
                 AlienBikeSetup.ConfigureRideable(bike);

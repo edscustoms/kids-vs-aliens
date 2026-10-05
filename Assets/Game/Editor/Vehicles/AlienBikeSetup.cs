@@ -16,8 +16,11 @@ public static class AlienBikeSetup
     private const string Audio = "Assets/Game/Audio/Events/Vehicles";
     public static void ConfigureRideable(AlienBikeController bike)
     {
+        if (bike.GetComponent<EnemyActor>() != null) return;
         if (bike.GetComponent<AlienBikeImpact>() == null)
             Undo.AddComponent<AlienBikeImpact>(bike.gameObject);
+        if (bike.GetComponent<AlienBikePickupCollector>() == null)
+            Undo.AddComponent<AlienBikePickupCollector>(bike.gameObject);
     }
     public static void ConfigurePlayer(PlayerCharacter player)
     {
@@ -29,6 +32,16 @@ public static class AlienBikeSetup
             pose.objectReferenceValue = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(PosePath);
             so.ApplyModifiedProperties();
         }
+        EnsureRiderIK(pose.objectReferenceValue as AnimatorController);
+    }
+    private static void EnsureRiderIK(AnimatorController controller)
+    {
+        if (controller == null || controller.layers.Length == 0 || controller.layers[0].iKPass) return;
+        var layers = controller.layers;
+        layers[0].iKPass = true;
+        controller.layers = layers;
+        EditorUtility.SetDirty(controller);
+        AssetDatabase.SaveAssetIfDirty(controller);
     }
     private static void Reference(Object owner, string key, Object value)
     {
@@ -329,6 +342,7 @@ public static class AlienBikeSetup
         var state = controller.layers[0].stateMachine.AddState("Rider");
         state.motion = clip;
         controller.layers[0].stateMachine.defaultState = state;
+        EnsureRiderIK(controller);
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssetIfDirty(controller);
     }

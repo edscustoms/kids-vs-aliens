@@ -81,7 +81,7 @@ namespace EditorTools
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (GUILayout.Button("Load / Refresh Asset", GUILayout.Height(26)))
-                        LoadAssetAsync();
+                        _ = LoadAssetAsync();
 
                     if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(26)))
                         ClearAsset();
@@ -105,7 +105,7 @@ namespace EditorTools
 
                     GUILayout.Space(10);
                     if (GUILayout.Button("IMPORT SELECTED", GUILayout.Height(34)))
-                        ImportSelectedAsync();
+                        _ = ImportSelectedAsync();
                 }
             }
 
@@ -219,7 +219,28 @@ namespace EditorTools
             );
         }
 
-        private async void LoadAssetAsync()
+        /// <summary>Runs the same recommended-map workflow as the Inspector for explicit Editor authoring.</summary>
+        public async Task ImportRecommendedAsync(string canonicalUrl, string group, string resolution = "2k")
+        {
+            if (_busy) throw new InvalidOperationException("An import is already running.");
+            RefreshGroups();
+            int groupIndex = _groups.IndexOf(group);
+            if (groupIndex < 0) throw new ArgumentException("Unknown environment group: " + group);
+            _url = canonicalUrl;
+            await LoadAssetAsync();
+            if (_statusType == MessageType.Error) throw new InvalidOperationException(_status);
+            int resolutionIndex = _resolutions.IndexOf(resolution);
+            if (resolutionIndex < 0) throw new ArgumentException("Unavailable resolution: " + resolution);
+            _groupIndex = groupIndex;
+            _resolutionIndex = resolutionIndex;
+            ResetFormatsForCurrentResolution();
+            SelectRecommended();
+            await ImportSelectedAsync();
+            if (_statusType != MessageType.Info) throw new InvalidOperationException(_status);
+            Debug.Log("Poly Haven " + canonicalUrl + " -> " + group + "/" + _assetId + " (" + resolution + "): " + _status);
+        }
+
+        private async Task LoadAssetAsync()
         {
             if (_busy)
                 return;
@@ -284,7 +305,7 @@ namespace EditorTools
             }
         }
 
-        private async void ImportSelectedAsync()
+        private async Task ImportSelectedAsync()
         {
             if (_busy || string.IsNullOrWhiteSpace(_assetId))
                 return;

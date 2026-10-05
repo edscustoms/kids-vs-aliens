@@ -211,10 +211,41 @@ each next segment is rechecked before walking it. PlayerAnimation observes that 
 walking velocity, then uses the
 authored Humanoid rider controller for the short hop/sit and seated phase. Replacing that
 controller does not require editing bike physics. BikeRiding retains the on-foot lease
-and allows only move/look/jump/run ingestion. Normal shooting, Beam, melee, inventory
-activation and pickups stay unavailable; the capsule is disabled while seated. The
+and allows move/look/jump/run plus the existing Shoot input for a selected SemiAuto
+pistol during normal Riding. Beam, melee, grenades, inventory activation and pickups
+stay unavailable; the capsule is disabled while seated. The
 player root follows SeatPoint before the existing camera updates. Mounted look still
 uses ThirdPersonController's existing input and camera-target method.
+
+Mounted pistol shooting uses `PlayerAim`'s existing camera/body visibility samples,
+sticky selection, real LOS and accuracy zones on both input platforms. Its Inspector
+`Mounted Aim Max Angle` defaults to **70 degrees per side**, measured horizontally
+from the stable bike root. Mounted look input still controls the camera. A missing
+lock fires from the real pistol muzzle along bike forward; normal muzzle obstruction
+and nearest-hit physics still apply. The occupied hull is excluded from Amy's own
+queries. `PlayerShooter` retains owned ammo, cooldown, reload payment and delayed hits.
+Knowledge requirements remain in force. BikeRoute's starting loadout is unchanged;
+select the existing pistol before mounting.
+
+`PlayerAnimation` blends the right-hand Humanoid IK over **0.18 s**, holding a short
+tap's pose for **0.35 s** before returning to the authored steering pose. The left
+arm retains that pose. After the arm solve, PlayerAnimation smoothly aligns the
+evaluated hand using the existing weapon/socket-to-muzzle rotation; it does not
+assume Humanoid IK goal axes match this avatar's bone axes. `PlayerEquipment` only
+changes weapon visibility. The rider controller's base
+layer needs IK Pass, ensured by canonical scene repair. The Animator stays evaluated
+while seated because its post-IK muzzle supplies gameplay, then restores its previous
+culling mode on exit. A tap waits for the raised pose before firing; pause, dismount
+or equipment change cancels an unaccepted tap, never an already accepted delayed hit.
+Focused coverage: `MountedPistolAimTests` and `MountedPistolPlayTests`.
+
+Unity 6000.5.6f1: `MountedPistolFocused` passed **40/40** (15 mounted checks plus
+existing aim, suspension, owned weapon/economy, delayed-hit lifecycle, repair and
+bike startup/driving checks). This includes real Save/Continue with a paid reload,
+both side poses and a wall behind the muzzle. XML/logs are under
+`Logs/RepositoryAuditRemediation`; pose captures are under `Logs/MountedPistol`.
+Compilation and `git diff --check` passed. Manual touch/pose acceptance and device
+testing remain pending; no full regression ran.
 
 `GameplayCameraController` owns temporary bike framing on the existing Cinemachine
 rig. It finds the rider through the authored Follow target's player ancestor; normal
@@ -384,8 +415,9 @@ ride behavior. XML/logs remain under `Logs/RepositoryAuditRemediation`.
 Open `Assets/Game/Scenes/BikeRoute.unity`, enter Play Mode, use RIDE and follow the
 route to the green finish stripe. V3 replaces the rejected flat environment with
 close terrain cuts, forest clusters and service buildings. **Manual driving acceptance
-is pending.** Existing bike/camera, HUD/input and Active Run owners are unchanged;
-there is no combat, mission, pickup or ConstructionSite transition.
+is pending.** The chase layer below adds enemy bikes, Plasma pickups and finish
+defense. Existing camera/HUD and Active Run owners remain; no mission or
+ConstructionSite transition is attached.
 
 The eight sections retain approximately **5.23 km** of primary progression, or
 **4.64 km** using both shortcuts. Asphalt-only sections 01/03/05/08 alternate with
@@ -420,10 +452,13 @@ speed still feels too slow. Mobile rendering/performance remains unmeasured.
 | Hero embankment | 28 x 9 x 5.5 m |
 
 These are solid, curved launch meshes with safe ground/deck below, not gaps requiring
-a jump. Bike tuning is preserved: **22 m/s** normal, **35 m/s** turbo, acceleration
-**18/35 m/s^2**, reverse **6 m/s**. V1 can lose substantial speed climbing a ramp without
-Jump. Charge on the flat approach and release before the slope; late release can
-lose eligibility. Slope attitude, launch and landing polish remain bike limitations.
+a jump. The current saved tuning is **29 m/s** normal, **50 m/s** turbo, acceleration
+**24/45 m/s^2**, reverse **6 m/s**, preserved for Chase V1. The historical V3 tests
+below used 22/35. Chase V1 adds filtered ground-plane attitude and slope-relative
+grounding, including uphill Jump eligibility. The existing launch speed is now
+relative to the supported road, so climbing velocity is retained on release. Charge before a ramp for a deliberate
+launch; loss of actual support still cancels an unreleased charge. Landing quality
+and high-speed ramp response remain manual physics checks.
 
 EasyRoads3D Free remains Editor-only: native markers/source meshes live beneath
 inactive `EditorOnly` `_RoadAuthoring`; runtime roads use `LevelGeometry/BakedAsphalt`.
@@ -442,7 +477,10 @@ To reshape this scene:
 3. Conform/repaint the isolated Terrain and reposition/rebuild affected boundary
    meshes, trees, signs, buildings and ramps. **The mesh update does not move those
    objects or reshape Terrain.** Keep both rejoin surfaces and the underpass clear.
-4. Save, run focused `BikeRouteGrayboxTests;BikeRouteGrayboxPlayTests;BikeRouteCorridorTests`,
+4. Run **Tools > Level Authoring > Update BikeRoute Chase Guide** to resample native
+   paths, validate safe spawn anchors and relocate the four jump hints. Inspect guide
+   gizmos and release distances, then save. This does not move enemies or geometry.
+5. Run focused `BikeRouteGrayboxTests;BikeRouteGrayboxPlayTests;BikeRouteCorridorTests`,
    then drive all changed sections and both shortcuts. Check boundaries, jump
    approaches/landings, camera readability and turbo sightlines.
 
@@ -462,6 +500,342 @@ asset churn. The supported bridge shoulders, corrected deck-level warning sign a
 lower shortcut passed the 7/7 `BikeRouteV3BridgeConfirm` follow-up. After removing
 temporary probes, `BikeRouteV3Retained` passed 5/5 with a clean Editor exit. These
 checks do not replace manual acceptance.
+
+## BikeRoute environment V2 and containment
+
+Road centerlines, markings, ramps, waves, towers, camera and saved player speed/boost
+remain separately owned. Environment authoring uses one sampled wall footprint and
+one opening decision for visual cliff feet and smooth, zero-bounce grounded collision.
+Upper cliff colliders follow the visible sculpted surface, including its terrain cap;
+material transitions cannot create separate collision gaps. Basalt outcrops and taller
+forest rocks have their own matching surfaces behind the smooth riding boundary.
+The old overlapping bank colliders, tall bridge guards and scattered forest root are
+inactive `EditorOnly` authoring history.
+
+Quarry, dark rock and forest weights vary continuously across approximately 600-730 m
+bands. The same vertex-weight shader spans all cliff chunks, blending three PBR map
+sets (nine texture samples); there is no chunk-level material switch or runtime
+material instantiation. Curved wall feet, eroded ledges, varied crests and terrain-fitted
+caps replace the previous uniform extrusions. Groves and ledge vegetation follow the
+same broad climate bands. Mobile GPU cost still needs device profiling.
+
+`BikeRouteContainment`, explicitly wired on the chase root, owns only the local bridge
+flight lane and the last-resort route defense. Amber beacons mark the lane. Outside
+its side margin, airborne velocity and chassis heading turn inward together, preserving
+velocity magnitude and vertical motion. Ordinary in-lane jumping and shared bike
+physics remain untouched. More than 32 m beyond the nearest road half-width produces
+a three-second warning, followed by visible/audible defense pulses of 25 damage every
+0.5 s through PlayerHealth. Returning cancels the defense; sustained escape uses the
+existing death/restart flow. Warning state is transient and clears during suspension,
+Continue readiness, death and finish. There is no teleport or giant world box.
+
+The seven materials below were imported at **2K** through the existing
+**Tools > Helpers > Poly Haven Material Importer**, selecting Diffuse, Normal GL and
+ARM. The helper generates URP Lit materials and its existing metallic/AO/smoothness
+packed mask. Normal and mask maps are linear, mipmapped and compressed; displacement
+is not used. Paths follow the existing `Art/Environment/{Materials,Textures}/<group>`
+convention. Canonical source links:
+
+| Asset | Existing category | Source |
+| --- | --- | --- |
+| Quarry Wall 02 | Wall | [quarry_wall_02](https://polyhaven.com/a/quarry_wall_02) |
+| Dark Rock | Wall | [dark_rock](https://polyhaven.com/a/dark_rock) |
+| Forest Ground 01 | Ground | [forrest_ground_01](https://polyhaven.com/a/forrest_ground_01) |
+| Forest Floor | Ground | [forest_floor](https://polyhaven.com/a/forest_floor) |
+| Sandstone Blocks 05 | Wall | [sandstone_blocks_05](https://polyhaven.com/a/sandstone_blocks_05) |
+| Sandstone Blocks 08 | Wall | [sandstone_blocks_08](https://polyhaven.com/a/sandstone_blocks_08) |
+| Asphalt 01 | Ground | [asphalt_01](https://polyhaven.com/a/asphalt_01) |
+
+Pipes, excavator, barriers, cable reels, timber/cement pallets, portable toilets,
+road signs and conifers reuse existing prefabs. Eight original reusable buildings are
+under `Art/Environment/Buildings/BikeRoute`: DuneStepHouse, OasisShop, RedClayTownhouse,
+ShadePorchHouse, BlueShutterHouse, RouteServiceHall, CornerMarket and ArchedWorkshop.
+They use solid opaque windows, simple colliders, shared masonry/paint materials and
+fewer than 1,800 triangles each. Seventeen instances form the open-section settlement
+and smaller start/finish service clusters. The editable source is outside Unity Assets:
+`D:/assets/Kids VS Aliens/BikeRoute/BikeRoute_DesertSettlement.blend`.
+
+**Tools > Level Authoring > Author BikeRoute Environment Art and Collision** is an
+explicit rebuild: it replaces its two generated roots, reshapes outer terrain/paint
+and reapplies these art choices. Manual edits under those roots are replaced.
+**Update BikeRoute Desert Settlement** refreshes only the building prefabs/placements.
+Neither command rewrites player tuning, chase reservations, waves or finish defenses.
+The existing Poly Haven importer supplies the material workflow; V2 reuses the seven
+previously downloaded 2K sets, rather than downloading duplicate copies.
+
+Chase-only authored tuning now gives active pursuit a 1.45 multiplier on enemy base
+speed/acceleration, and distant catch-up a 1.65 multiplier starting at 28 m behind.
+The enemy's original 29/50 base values remain; all temporary multipliers are removed
+on death, disable, finish and restore. Attack recovery is 1.4 s and lead recovery 2.5 s.
+Support riders hold about 13 m behind to finish readable laser locks before committing
+to an overtake/contact. A committed ram with at least 60 N s impulse and 3 m/s relative
+speed deals 14 damage through the existing occupied-hull combat resolver, once per
+commitment. Incidental
+contact and player rams remain unchanged. Contact still has one director-owned
+reservation; no riders teleport, no extra waves exist, and shared/on-foot enemies
+are unchanged.
+
+Enemy vehicle lasers refresh their firing prediction only during the first **0.1 s**
+of the existing **0.3 s** discharge beat. The remaining beat and flight are committed,
+so a late lateral dodge still escapes. The chase prefab opts in; player lasers retain
+zero refresh. The 3.5 s lock, UI/audio, 72 m/s straight non-homing bolt, forward cone,
+30 damage and the player's 8 s cooldown are unchanged. The enemy-only cooldown is 5.5 s.
+
+Focused V2 validation and representative gameplay-camera captures are retained under
+`Logs/BikeRouteEnvironmentV2`; Unity XML/logs use `BikeEnvironmentV2*` under
+`Logs/RepositoryAuditRemediation`. The latest results cover **26/26 passing focused
+contracts** across Review, Pressure, BalanceConfirm and Final; targeted reruns cleared
+all earlier failures. They cover wall impacts, visual/collision alignment, materials,
+route/shortcut traversal, bridge containment, hit/dodge, counterfire, front entries,
+finish and real Save/Continue. The final no-counterfire/no-turbo route-following probe
+died after **75.7 simulated seconds**, with 14 contact attempts, five lead windows and
+three laser shots. This is controlled input evidence, not a human completion time.
+The bridge escape probe retained at least **52.8 m/s** while returning to the lane;
+ordinary in-lane flight passed. Unity compilation and `git diff --check` passed.
+No full regression was run.
+The bridge collision/safety probes begin airborne to isolate boundary behavior. They
+do not establish natural ramp launch feel: V1 jump charging remains slope-sensitive.
+Human full-route art/driving/difficulty acceptance and mobile GPU/touch checks remain
+manual gates. Automated traversal and controlled hit/dodge fixtures do not replace them.
+
+## BikeRoute chase V4.2
+
+The ownership below remains current; environment V2's tuning above supersedes the
+historical V4.2 speed multipliers, recovery durations and enemy laser cooldown below.
+
+`BikeRoute Chase` owns the level-specific layer. Amy and the player bike stage 55 m
+along the first road, leaving room between Amy and the existing start wall for the
+opening wave. On first normal Riding, two dormant riders activate about 30 m behind, with
+separate delays. Both must die before Wave 2: two staggered front passes and one rear
+pursuer. Front activation waits for a clear authored anchor outside the gameplay
+frustum on a sufficiently wide part of Amy's current path. It may remain pending
+through a narrow/fully visible stretch. No later waves exist.
+
+`EnemyBikeDriver` supplies intentions to the unchanged `AlienBikeController`.
+Its chase-only engagement envelope is **8 m behind to 6 m ahead** of Amy, measured
+along her bike's stable forward direction. These limits, the **10 m** overshoot
+threshold, **0.6 s** prediction horizon and **2.7 m** crossing exit are Inspector fields.
+Support riders use separate side/rear or forward staging positions and match Amy's
+speed with a damped longitudinal correction. Beyond 10 m ahead they brake, widen and
+wait for Amy to close; recovery ends below 4 m ahead. They do not turn back into her.
+Route guidance bounds safe travel and joins; it no longer supplies the engagement goal.
+
+Beyond **40 m behind**, V2 catch-up temporarily raises
+only the enemy instance's speed/acceleration limits by **15%**, ending 6 m behind
+(2 m inside the rear envelope edge).
+Finish, death, disable and restore remove that advantage. Turbo uses the existing
+charge and physics, with full acceleration pulses and coasting between them. Close
+pursuit retains its envelope speed target while boosting. Road-margin recovery
+steers inward instead of indefinitely braking along an outer support lane.
+
+`BikeRouteChaseDirector` owns exactly one transient primary contact reservation.
+It uses its existing authored rider arrays to bind drivers and select a nearby
+eligible rider, preferring a different rider after release. Non-primary riders hold
+separate support positions and yield longitudinally only when sharing a peer's lane.
+The primary predicts Amy's path from her Rigidbody velocity, aims across it to the
+opposite side, or targets a rear-quarter/blocking point. Prediction follows Amy's
+current branch through forks. The guide bounds the target;
+real steering, collisions and scenery remain authoritative. Contact, miss/timeout,
+boundary abort, death, disable, restore and finish release the slot. A **0.7 s** handoff
+gap and clearance from the recovering rider separate reservations; individual
+recovery lasts at least **1.8 s**. A commitment lasts at most **3.6 s**.
+The director also reserves one transient lead blocker, independently of the primary
+contact attacker. A supporting rider stages toward an overtake; reservation starts
+only once it is physically 2-25 m ahead, so a rider still behind cannot monopolize
+the role. The lead targets **16 m ahead**, smoothly moves from its outside pass lane
+into a small weave, and holds for **6 continuous useful seconds** inside 10-25 m with
+real forward-cone/screen/LOS validity and Amy's laser out of cooldown. Quiet cooldown
+time does not consume her next firing opportunity. Losing that window resets the timer.
+Ordinary steering/throttle, curvature and authored boost limits remain authoritative.
+The overtake lane uses the bike's narrower physical road margin; it never leaves the
+road. Directly joined sections keep guidance continuous. A failed role expires after
+22 s; falling back behind Amy also releases it so the other rider can take over.
+Lead recovery lasts 4 s. A lone survivor must complete another physical
+attack between lead attempts. Death, disable, finish and both restore passes release
+the role. No reservation or maneuver frame is saved. Contact can commit from 15 m
+behind; nearby support positions keep pressure close without simultaneous primaries.
+
+The enemy prefab is `BikeRoute/Chase/PF_EnemyBikeRider`. Existing EnemyActor,
+EnemyEquipment, EnemyHealth and death retain their ownership. Handheld ranged attack
+is disabled only on this chase prefab, and the driver never requests handheld shots.
+Equipment remains logically present for the existing save/loot behavior. Its normal
+Changed signal hides the carried weapon and selects Unarmed presentation, including
+both restore passes while paused. The copied controller still uses the shared
+**Bike_RiderSit** full-body pose; its Unarmed upper layer uses that same seated pose.
+Shared/on-foot animations, weapon definitions and combat profiles are unchanged.
+
+`AlienBikeLaserWeapon` is the same component on Amy's BikeRoute instance and all five
+enemy bikes. It owns selection, lock validity/progress, audio cadence, automatic fire
+and cooldown. Explicit target arrays and the existing GameplayCameraController supply
+the combat view; no scene-name lookup, second camera or mounted-pistol cone is used.
+Amy acquires while moving/intending forward, retaining a valid current target and
+otherwise preferring screen center, then distance. Both enemy and player eligibility
+require a **60-degree half-cone** from the stable physical bike root, a live driven
+target within **110 m**, normal forward-camera visibility and real muzzle LOS.
+Passing Amy cancels an enemy lock immediately; rear view never changes that cone.
+Enemy vehicles target Amy during Pursuit, but committed attacks and same-corridor
+pressure inside 15 m suppress the laser. The weapon never writes steering or throttle. Cover, cone/screen loss, death,
+pause and ineligible driving reset progress.
+
+Lock takes **3.5 s**, followed by a **0.3 s** LOCKED discharge beat. The intercept is
+committed at LOCKED, including expected travel during the beat; it stops tracking a
+late dodge. Validity/cone checks continue until release. One **30-damage** bolt then
+fires, followed by **8 s** of cooldown with no brackets, beeps or reacquisition. These
+values are Inspector fields. Independent enemy acquisition delays remain **0.2 to
+1.12 s**; there is no shared firing clock.
+
+BikeLaserLockView reuses one BikeLaserFrame mesh implementation for outgoing and the
+highest-progress incoming lock. V4.2 removes circuit forks, inward chevrons and
+center charge ticks. Clean broken neon rails and notched corners retain red/hot-magenta
+and pale highlights, with only the small top status label. Stroke widths remain fixed while the frame contracts around
+projected oriented hull bounds; incoming framing is capped to keep the completed
+warning clear of the quick slots. The shared NeonUI material supplies antialiasing
+and glow; no raster texture or per-frame material instance is added. LOCKED brightens
+the frame during the final beat. AudioService retains eased **0.75 to 0.12 s** beeps
+and the stronger completion tone, with the most advanced incoming threat taking
+priority. Fire/impact events and the existing placeholder clips are unchanged.
+
+`AlienBikeLaserBolt` is the shared weapon's pooled physical projectile. It snapshots
+the committed intercept at release, travels straight at **72 m/s**, and sweeps a
+**0.25 m radius** each physics step. Nearest eligible collision applies HitInfo damage
+and reaction together through CombatHitResolver. It has no target-following update
+and continues after a miss, up to **440 m**, into banks, roads or other real blockers.
+A spawned bolt survives its shooter's disable/death; transient flights are not saved.
+The separate bright core/halo and short trail share authored materials. Impacts use
+at most 48 burst particles plus one expanding flash, with no realtime lights.
+
+The user's saved BikeRoute tuning is preserved: **40.6 / 70.1 m/s** normal/turbo,
+**28 / 53 m/s^2** acceleration and reverse **6 m/s**. Boost charge/drain/recharge,
+handling, support and jump are unchanged. Enemy base speeds remain **29 / 50**, with
+the existing 15% distant catch-up; sustained player turbo can outrun them. Lead roles
+create opportunities when Amy maintains a chase pace, not a guaranteed overtake at
+70.1 m/s. Bike-to-bike forces and damage are unchanged.
+
+`BikeRouteImpactFeedback` is attached only to the player bike instance. Meaningful
+bike-to-bike collision entry requests the existing CameraFeedbackService, scaled by
+impulse divided by player-bike mass (1.5-9 m/s velocity change), with a 0.35 s debounce.
+The chase-only `BikeImpact.asset` is a 0.2 s positional/rotational pulse. The existing
+CameraFeedbackController has an explicit mounted-player reference in BikeRoute:
+its riding lease may play feedback, while blocking suspension, backgrounding and
+camera settings still suppress it. Render offsets never feed gameplay aim or physics.
+
+`BikeRouteBreakableSign` owns each sign's intact/broken state under a stable
+RunWorldObject. All 9 original signs and 10 additional shoulder warnings use one
+primitive solid collider, an early trigger and one initially kinematic debris body.
+A driven player bike at **60% of its authored regular max speed** (currently 24.36 m/s)
+breaks the sign: its body launches at 55% of incoming horizontal velocity plus 4 m/s
+upward, the bike loses **8%** horizontal speed, and the same impact profile plays.
+The debris ignores the striking bike, remains physical against scenery, and hides
+after 5 seconds. Broken state persists; Continue hides debris without replaying
+launch, slowdown or feedback. The stable root never follows the transient flight.
+
+**Tools > Level Authoring > Author BikeRoute Breakable Signs and Impact** explicitly
+wires these dependencies and authored chase timings in BikeRoute only. Existing
+vendor sign instances are unpacked into scene-owned visuals; vendor assets remain
+unchanged. Repeating the command retains existing wrappers/identities and named extra
+placements. It reapplies the documented chase timings, so use it deliberately after
+hand tuning. It does not rebuild geometry or modify player speed/boost tuning. To add
+one manually, duplicate a configured sign wrapper and assign its RunWorldObject a new
+unique stable ID; the visible sign body and its primitive colliders stay explicitly wired.
+
+The rear button below Pause is now **hold-only and instant**. BikeRearViewHold sends
+pointer down/up/exit/cancel to GameplayCameraController.SetRearViewHeld; release,
+disable, focus loss, pause, death and dismount clear it. The existing camera rotates
+the rendered pose by 180 degrees only while held. Its normal damped pose, FOV,
+controls and forward combat projection remain independent. No toggle, rear blend,
+second camera or persistence field exists. Outgoing brackets hide during rear view.
+
+**Tools > Level Authoring > Update BikeRoute Vehicle Lasers** wires only this level,
+preserves authored laser and all speed/boost tuning, and refreshes the heavy effect
+assets. It is not routine scene repair. Atmospheric flybys and other scenes do not
+receive this weapon. Existing **Update BikeRoute Chase Riders** remains the separate
+copied animation/legacy handheld-profile authoring tool.
+
+The guide is serialized scene data: ten paths, forward joins, validated spawn anchors
+and four charge/release hints. EasyRoads is used only by the Editor authoring tool.
+**Create BikeRoute Chase Content** is a one-time explicit authoring operation and
+refuses an existing director. Edit existing content through its references/Inspector;
+**Update BikeRoute Chase Guide** only refreshes guide data after geometry edits.
+
+Fresh BikeRoute attempts ensure Pistol and Rifle with their normal magazines, select
+Pistol and set **12 Plasma**. Ten existing Plasma pickups, **3 each**, sit on the main
+and both shortcut driving lines. The tiny bike collector forwards trigger contact to
+`PickupItem` and `PlayerInventory`; only capsule resources are eligible while Riding.
+Weapons, books and mission items retain on-foot collection. Knowledge is unchanged:
+weapon ownership alone does not bypass learned-skill requirements.
+
+The actual finish box at the green stripe activates **two graybox towers / four
+rifles**. Each gun has its own phase, target preference, yaw/pitch and roughly 4 s
+fire / 0.5 s rest cycle, with the existing Rifle's range/damage/spread concepts and
+pooled plasma VFX. Ammunition is unlimited in the mechanism, without changing the
+player's weapon definition. Guns choose only the five chasing aliens and withhold
+shots intercepted by Amy or her occupied hull. At finish, all activated riders cancel
+attacks and flee forward along the corridor into its run-out, using individual side
+lines and ordinary obstacle recovery; pending waves are barred. They no longer steer
+intercepts toward Amy. Amy keeps control. A rider outside rifle range/LOS can survive
+while disengaged; the existing run-out boundaries still physically contain it.
+
+Stable RunWorldObject identities belong to the director, all five dormant riders and
+the pickups. The director persists wave/elapsed activation age/next front-entry deadline/loadout/finish;
+individual driver, bike, health and equipment participants retain their own state.
+Continue restores grounded bike checkpoints, clears transient jump/turbo intentions,
+and returns Amy on foot/paused as before. Both restore passes assign absolute values;
+finish-derived peer/gun activation waits for Active Run readiness. Tower bursts and
+accepted transient visual frames are not reconstructed.
+
+V4.2 focused evidence spans 35 distinct tests, with latest results passing across
+iterations. `ChaseV42Counterplay` passed **2/2** on the final chase implementation.
+`ChaseV42Final` passed 15/17; its two pressure/offense failures were cleared by that
+counterplay run. `ChaseV42HoldForward` passed 4/5, including sign Save/Continue,
+physical sign launch/render feedback and solo alternation. Its offensive failure was
+also cleared. `ChaseV42Confirm` passed **5/5**, confirming final URP sign materials,
+authored placement, physical impact/render feedback, contact cleanup and Save/Continue.
+CameraFeedbackTests and authored sign clearance/identity checks passed in
+`ChaseV42Pressure` (17/19); its earlier driving/foreground failures were corrected.
+No full regression ran.
+
+| 60-second input probe | No counterfire | Counterfire |
+| --- | --- | --- |
+| Committed attacks / physical contacts | 4 / 8 | 7 / 7 |
+| Lead windows / longest valid forward opportunity | 2 / 9.35 s | 3 / 19.88 s |
+| Player locks / shots / attributed bolt hits | 0 / 0 / 0 | 4 / 4 / 2 |
+| Impact feedback requests / sustained stationary pileups | 9 / 0 | 5 / 0 |
+
+Both probes use the saved physics/tuning, ordinary input and no turbo. Extra player
+durability keeps the measurement running; real incoming damage stays enabled.
+No-counterfire holds forward. Counterfire uses normal braking when a blocker is ahead
+to maintain roughly a 12 m following gap. The two player-attributed hits dealt 60 damage;
+no enemy died in that sample. Enemy bolts can also hit other riders after missing Amy,
+so enemy health loss alone is not counted as player success. Earlier unbraked
+counterfire runs produced only zero/one released shot in 60 seconds: driving past a
+slower blocker does not guarantee a lock. Full player turbo can still outrun the
+unchanged enemy limits. These limits remain part of manual feel review.
+
+Iteration fixed mounted-feedback eligibility (disabled foot motor and its riding
+lease), overtake/contact priority conflicts, lost-lead handoff, cooldown consuming
+attack windows, and inherited legacy sign materials. The headless-focus fixture now
+explicitly simulates foreground as existing feedback tests do. Pressure assertions
+require repeated contact plus participating riders/forward windows, rather than an
+arbitrary identical attack count per role. No hit or lock completion is forced.
+
+Actual URP lock stages and sign-flight captures are in
+`Logs/BikeRouteChaseV42/review.html`; metrics, per-record scene review and content hashes
+are alongside it. The 4,545-file starting baseline shows only the intended chase,
+lock-frame, camera-feedback eligibility and focused test changes. Scene changes are
+sign wrappers/additions, mounted feedback references and contact timing. Player speed/
+boost, shared physics, route geometry, ConstructionSite, towers, normal weapon tuning
+and vendor source assets remain unchanged. `git diff --check` passed.
+
+Historical V4.1 evidence remains in `ChaseV41Laser`, `ChaseV41Lead`,
+`ChaseV41Adjacent` and `ChaseV41FinalCapture` (44 distinct tests passing across
+iterations, including an unchanged pistol test rerun after a timing failure).
+Current XML/logs are under `Logs/RepositoryAuditRemediation`.
+
+Human chase feel remains the acceptance gate: drive, dodge incoming locks, overtake
+and let the forward vehicle laser acquire, use the mounted pistol, hold/release rear view,
+and finish under tower cover. Automated inputs and rendered inspection do not
+replace that playtest. Touch readability, sound mix, Android/iOS interruptions and
+mobile performance remain device checks.
 
 ## Dialogue and objectives
 

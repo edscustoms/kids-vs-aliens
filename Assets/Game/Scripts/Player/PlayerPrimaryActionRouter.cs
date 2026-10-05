@@ -16,9 +16,11 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
     [SerializeField] private PlayerMeleeController meleeController;
 
     private bool awaitingNeutral;
+    private PlayerBikeRider rider;
 
     private void Awake()
     {
+        rider = GetComponent<PlayerBikeRider>();
         if (equipment == null) equipment = GetComponent<PlayerEquipment>();
         if (meleeController == null) meleeController = GetComponent<PlayerMeleeController>();
         if (input == null)
@@ -76,7 +78,7 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
             grenadeController.GrenadeSelectionChanged -= HandleGrenadeSelectionChanged;
         }
 
-        shooter?.SetTriggerHeld(false);
+        shooter?.CancelTrigger();
 
         grenadeController?.CancelThrow();
         meleeController?.CancelCombat();
@@ -86,6 +88,12 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
 
     private void HandleShootStateChanged(bool pressed)
     {
+        if (rider != null && rider.IsBusy)
+        {
+            // The same Shoot button is pistol-only during Riding; no grenade/melee dispatch here.
+            shooter?.SetTriggerHeld(pressed && rider.CanShootMounted);
+            return;
+        }
         if (grenadeController != null && grenadeController.IsGrenadeSelected)
         {
             shooter?.SetTriggerHeld(false);
@@ -123,7 +131,7 @@ public sealed class PlayerPrimaryActionRouter : MonoBehaviour
 
     private void HandleShootCanceled()
     {
-        shooter?.SetTriggerHeld(false);
+        shooter?.CancelTrigger();
         meleeController?.CancelCombat();
 
         awaitingNeutral = false;

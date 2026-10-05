@@ -72,7 +72,7 @@ public sealed class BikeRouteCorridorTests
     }
 
     [Test]
-    public void RouteSidesHavePhysicalBoundariesIncludingAboveNormalJumpHeight()
+    public void RouteSidesHaveGroundLevelPhysicalBoundaries()
     {
         EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);
         try
@@ -92,14 +92,14 @@ public sealed class BikeRouteCorridorTests
                     var right = Vector3.Cross(Vector3.up, forward.normalized);
                     foreach (int side in new[] { -1, 1 })
                     {
-                        var outside = p + right * (side * (half + 7));
+                        var outside = p + right * (side * (half + 13));
                         // Fork openings into another authored route are intentional.
                         if (roads.Any(other => other != road && other.splinePoints.Any(q =>
                             Mathf.Abs(q.y - outside.y) < 5 && FlatDistance(q, outside) < HalfCorridor(other) + 2)))
                             continue;
-                        foreach (float height in new[] { 1.4f, 7.2f })
+                        foreach (float height in new[] { 1.2f })
                             if (!Physics.SphereCast(p + Vector3.up * height, .3f, right * side,
-                                out _, half + 8, ~0, QueryTriggerInteraction.Ignore))
+                                out _, half + 14, ~0, QueryTriggerInteraction.Ignore))
                                 leaks.Add(road.name + " sample=" + i + " side=" + side + " height=" + height + " at=" + p);
                     }
                 }

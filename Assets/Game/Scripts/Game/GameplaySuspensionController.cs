@@ -63,7 +63,7 @@ public sealed class GameplaySuspensionController : MonoBehaviour
         owners.ContainsValue(SuspensionReason.KnowledgePresentation)
         || owners.ContainsValue(SuspensionReason.Modal);
     public event Action<bool> SuspensionChanged;
-    // Riding retains the on-foot lease but permits the existing move/look/jump/run inputs.
+    // Riding keeps the on-foot lease; only bike controls and the existing pistol path remain available.
     public bool BlocksControls => IsSuspended && !(owners.Count == 1 && owners.ContainsValue(SuspensionReason.BikeRiding));
     public event Action<bool> ControlBlockChanged;
 
@@ -167,7 +167,16 @@ public sealed class GameplaySuspensionController : MonoBehaviour
 
     private void RefreshBikeInput()
     {
-        if (input != null) input.SetBikeControlsActive(IsSuspended && !BlocksControls && !previousInputBlocked);
+        bool riding = IsSuspended && !BlocksControls && !previousInputBlocked;
+        if (input != null) input.SetBikeControlsActive(riding);
+        if (previousEnabled != null && IsSuspended)
+            for (int i = 0; i < gameplayBehaviours.Length; i++)
+            {
+                var consumer = gameplayBehaviours[i];
+                // Do not restore locomotion, inventory, melee, grenades or Beam with this exception.
+                if (consumer is PlayerAim || consumer is PlayerShooter)
+                    consumer.enabled = riding && previousEnabled[i];
+            }
         ControlBlockChanged?.Invoke(BlocksControls);
     }
 

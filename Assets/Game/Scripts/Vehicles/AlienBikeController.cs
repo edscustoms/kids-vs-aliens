@@ -32,6 +32,9 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
     [Range(0, 1)] public float steeringAtMaxSpeed = .45f;
     [Min(.1f)] public float hoverHeight = .85f, hoverSpring = 70, hoverDamping = 14;
     [SerializeField] private LayerMask environmentMask = ~0;
+    [Header("Slope support")]
+    [SerializeField, Min(.1f)] private float supportNormalResponse = 8;
+    [SerializeField, Range(20, 50)] private float maximumSupportSlope = 40;
     [Header("Charged jump (vertical speed)")]
     [Min(.01f)] public float maxChargeTime = 1.4f;
     [Min(0)] public float minJump = 4, maxJump = 9;
@@ -65,9 +68,12 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
     public float Turbo01 => Mathf.Clamp01(turboCharge / maxTurboCharge);
     public float Speed => Body == null ? 0 : Vector3.ProjectOnPlane(Body.linearVelocity, Vector3.up).magnitude;
     public float ForwardSpeed => Body == null ? 0 : Vector3.Dot(Body.linearVelocity, transform.forward);
-    public float SteerInput => Rider != null && Rider.IsDriving ? Mathf.Clamp(Rider.DrivingInput.x, -1, 1) : 0;
+    public float SteerInput => Rider != null && Rider.IsDriving ? Rider.DrivingInput.x : IsDriven ? drivingInput.x : 0;
+    public bool IsDriven => driver != null && Body != null && !Body.isKinematic;
+    public Vector3 SupportNormal => supportNormal;
     public Vector3 SafeExit => safeExit;
     public Quaternion SafeRotation => safeRotation;
+    public Quaternion SafePlayerRotation => Quaternion.Euler(0, safeRotation.eulerAngles.y, 0);
     public string RunStateKey => "alien-bike-v1";
     private readonly RaycastHit[] hits = new RaycastHit[24];
     private float chargeTime, turboCharge, jumpLockUntil, nextSafeCheck;
@@ -75,6 +81,13 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
     private Vector3 safePosition, safeExit;
     private Quaternion safeRotation;
     private bool hasSafePose;
+    private MonoBehaviour driver;
+    private Vector2 drivingInput;
+    private Vector3 supportNormal = Vector3.up;
+    private readonly RaycastHit[] supportHits = new RaycastHit[5];
+    private readonly bool[] supportValid = new bool[5];
+    private readonly float[] supportHeights = new float[5];
+    private readonly float[] sortedHeights = new float[5];
 
     [Serializable]
     private sealed class Saved
@@ -106,7 +119,7 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
         audioPresentation?.Stop();
     }
     private bool RunReady => ActiveRunController.Instance == null || ActiveRunController.Instance.IsReady;
-    public bool CanMount => isActiveAndEnabled && Rider == null && RunReady && Speed <= safeDismountSpeed
+    public bool CanMount => isActiveAndEnabled && driver == null && RunReady && Speed <= safeDismountSpeed
         && mountApproaches != null && mountApproaches.Length > 0 && mountApproaches.Length <= MaxMountApproaches && seatPoint != null;
     public bool IsWithinInteractionRange(Vector3 playerPosition)
     {
@@ -117,6 +130,7 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
     {
         Initialize();
         Rider = rider;
+        driver = rider;
         Body.isKinematic = true;
         CancelCharge();
     }
@@ -126,11 +140,25 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
         Body.WakeUp();
         audioPresentation?.SetEngine(true);
     }
+    // One physical owner; either the player or an AI supplies intentions through this seam.
+    public bool ClaimDriver(MonoBehaviour owner)
+    {
+        Initialize();
+        if (owner == null || (driver != null && driver != owner)) return false;
+        driver = owner;
+        return true;
+    }
+    public void SetDriveInput(MonoBehaviour owner, Vector2 intent)
+    {
+        if (driver == owner) drivingInput = new Vector2(Mathf.Clamp(intent.x, -1, 1), Mathf.Clamp(intent.y, -1, 1));
+    }
     public void Detach()
     {
         CancelCharge();
         IsTurbo = false;
         Rider = null;
+        driver = null;
+        drivingInput = Vector2.zero;
         Secure();
         audioPresentation?.Stop();
         visual?.SetPower(0);
@@ -147,7 +175,7 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
         }
         Body.isKinematic = true;
     }
-    private bool Probe(Vector3 origin, float distance, out RaycastHit support)
+    private bool Probe(Vector3 origin, float distance, out RaycastHit support, float minimumUp = .82f)
     {
         support = default;
         float nearest = float.PositiveInfinity;
@@ -158,7 +186,8 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
         {
             var hit = hits[i];
             if (hit.collider.transform.IsChildOf(transform) || (Rider != null && hit.collider.transform.IsChildOf(Rider.transform))
-                || hit.distance >= nearest || Vector3.Dot(hit.normal, Vector3.up) < .82f)
+                || hit.distance >= nearest || Vector3.Dot(hit.normal, Vector3.up) < minimumUp
+                || hit.collider.GetComponentInParent<AlienBikeController>() != null)
                 continue;
             nearest = hit.distance;
             support = hit;
@@ -175,29 +204,82 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
         grounded = default;
         return false;
     }
+    private bool SampleSupport(out float surfaceHeight, out Vector3 normal)
+    {
+        Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        Vector3 right = Vector3.Cross(Vector3.up, forward);
+        int count = 0;
+        float minimumUp = Mathf.Cos(maximumSupportSlope * Mathf.Deg2Rad);
+        for (int i = 0; i < 5; i++)
+        {
+            Vector3 offset = i == 1 ? forward * 1.05f : i == 2 ? -forward * 1.05f
+                : i == 3 ? right * .55f : i == 4 ? -right * .55f : Vector3.zero;
+            supportValid[i] = Probe(transform.position + offset + Vector3.up * 1.2f,
+                hoverHeight + 2.2f, out supportHits[i], minimumUp);
+            if (!supportValid[i]) continue;
+            var hit = supportHits[i];
+            // Project each contact plane to the chassis center, so a real incline is
+            // consistent across the footprint while a tiny seam/spike is an outlier.
+            supportHeights[i] = hit.point.y - Vector3.Dot(new Vector3(hit.normal.x, 0, hit.normal.z),
+                transform.position - hit.point) / hit.normal.y;
+            // A wall/railing top above the chassis is not a floor. Sampling farther
+            // ahead for slopes must not turn hover lift into a stair-climbing force.
+            if (supportHeights[i] >= transform.position.y - .05f)
+            { supportValid[i] = false; continue; }
+            sortedHeights[count++] = supportHeights[i];
+        }
+        surfaceHeight = 0; normal = Vector3.up;
+        if (count < 3) return false;
+        Array.Sort(sortedHeights, 0, count);
+        float median = sortedHeights[count / 2];
+        int accepted = 0; Vector3 normals = Vector3.zero;
+        for (int i = 0; i < 5; i++)
+        {
+            supportValid[i] &= Mathf.Abs(supportHeights[i] - median) <= .24f;
+            if (!supportValid[i]) continue;
+            surfaceHeight += supportHeights[i]; normals += supportHits[i].normal; accepted++;
+        }
+        if (accepted < 3) return false;
+        surfaceHeight /= accepted;
+        normal = normals.normalized;
+        if (supportValid[1] && supportValid[2] && supportValid[3] && supportValid[4])
+        {
+            Vector3 plane = Vector3.Cross(supportHits[1].point - supportHits[2].point,
+                supportHits[3].point - supportHits[4].point).normalized;
+            if (plane.y >= minimumUp) normal = plane;
+        }
+        return true;
+    }
+    private float SlopeVerticalSpeed(Vector3 normal) =>
+        -Vector3.Dot(new Vector3(normal.x, 0, normal.z), Body.linearVelocity) / Mathf.Max(.5f, normal.y);
+    private void SetGrounded(bool supported, float height, Vector3 normal)
+    {
+        IsGrounded = supported && Time.time >= jumpLockUntil
+            && Mathf.Abs(transform.position.y - height - hoverHeight) < .32f
+            && Mathf.Abs(Body.linearVelocity.y - SlopeVerticalSpeed(normal)) < 2.5f;
+    }
     public bool CheckGrounded()
     {
         Initialize();
-        bool front = Probe(transform.position + transform.forward * .9f + Vector3.up * .4f, hoverHeight + .7f, out var a);
-        bool back = Probe(transform.position - transform.forward * .9f + Vector3.up * .4f, hoverHeight + .7f, out var b);
-        IsGrounded = front && back && Mathf.Abs(Body.linearVelocity.y) < 2
-            && Mathf.Abs(a.distance - .4f - hoverHeight) < .25f && Mathf.Abs(b.distance - .4f - hoverHeight) < .25f
-            && Time.time >= jumpLockUntil;
+        bool supported = SampleSupport(out float height, out var normal);
+        SetGrounded(supported, height, normal);
         return IsGrounded;
     }
     private void FixedUpdate()
     {
-        if (!RunReady || Rider == null || !Rider.IsDriving || Body.isKinematic)
-            return;
-        bool supported = Probe(transform.position + Vector3.up * .4f, hoverHeight + 1f, out var ground);
-        CheckGrounded();
+        if (!RunReady || !IsDriven) return;
+        bool supported = SampleSupport(out float height, out var normal);
+        SetGrounded(supported, height, normal);
+        supportNormal = Vector3.Slerp(supportNormal, supported ? normal : Vector3.up,
+            1 - Mathf.Exp(-supportNormalResponse * Time.fixedDeltaTime));
         if (supported && Time.time >= jumpLockUntil)
         {
-            float height = ground.distance - .4f;
-            float lift = Mathf.Clamp((hoverHeight - height) * hoverSpring - Body.linearVelocity.y * hoverDamping, -25, 45);
+            float relativeVertical = Body.linearVelocity.y - SlopeVerticalSpeed(normal);
+            float lift = Mathf.Clamp((hoverHeight - (transform.position.y - height)) * hoverSpring
+                - relativeVertical * hoverDamping, -25, 45);
             Body.AddForce(Vector3.up * (lift - Physics.gravity.y), ForceMode.Acceleration);
         }
-        Vector2 move = Rider.DrivingInput;
+        Vector2 move = drivingInput;
         float throttle = move.y;
         float speedLimit = throttle < 0 ? reverseSpeed : IsTurbo ? turboMaxSpeed : maxSpeed;
         float forwardSpeed = Vector3.Dot(Body.linearVelocity, transform.forward);
@@ -208,18 +290,23 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
             Body.AddForce(-Vector3.ProjectOnPlane(Body.linearVelocity, Vector3.up) * 2.2f, ForceMode.Acceleration);
         float steering = Mathf.Lerp(1, steeringAtMaxSpeed, Mathf.Clamp01(Speed / maxSpeed));
         float reverse = forwardSpeed < -.5f ? -1 : 1;
-        Body.MoveRotation(Quaternion.Euler(0, Body.rotation.eulerAngles.y + move.x * steeringStrength * steering * reverse * Time.fixedDeltaTime, 0));
+        Vector3 heading = Quaternion.AngleAxis(move.x * steeringStrength * steering * reverse * Time.fixedDeltaTime, Vector3.up)
+            * Vector3.ProjectOnPlane(Body.rotation * Vector3.forward, Vector3.up).normalized;
+        // Preserve the physics yaw, including with Rigidbody render interpolation enabled.
+        // Solve the tangent's vertical component instead of changing its horizontal heading.
+        heading.y = -(supportNormal.x * heading.x + supportNormal.z * heading.z) / Mathf.Max(.5f, supportNormal.y);
+        Body.MoveRotation(Quaternion.LookRotation(heading, supportNormal));
         if (Time.time >= nextSafeCheck && IsGrounded)
         {
             nextSafeCheck = Time.time + .4f;
-            if (Rider.TryFindDismount(out var exit))
-                RememberSafePose(exit);
+            if (Rider == null) RememberSafePose(transform.position);
+            else if (Rider.TryFindDismount(out var exit)) RememberSafePose(exit);
         }
     }
     public void RememberSafePose(Vector3 exit)
     {
         safePosition = transform.position;
-        safeRotation = Quaternion.Euler(0, transform.eulerAngles.y, 0);
+        safeRotation = transform.rotation;
         safeExit = exit;
         hasSafePose = true;
     }
@@ -249,7 +336,11 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
             else
             {
                 Vector3 v = Body.linearVelocity;
-                v.y = Mathf.Lerp(minJump, maxJump, JumpCharge01);
+                // The authored launch speed is relative to the supported road. On
+                // an incline, replacing climbing velocity with that speed can drive
+                // the bike back into the road instead of producing a jump.
+                float roadRise = SampleSupport(out _, out var launchNormal) ? SlopeVerticalSpeed(launchNormal) : 0;
+                v.y = roadRise + Mathf.Lerp(minJump, maxJump, JumpCharge01);
                 Body.linearVelocity = v;
                 jumpLockUntil = Time.time + .3f;
                 IsGrounded = false;
@@ -286,6 +377,7 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
     }
     public string CaptureRunState()
     {
+        Initialize();
         // Active Run captures world participants before the player. Publish the matching
         // exit synchronously, so a FixedUpdate safe-pose change cannot split that pair.
         Rider?.RefreshSavePoint();
@@ -313,6 +405,8 @@ public sealed class AlienBikeController : MonoBehaviour, IRunStateParticipant
         safeExit = saved.exit;
         hasSafePose = saved.hasSafePose;
         turboCharge = Mathf.Clamp(saved.turbo, 0, maxTurboCharge);
+        supportNormal = safeRotation * Vector3.up;
+        drivingInput = Vector2.zero;
         RestoreSafePose();
     }
 }

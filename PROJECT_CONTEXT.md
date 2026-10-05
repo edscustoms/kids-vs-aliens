@@ -7,6 +7,93 @@ Important: The section immediately below contains current implementation/status 
 For live implementation order, use TODO.md.
 For Codex coding/repo rules, use AGENTS.md.
 
+CURRENT IMPLEMENTATION OVERRIDE - 5 Oct 2026 - BikeRoute environment V2
+
+Visible cliff feet and collision share one footprint/opening decision; upper collision
+matches sculpted rock. Continuous three-material blends and terrain-fitted caps span
+biomes. Eight original low-poly desert buildings populate the wide settlement area.
+BikeRouteContainment owns the marked bridge air lane and warned off-route defense;
+shared physics, health/death and camera remain their existing owners. Chase-only
+pursuit/catch-up pacing and support firing windows increase pressure without changing
+player speed/boost, waves, towers or other levels. Human acceptance remains pending;
+see Docs/GameplayAuthoring.md for configuration and focused evidence.
+
+CURRENT IMPLEMENTATION OVERRIDE - 5 Oct 2026 - BikeRoute environment and collision cleanup
+
+BikeRoute has smooth vertical roadside collision, an open bridge flight corridor,
+gradually blended quarry/basalt/forest terrain and reused service/construction dressing.
+Seven 2K materials use the existing Poly Haven importer; two original reusable buildings
+have external Blender sources. Enemy prediction refreshes only the first 0.1 s of the
+discharge beat. Saved speed/boost, shared bike physics, chase/finish ownership and other
+levels are preserved. Focused evidence and manual limits: Docs/GameplayAuthoring.md.
+
+CURRENT IMPLEMENTATION OVERRIDE - 5 Oct 2026 - BikeRoute chase V4.2
+
+Targeted polish: clean contracting lock rails, closer physical pressure and deliberate
+forward lead windows, scene-specific impact feedback through the existing render owner,
+and lightweight persistent breakable roadside signs. Saved speed/boost tuning remains
+40.6/70.1 with 28/53 acceleration. Focused evidence and manual feel limitations belong
+to Docs/GameplayAuthoring.md.
+
+CURRENT IMPLEMENTATION OVERRIDE - 4 Oct 2026 - BikeRoute chase V4.1
+
+Bike lasers now require a physical forward cone and use a quiet post-shot cooldown,
+a final discharge beat and slower swept bolts. A committed contact attacker suppresses
+its laser; one transient lead blocker creates forward counter-lock opportunities.
+Rear view is instant while held. The user's saved 40.6/70.1 speeds, 28/53 acceleration
+and boost settings are preserved. See Docs/GameplayAuthoring.md for tuning, focused
+evidence and remaining human/device acceptance.
+
+CURRENT IMPLEMENTATION OVERRIDE - 4 Oct 2026 - BikeRoute chase V4
+
+BikeRoute bikes now share a vehicle-owned lock/laser weapon with real swept bolts;
+chase riders hide their handheld guns without changing logical equipment or loot.
+Red lock warnings and semantic beeps telegraph the 3.5-second lock. The existing
+camera owns a view-only rear toggle. Player maxima are 34.8/60 m/s; acceleration
+24/45 and enemy base speeds 29/50 remain. Physical attack recovery/handoff are
+shorter, with the same envelope and one-primary-contact ownership. Scope and focused
+validation are recorded in Docs/GameplayAuthoring.md; human/device feel is pending.
+
+CURRENT IMPLEMENTATION OVERRIDE - 4 Oct 2026 - BikeRoute chase V3
+
+Manual V2 review rejected long interaction gaps and simultaneous pileups. The chase
+now uses an Amy-relative engagement envelope, controlled overshoot braking and
+predicted crossing attacks. BikeRouteChaseDirector owns one transient contact slot;
+drivers release it on contact, miss, invalidation, restore and finish. V2 gun tuning,
+seated presentation, player physics/camera, route and wave/finish rules remain.
+Focused evidence and remaining human acceptance: Docs/GameplayAuthoring.md.
+
+CURRENT IMPLEMENTATION OVERRIDE - 4 Oct 2026 - BikeRoute chase V2
+
+Chase riders now prioritize catch-up and timed physical attacks/recovery, with a
+temporary enemy-instance-only 15% advantage at distance. The chase-specific combat
+profile uses short, inaccurate bursts with long pauses. The shared Humanoid seated
+clip owns their base body, with copied weapon upper-body poses layered above it.
+At finish they stop attacking Amy and flee forward under the unchanged defense guns.
+Player handling/camera, route geometry, waves, loadout and persistence owners remain;
+shared/on-foot enemies and ConstructionSite tuning are unchanged by this pass.
+See Docs/GameplayAuthoring.md for focused evidence and manual acceptance limits.
+
+CURRENT IMPLEMENTATION OVERRIDE - 4 Oct 2026 - BikeRoute chase V1
+
+BikeRoute now has two physical enemy-bike waves, drive-over Plasma and a finish
+trigger that disengages riders and activates four automated rifles on two towers.
+EnemyBikeDriver commands the same AlienBikeController used by Amy; existing enemy
+owners handle perception, weapon cadence/LOS, health and death. Shared support uses
+multiple ground samples and slope-relative grounding. The saved BikeRoute tuning is
+29/50 m/s and 24/45 m/s^2 acceleration, explicitly retained for this pass. Fresh runs
+receive Pistol/Rifle and 12 Plasma; Continue does not repeat the grant. Knowledge
+rules are preserved. Existing route geometry, camera and mounted pistol owners remain.
+See Docs/GameplayAuthoring.md for authoring, validation and manual/device limits.
+
+CURRENT IMPLEMENTATION OVERRIDE - 4 Oct 2026 - Mounted pistol V1
+
+Normal Riding permits the existing selected SemiAuto pistol through PlayerAim and
+PlayerShooter, with a bike-forward cone (70 degrees per side) and PlayerAnimation
+right-arm Humanoid IK. Inventory remains the magazine/reload owner; Knowledge gating
+and real muzzle obstruction remain intact. Camera, handling, route geometry and
+starting loadouts are unchanged. Authoring: Docs/GameplayAuthoring.md.
+
 CURRENT IMPLEMENTATION OVERRIDE - 3 Oct 2026 - BikeRoute V3
 
 BikeRoute is an independently playable Level 2 graybox using existing bike/camera,

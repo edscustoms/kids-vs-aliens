@@ -10,14 +10,73 @@ If this file conflicts with older roadmap text inside PROJECT_CONTEXT.md, this f
 
 NOW
 
+IMPLEMENTED - BikeRoute environment V2 and containment - 5 Oct 2026
+
+Unified visible/physical wall boundaries, broader material/form transitions, eight
+original desert building variants and a roadside settlement. Local bridge flight
+safety and warned off-route defense contain escapes. Chase-only pacing/firing windows
+increase pressure; player tuning and other levels stay unchanged. Human art/driving/
+difficulty and mobile acceptance remain pending; focused evidence: Docs/GameplayAuthoring.md.
+
+IMPLEMENTED - BikeRoute environment and collision cleanup - 5 Oct 2026
+
+Smooth roadside collision, open bridge flight corridor, small enemy-laser prediction
+refresh, seven 2K Poly Haven materials and gradual cliff/forest/service dressing.
+Saved handling and chase owners remain. Focused evidence and manual review:
+Docs/GameplayAuthoring.md.
+
+IMPLEMENTED - BikeRoute chase V4.2 - 5 Oct 2026
+
+Cleaner lock UI, closer pressure/lead windows, impact feedback and breakable signs.
+Preserves saved speed/boost, route, towers and shared combat. Focused evidence and
+remaining human feel review: Docs/GameplayAuthoring.md.
+
+IMPLEMENTED - BikeRoute chase V4.1 - 4 Oct 2026
+
+Forward firing cone, quieter/slower laser with discharge beat, Beam-style lock HUD,
+contact-first pursuit and lead windows, instant rear hold. Saved speed/boost tuning
+is preserved. Focused evidence and remaining manual review: Docs/GameplayAuthoring.md.
+
+IMPLEMENTED - BikeRoute chase V4 - 4 Oct 2026
+
+Shared vehicle lock/laser, chase-only handheld removal, shorter contact recovery,
+34.8/60 player maxima and rear view are implemented. Focused checks and rendered
+review are complete; see Docs/GameplayAuthoring.md for 46/47 + 4/4 evidence and the
+variable pressure at faster player speeds. Human dodge/pressure/readability, mobile
+touch and audio mix remain acceptance work.
+
+IMPLEMENTED - BikeRoute chase V3 - 4 Oct 2026
+
+Manual V2 review rejected long gaps and clustered pressure. V3 adds an Amy-relative
+envelope, overshoot braking, predicted crossing trajectories and one director-owned
+contact reservation. V2 combat tuning and seated presentation remain. Human review:
+drive 60 seconds without counterfire, then fight back; judge pressure continuity,
+crossing/contact, overshoot recovery and finish flight. Focused measurements and
+manual/device limits are in Docs/GameplayAuthoring.md.
+
+IMPLEMENTED - BikeRoute chase V1 - 4 Oct 2026
+
+Two waves, shared physical enemy bikes, slope support/uphill Jump, Plasma drive-over
+pickups and four independent finish rifles. Saved 29/50 speed and 24/45 acceleration
+are preserved. See Docs/GameplayAuthoring.md for focused evidence. Human chase feel,
+first-pass readability, touch shooting and device performance remain acceptance work.
+No final enemy rider animation/IK, tower art or combat balance pass is included.
+
+IMPLEMENTED - Mounted pistol V1 - 4 Oct 2026
+
+Existing pistol/auto-aim pipeline now supports normal Riding with a tunable forward
+cone and smooth right-arm presentation. See Docs/GameplayAuthoring.md. Manual touch,
+pose/readability and device acceptance remain pending. The chase layer is recorded above.
+
 READY FOR MANUAL PLAYTEST - BikeRoute V3 - 3 Oct 2026
 
 The flat pass was rejected. Open Assets/Game/Scenes/BikeRoute.unity and review V3's
 close corridors, elevation, markings, forest/service dressing and enlarged ramps.
 Drive the main route and both shortcuts; judge speed feel (especially open section
-05), boundaries, jump response and camera readability. Saved 22/35 tuning is unchanged.
-See Docs/GameplayAuthoring.md for ownership and focused validation. Combat, final art
-and the level transition remain separate work.
+05), boundaries, jump response and camera readability. Chase V1 preserves the newer
+saved 29/50 tuning; the original V3 evidence below used 22/35.
+See Docs/GameplayAuthoring.md for ownership and focused validation. Final art and
+the level transition remain separate work.
 
 COMPLETE - Alien plasma bike V1 - 2 Oct 2026
 
@@ -30,7 +89,7 @@ Final polish: smooth rideable-only bike/rider lean and visual control steering.
 Focused cleanup: independent transition yaw, Path_07 clearance, mounted enemy targeting
 and rideable-only ram damage/knockback. Next: device touch/handling, sound mix and
 performance acceptance; replacement mount/rider animation art when available.
-Bike shooting remains separate work; BikeRoute manual acceptance is listed above.
+Mounted pistol V1 and BikeRoute manual acceptance are listed above.
 
 IMPLEMENTED ? Gameplay authoring V1 ? 27 Sep 2026
 
