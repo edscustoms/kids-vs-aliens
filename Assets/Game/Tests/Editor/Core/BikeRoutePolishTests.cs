@@ -15,6 +15,10 @@ public sealed class BikeRoutePolishTests
         {
             var director = Object.FindAnyObjectByType<BikeRouteChaseDirector>();
             var signs = Object.FindObjectsByType<BikeRouteBreakableSign>();
+            var visuals=Object.FindObjectsByType<MeshFilter>().Where(f=>AssetDatabase.GetAssetPath(f.sharedMesh).StartsWith("Assets/Road sign - Big pack/")).ToArray();
+            Assert.That(visuals,Is.Not.Empty);
+            foreach(var visual in visuals)
+                Assert.That(visual.GetComponentInParent<BikeRouteBreakableSign>(),Is.Not.Null,visual.name+" needs the existing sign owner");
             Assert.That(signs.Length, Is.GreaterThan(9), "Existing signs plus modest extra shoulder placements");
             Assert.That(signs.Select(s => s.GetComponent<RunWorldObject>().Id).Distinct().Count(), Is.EqualTo(signs.Length));
             foreach (var sign in signs)
@@ -23,8 +27,11 @@ public sealed class BikeRoutePolishTests
                 Assert.That(sign.GetComponentsInChildren<Renderer>().All(r => r.sharedMaterials.All(m => m != null && m.shader.name.StartsWith("Universal Render Pipeline/"))),
                     Is.True, sign.name + " uses BikeRoute's URP sign presentation, not a vendor legacy shader");
                 Assert.That(sign.signBody, Is.Not.Null); Assert.That(sign.signBody.isKinematic, Is.True);
+                Assert.That(sign.playerBike,Is.SameAs(director.PlayerBike),sign.name+" explicit pre-physics contact target");
                 Assert.That(sign.GetComponentsInChildren<Collider>().All(c => c is BoxCollider), Is.True);
                 Assert.That(sign.approach.isTrigger, Is.True); Assert.That(sign.speedFraction, Is.EqualTo(.6f));
+                Assert.That(sign.approach.size.x,Is.GreaterThanOrEqualTo(4),sign.name+" side approach before solid contact");
+                Assert.That(sign.approach.size.z,Is.GreaterThanOrEqualTo(4),sign.name+" front/rear approach before solid contact");
                 if (!sign.name.StartsWith("Shoulder Warning")) continue;
                 var sample = director.Guide.Project(sign.transform.position);
                 float side = Mathf.Abs(Vector3.Dot(sign.transform.position - sample.position, sample.Right));

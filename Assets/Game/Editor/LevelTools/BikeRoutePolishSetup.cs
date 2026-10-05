@@ -9,6 +9,35 @@ using Object = UnityEngine.Object;
 public static class BikeRoutePolishSetup
 {
     public const string ImpactProfile = "Assets/Game/Scenes/BikeRoute/Chase/BikeImpact.asset";
+    [MenuItem("Tools/Level Authoring/Update BikeRoute Breakable Signs")]
+    public static void UpdateBreakableSigns()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (Application.isPlaying || scene.path != BikeRouteChaseSetup.ScenePath)
+            throw new InvalidOperationException("Open BikeRoute outside Play Mode.");
+        var signs = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Transform>(true))
+            .Single(t => t.name == "Road Signs");
+        var director = Object.FindAnyObjectByType<BikeRouteChaseDirector>();
+        if (director == null || director.PlayerBike == null) throw new InvalidOperationException("Missing authored player bike.");
+        foreach (Transform child in signs)
+            if (child.GetComponent<BikeRouteBreakableSign>() == null &&
+                (child.GetComponentsInChildren<MeshFilter>().Length == 0 ||
+                 child.GetComponentsInChildren<MeshFilter>().Any(f => !AssetDatabase.GetAssetPath(f.sharedMesh).StartsWith("Assets/Road sign - Big pack/"))))
+                throw new InvalidOperationException("Unexpected non-sign under Road Signs: " + child.name);
+        foreach (var child in signs.Cast<Transform>().ToArray())
+        {
+            var sign = child.GetComponent<BikeRouteBreakableSign>() ?? Wrap(child.gameObject, director.PlayerBike).GetComponent<BikeRouteBreakableSign>();
+            Undo.RecordObject(sign.approach, "Update BikeRoute sign approach");
+            Undo.RecordObject(sign, "Update BikeRoute sign threshold");
+            // A sideways turbo hit can reach speculative solid contact before a
+            // narrow trigger overlaps. Give every approach the same short lead-in.
+            sign.approach.size = new Vector3(4, sign.approach.size.y, 4);
+            sign.speedFraction = .6f;
+            sign.playerBike = director.PlayerBike;
+            EditorUtility.SetDirty(sign.approach); EditorUtility.SetDirty(sign);
+        }
+        EditorSceneManager.MarkSceneDirty(scene);
+    }
     [MenuItem("Tools/Level Authoring/Author BikeRoute Breakable Signs and Impact")]
     public static void Author()
     {
@@ -39,7 +68,7 @@ public static class BikeRoutePolishSetup
         EditorUtility.SetDirty(feedback); EditorUtility.SetDirty(impact);
         // Existing vendor prefab instances become isolated scene visuals; vendor assets stay untouched.
         foreach (var child in signs.Cast<Transform>().ToArray())
-            if (child.GetComponent<BikeRouteBreakableSign>() == null) Wrap(child.gameObject);
+            if (child.GetComponent<BikeRouteBreakableSign>() == null) Wrap(child.gameObject, director.PlayerBike);
         for (int path = 0; path < director.Guide.paths.Length; path++)
         {
             string name = "Shoulder Warning " + (path + 1).ToString("00");
@@ -52,7 +81,7 @@ public static class BikeRoutePolishSetup
             visual.transform.SetParent(signs, false);
             foreach (var renderer in visual.GetComponentsInChildren<Renderer>()) renderer.sharedMaterial = signMaterial;
             visual.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-Vector3.ProjectOnPlane(sample.forward, Vector3.up)));
-            Wrap(visual).name = name;
+            Wrap(visual, director.PlayerBike).name = name;
         }
         var serialized = new SerializedObject(director);
         serialized.FindProperty("contactHandoffDelay").floatValue = .7f; serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -71,7 +100,7 @@ public static class BikeRoutePolishSetup
         EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
         Debug.Log("BikeRoute polish authored: " + signs.childCount + " signs; impact feedback; chase timings. Player tuning preserved.");
     }
-    private static GameObject Wrap(GameObject visual)
+    private static GameObject Wrap(GameObject visual, AlienBikeController playerBike)
     {
         if (PrefabUtility.IsPartOfPrefabInstance(visual))
             PrefabUtility.UnpackPrefabInstance(visual, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
@@ -100,9 +129,10 @@ public static class BikeRoutePolishSetup
         var body = visual.AddComponent<Rigidbody>(); body.mass = 8; body.isKinematic = true;
         body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         var trigger = root.AddComponent<BoxCollider>(); trigger.isTrigger = true;
-        trigger.center = bounds.center; trigger.size = new Vector3(.65f, bounds.size.y + .2f, 2.4f);
+        trigger.center = bounds.center; trigger.size = new Vector3(4, bounds.size.y + .2f, 4);
         root.AddComponent<RunWorldObject>().ConfigureIdentity(Guid.NewGuid().ToString("N"));
         var signComponent = root.AddComponent<BikeRouteBreakableSign>(); signComponent.signBody = body; signComponent.approach = trigger;
+        signComponent.playerBike = playerBike;
         return root;
     }
     public static void Batch()

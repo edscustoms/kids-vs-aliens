@@ -514,6 +514,10 @@ to reduce their side-ramp effect, preserving the road floor and upper silhouette
 TerrainCollider uses the existing low-friction RoadsideSlide material. Four existing
 ledge trees are grounded.
 Other sections retain their authored cliff meshes and matching collision.
+At the marked entrance to 04 Wash, the first 72 m of added wall skins, columns and
+their collision are removed. The original Terrain stays unchanged; the retained
+skin meets it over the next 18 m without an exposed hanging edge. Two existing
+ledge trees are grounded. Content farther into the Wash and other sections is preserved.
 The two opening asphalt seams match at both edges, with 24 m width tapers at the
 ends of 02 Long Sweep and regenerated markings. The asphalt update reapplies these
 joins from the editable source, so repeated updates do not compound the taper.
@@ -745,12 +749,29 @@ camera settings still suppress it. Render offsets never feed gameplay aim or phy
 `BikeRouteBreakableSign` owns each sign's intact/broken state under a stable
 RunWorldObject. All 9 original signs and 10 additional shoulder warnings use one
 primitive solid collider, an early trigger and one initially kinematic debris body.
+The trigger extends 2 m from the post on both horizontal axes: the earlier narrow
+trigger could let a turbo hit stop on speculative solid contact first. A short sweep
+of the actual bike hull must intersect the post; nearby parallel passes do not break it.
+Each sign explicitly references the player bike for a distance-gated pre-physics
+check, since a trigger callback can arrive after CCD has already stopped the hull.
 A driven player bike at **60% of its authored regular max speed** (currently 24.36 m/s)
 breaks the sign: its body launches at 55% of incoming horizontal velocity plus 4 m/s
 upward, the bike loses **8%** horizontal speed, and the same impact profile plays.
 The debris ignores the striking bike, remains physical against scenery, and hides
 after 5 seconds. Broken state persists; Continue hides debris without replaying
 launch, slowdown or feedback. The stable root never follows the transient flight.
+
+**Tools > Level Authoring > Update BikeRoute Breakable Signs** updates existing
+sign wrappers and their approach triggers without changing visuals, placement or
+chase tuning. Save the scene after using it. It preserves existing stable identities.
+The targeted check covers all 19 signs: 57 real front/side/rear turbo contacts,
+19 low-speed post touches and 19 parallel near misses, plus threshold/speed-loss
+assertions. `BikeRouteSignPrePhysics` passed **4/4**, including feedback and real
+Save/Continue. The four entrance/geometry checks passed in `BikeRouteTargetedFixes`;
+its initial all-sign failure was cleared by the sign rerun. The 04 Wash entrance was
+driven in both directions and reviewed through gameplay and Scene-view cameras.
+Captures and metrics are under `Logs/BikeRouteTargeted`; these are controlled Editor
+checks, not a human playtest. Runtime changes are confined to the existing sign owner.
 
 **Tools > Level Authoring > Author BikeRoute Breakable Signs and Impact** explicitly
 wires these dependencies and authored chase timings in BikeRoute only. Existing

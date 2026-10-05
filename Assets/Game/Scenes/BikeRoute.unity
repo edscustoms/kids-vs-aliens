@@ -6742,6 +6742,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33429348655252553}
   approach: {fileID: 91431351}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &91431350
@@ -6776,7 +6777,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.736913, z: 2.4}
+  m_Size: {x: 4, y: 3.736913, z: 4}
   m_Center: {x: -0.0018426776, y: 1.7684565, z: 0.002317369}
 --- !u!1 &92617800
 GameObject:
@@ -20278,96 +20279,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 147914619}
   m_Mesh: {fileID: 4300000, guid: fdc8f83c7e1a0c44aa5ecdb34ccf216c, type: 2}
---- !u!1 &148084359
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 148084360}
-  - component: {fileID: 148084362}
-  - component: {fileID: 148084361}
-  m_Layer: 0
-  m_Name: 04_Wash_Dirt_Right_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
---- !u!4 &148084360
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148084359}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1999357642}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &148084361
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148084359}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: e3b250ade3435af4e9c355066a7621cb, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &148084362
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148084359}
-  m_Mesh: {fileID: 4300000, guid: 69e882881e6819a4599ab3118c619dd2, type: 2}
 --- !u!1001 &148483202
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28393,6 +28304,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 1367485772494033954}
   approach: {fileID: 235472539}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &235472538
@@ -28427,7 +28339,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011640191, y: 1.1052856, z: 0.0014731288}
 --- !u!1 &236274263
 GameObject:
@@ -36453,6 +36365,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33429347860666070}
   approach: {fileID: 316307570}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &316307569
@@ -36487,7 +36400,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.7369149, z: 2.4}
+  m_Size: {x: 4, y: 3.7369149, z: 4}
   m_Center: {x: -0.0018430948, y: 1.7684574, z: 0.0023426153}
 --- !u!1001 &317084891
 PrefabInstance:
@@ -44079,6 +43992,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 2197470473942502117}
   approach: {fileID: 408022519}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &408022518
@@ -44113,7 +44027,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011352003, y: 1.1052856, z: 0.0014519244}
 --- !u!1001 &408222906
 PrefabInstance:
@@ -60256,6 +60170,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33822286576420798}
   approach: {fileID: 480830152}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &480830151
@@ -60290,7 +60205,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.736913, z: 2.4}
+  m_Size: {x: 4, y: 3.736913, z: 4}
   m_Center: {x: -0.000026345253, y: 1.7684565, z: 0.0023552105}
 --- !u!1 &481615277
 GameObject:
@@ -64550,6 +64465,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33158318301989413}
   approach: {fileID: 525439340}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &525439339
@@ -64584,7 +64500,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.7369149, z: 2.4}
+  m_Size: {x: 4, y: 3.7369149, z: 4}
   m_Center: {x: 0.00002026558, y: 1.7684574, z: 0.0023192465}
 --- !u!1001 &528801382
 PrefabInstance:
@@ -64616,7 +64532,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4071390273635838, guid: 78f6b68ad931a824c920d7b953612370, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 18.304102
+      value: 15.816887
       objectReference: {fileID: 0}
     - target: {fileID: 4071390273635838, guid: 78f6b68ad931a824c920d7b953612370, type: 3}
       propertyPath: m_LocalPosition.z
@@ -66406,6 +66322,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33760707734745969}
   approach: {fileID: 563341747}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &563341746
@@ -66440,7 +66357,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.7369149, z: 2.4}
+  m_Size: {x: 4, y: 3.7369149, z: 4}
   m_Center: {x: -0.0000071525574, y: 1.7684574, z: 0.00233078}
 --- !u!1001 &563550185
 PrefabInstance:
@@ -113292,60 +113209,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4534264641828652, guid: 4663d5cca4ed98548946e758cd5979e2, type: 3}
   m_PrefabInstance: {fileID: 775786139}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &776282063
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 776282064}
-  - component: {fileID: 776282065}
-  m_Layer: 0
-  m_Name: 04_Wash_Dirt_Right_0_UpperCollision
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
---- !u!4 &776282064
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 776282063}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1274438920}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &776282065
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 776282063}
-  m_Material: {fileID: 13400000, guid: 692e705313f05474b83b4443b486e537, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 1c334248fe544924ea87aa88dcb2b764, type: 2}
 --- !u!1 &776583441
 GameObject:
   m_ObjectHideFlags: 0
@@ -119488,6 +119351,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33158318432575560}
   approach: {fileID: 853206568}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &853206567
@@ -119522,7 +119386,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.736913, z: 2.4}
+  m_Size: {x: 4, y: 3.736913, z: 4}
   m_Center: {x: 0.000010609627, y: 1.7684565, z: 0.0023347437}
 --- !u!1001 &855794799
 PrefabInstance:
@@ -131304,6 +131168,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 6368811890049323560}
   approach: {fileID: 995538270}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &995538269
@@ -131338,7 +131203,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011425614, y: 1.1052856, z: 0.001452215}
 --- !u!1001 &995894238
 PrefabInstance:
@@ -132428,7 +132293,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4071390273635838, guid: 78f6b68ad931a824c920d7b953612370, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 18.304102
+      value: 15.811127
       objectReference: {fileID: 0}
     - target: {fileID: 4071390273635838, guid: 78f6b68ad931a824c920d7b953612370, type: 3}
       propertyPath: m_LocalPosition.z
@@ -136537,6 +136402,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 9220902433718856445}
   approach: {fileID: 1054756738}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1054756737
@@ -136571,7 +136437,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011034012, y: 1.1052856, z: 0.0014484674}
 --- !u!1 &1055304391
 GameObject:
@@ -148113,6 +147979,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 6773211376435486695}
   approach: {fileID: 1121977358}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1121977357
@@ -148147,7 +148014,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011476874, y: 1.1052856, z: 0.001449272}
 --- !u!1 &1122717487
 GameObject:
@@ -148198,6 +148065,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33762625432619672}
   approach: {fileID: 1122717491}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1122717490
@@ -148232,7 +148100,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.736913, z: 2.4}
+  m_Size: {x: 4, y: 3.736913, z: 4}
   m_Center: {x: -0.0018399358, y: 1.7684565, z: 0.0023122989}
 --- !u!1 &1123385226
 GameObject:
@@ -150304,6 +150172,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33429349266344144}
   approach: {fileID: 1152706044}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1152706043
@@ -150338,7 +150207,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.7369149, z: 2.4}
+  m_Size: {x: 4, y: 3.7369149, z: 4}
   m_Center: {x: -0.0018479228, y: 1.7684574, z: 0.0023451596}
 --- !u!1001 &1153515038
 PrefabInstance:
@@ -160344,7 +160213,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 776282064}
   - {fileID: 1349494840}
   - {fileID: 2112781278}
   - {fileID: 509567274}
@@ -195238,7 +195106,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1748606329}
   - {fileID: 1850581094}
   - {fileID: 2100993289}
   - {fileID: 575915811}
@@ -224776,6 +224643,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 3998693057418270170}
   approach: {fileID: 1515420331}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1515420330
@@ -224810,7 +224678,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011492372, y: 1.1052856, z: 0.0014535561}
 --- !u!1001 &1515462015
 PrefabInstance:
@@ -225585,119 +225453,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4689083990643298, guid: 1aaf3ef80841d9c4990a27fee328eb1c, type: 3}
   m_PrefabInstance: {fileID: 1526110836}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1526312814
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1526312815}
-  - component: {fileID: 1526312818}
-  - component: {fileID: 1526312817}
-  - component: {fileID: 1526312816}
-  m_Layer: 0
-  m_Name: 04_Wash_Dirt_Left_0_BasaltColumns
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
---- !u!4 &1526312815
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526312814}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1999357642}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &1526312816
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526312814}
-  m_Material: {fileID: 13400000, guid: 692e705313f05474b83b4443b486e537, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 63e12883b15b7bb46b4f853e69e3b2a3, type: 2}
---- !u!23 &1526312817
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526312814}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: e3b250ade3435af4e9c355066a7621cb, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1526312818
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526312814}
-  m_Mesh: {fileID: 4300000, guid: 63e12883b15b7bb46b4f853e69e3b2a3, type: 2}
 --- !u!1001 &1529490120
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -226739,96 +226494,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4689083990643298, guid: 1aaf3ef80841d9c4990a27fee328eb1c, type: 3}
   m_PrefabInstance: {fileID: 1546180782}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1546338311
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1546338312}
-  - component: {fileID: 1546338314}
-  - component: {fileID: 1546338313}
-  m_Layer: 0
-  m_Name: 04_Wash_Dirt_Left_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
---- !u!4 &1546338312
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1546338311}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1999357642}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &1546338313
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1546338311}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: e3b250ade3435af4e9c355066a7621cb, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1546338314
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1546338311}
-  m_Mesh: {fileID: 4300000, guid: 036b894771baf234dbf8354b9279eb6c, type: 2}
 --- !u!1001 &1548111864
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -229462,6 +229127,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 33429349128948451}
   approach: {fileID: 1577681896}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1577681895
@@ -229496,7 +229162,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 3.736913, z: 2.4}
+  m_Size: {x: 4, y: 3.736913, z: 4}
   m_Center: {x: -0.001842022, y: 1.7684565, z: 0.002302885}
 --- !u!1 &1578181325
 GameObject:
@@ -236350,119 +236016,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4689083990643298, guid: 1aaf3ef80841d9c4990a27fee328eb1c, type: 3}
   m_PrefabInstance: {fileID: 1666557069}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1666830043
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1666830044}
-  - component: {fileID: 1666830047}
-  - component: {fileID: 1666830046}
-  - component: {fileID: 1666830045}
-  m_Layer: 0
-  m_Name: 04_Wash_Dirt_Right_0_BasaltColumns
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
---- !u!4 &1666830044
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1666830043}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1999357642}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &1666830045
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1666830043}
-  m_Material: {fileID: 13400000, guid: 692e705313f05474b83b4443b486e537, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 0db0fa44d3fe05e41bec93ce59bf1659, type: 2}
---- !u!23 &1666830046
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1666830043}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: e3b250ade3435af4e9c355066a7621cb, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1666830047
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1666830043}
-  m_Mesh: {fileID: 4300000, guid: 0db0fa44d3fe05e41bec93ce59bf1659, type: 2}
 --- !u!1001 &1667297790
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -243246,60 +242799,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1747023283}
   m_Mesh: {fileID: 4300000, guid: fdc8f83c7e1a0c44aa5ecdb34ccf216c, type: 2}
---- !u!1 &1748606328
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1748606329}
-  - component: {fileID: 1748606330}
-  m_Layer: 0
-  m_Name: 04_Wash_Dirt_Left_0_UpperCollision
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
---- !u!4 &1748606329
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1748606328}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1424965003}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &1748606330
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1748606328}
-  m_Material: {fileID: 13400000, guid: 692e705313f05474b83b4443b486e537, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 89d59192c4a705248a37b77fdfb3a8b1, type: 2}
 --- !u!1 &1749255461
 GameObject:
   m_ObjectHideFlags: 0
@@ -254036,6 +253535,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 3168667536959907154}
   approach: {fileID: 1861860284}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1861860283
@@ -254070,7 +253570,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011520982, y: 1.1052856, z: 0.0014652945}
 --- !u!1 &1861988428
 GameObject:
@@ -279690,6 +279190,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 7743543457436362072}
   approach: {fileID: 1990748232}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &1990748231
@@ -279724,7 +279225,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.001152128, y: 1.1052856, z: 0.0014937222}
 --- !u!1001 &1992207742
 PrefabInstance:
@@ -280200,8 +279701,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1546338312}
-  - {fileID: 1526312815}
   - {fileID: 1732248408}
   - {fileID: 2086433671}
   - {fileID: 114299031}
@@ -280212,8 +279711,6 @@ Transform:
   - {fileID: 585202995}
   - {fileID: 258163988}
   - {fileID: 753957425}
-  - {fileID: 148084360}
-  - {fileID: 1666830044}
   - {fileID: 170205864}
   - {fileID: 236274264}
   - {fileID: 575218947}
@@ -289965,6 +289462,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 8463741764369532423}
   approach: {fileID: 2114603006}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &2114603005
@@ -289999,7 +289497,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011385679, y: 1.1052856, z: 0.0014689751}
 --- !u!1 &2116239396
 GameObject:
@@ -292367,6 +291865,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BikeRouteBreakableSign
   signBody: {fileID: 358050831837790550}
   approach: {fileID: 2133650609}
+  playerBike: {fileID: 1355124535}
   speedFraction: 0.6
   speedLoss: 0.08
 --- !u!114 &2133650608
@@ -292401,7 +291900,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 2.4105713, z: 2.4}
+  m_Size: {x: 4, y: 2.4105713, z: 4}
   m_Center: {x: -0.0011588037, y: 1.1052856, z: 0.0014368668}
 --- !u!1 &2134923433
 GameObject:

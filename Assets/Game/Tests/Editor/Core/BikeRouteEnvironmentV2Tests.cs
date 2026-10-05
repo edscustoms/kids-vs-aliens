@@ -7,6 +7,35 @@ using UnityEngine;
 public sealed class BikeRouteEnvironmentV2Tests
 {
     [Test]
+    public void GreenEntranceUsesOriginalTerrainAndHasNoOverlayCollision()
+    {
+        EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);
+        try
+        {
+            Physics.SyncTransforms();
+            var root=GameObject.Find("LevelGeometry").transform;
+            var guide=Object.FindAnyObjectByType<BikeRouteGuide>();
+            var terrain=Object.FindAnyObjectByType<TerrainCollider>();
+            var collision=root.Find("Smooth Corridor Collision");
+            foreach(string side in new[]{"Left","Right"})
+            {
+                string prefix="04_Wash_Dirt_"+side+"_0";
+                Assert.That(root.Find("Environment Art/"+prefix),Is.Null);
+                Assert.That(root.Find("Environment Art/"+prefix+"_BasaltColumns"),Is.Null);
+                Assert.That(collision.Find("04_Wash_Dirt "+side+" upper surfaces/"+prefix+"_UpperCollision"),Is.Null);
+            }
+            foreach(float s in new[]{4f,20f,40f,60f})
+            foreach(int side in new[]{-1,1})
+            {
+                var at=guide.At(3,s);var ray=new Ray(at.position+Vector3.up*1.2f,at.Right*side);
+                Assert.That(terrain.Raycast(ray,out _,30),Is.True,"Original physical bank at "+s);
+                foreach(var wall in collision.GetComponentsInChildren<MeshCollider>())
+                    Assert.That(wall.Raycast(ray,out _,12),Is.False,"No hidden overlay collision at "+s+": "+wall.name);
+            }
+        }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single); }
+    }
+    [Test]
     public void CleanedCutsUseTerrainWithoutDuplicateWallMeshes()
     {
         EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);

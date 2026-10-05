@@ -224,7 +224,9 @@ public static partial class BikeRouteEnvironmentSetup
         // The same vertices/open-face decision feed both meshes. Chunks share their end row.
         var wall = new MeshBuilder();
         var upperRoot = Group(r.source.name + (side < 0 ? " Left upper surfaces" : " Right upper surfaces"), collision);
-        for (float start = 0; start < wallEnd; start += 72)
+        // The Wash entrance uses its original Terrain wall. Start its retained skin
+        // one chunk later, buried into Terrain at the join rather than an exposed cap.
+        for (float start = r.index == 3 ? 72 : 0; start < wallEnd; start += 72)
         {
             var mesh = new MeshBuilder(); var upper = new MeshBuilder(); var columns = new MeshBuilder();
             int last = -1, previousWall = -1; Vector3 prior = default;
@@ -238,8 +240,8 @@ public static partial class BikeRouteEnvironmentSetup
                 float height = WallHeight(r, s, foot);
                 Vector2 climate = Climate(r.Progress(s));
                 bool open = last >= 0 && Opening(r, (foot + prior) * .5f);
-                int n = wall.Vertex(foot - Vector3.up * 3, new Vector2(s, 0));
-                wall.Vertex(foot + Vector3.up * Mathf.Min(2.6f, height * .7f), new Vector2(s, height));
+                int n = wall.Vertex(GreenEntranceVertex(r.index, s, foot - Vector3.up * 3), new Vector2(s, 0));
+                wall.Vertex(GreenEntranceVertex(r.index, s, foot + Vector3.up * Mathf.Min(2.6f, height * .7f)), new Vector2(s, height));
                 if (previousWall >= 0 && !open) wall.Quad(previousWall, n, previousWall + 1, n + 1, 0, side < 0);
                 previousWall = n;
                 int first = mesh.vertices.Count;
@@ -255,6 +257,7 @@ public static partial class BikeRouteEnvironmentSetup
                     if (row == 9) relief = 11;
                     var v = foot + outward * relief + Vector3.up * y;
                     if (row == 9 && !r.Bridge(s)) v.y = terrain.SampleHeight(v) + terrain.transform.position.y + .12f;
+                    v = GreenEntranceVertex(r.index, s, v);
                     int vertex = mesh.Vertex(v, new Vector2(s * .25f, v.y * .25f + (row == 9 ? 2 : 0)));
                     float mottling = .9f + .1f * Mathf.PerlinNoise(s * .021f, row * .4f);
                     mesh.colors[vertex] = new Color(climate.x * (1 - climate.y * .65f) * mottling, climate.y * .83f * mottling, 0, 1);
@@ -268,7 +271,7 @@ public static partial class BikeRouteEnvironmentSetup
                     }
                 last = first; prior = foot;
                 // Small weathered columns appear first, then build into a dramatic jointed outcrop.
-                if (step % 3 == 0 && !r.Bridge(s) && climate.x > .025f && !Opening(r, foot, 2))
+                if (step % 3 == 0 && !r.Bridge(s) && !(r.index == 3 && s < 90) && climate.x > .025f && !Opening(r, foot, 2))
                 {
                     int from = columns.vertices.Count;
                     Vector3 along = Vector3.Cross(outward, Vector3.up);
@@ -284,6 +287,13 @@ public static partial class BikeRouteEnvironmentSetup
             if (columns.vertices.Count > 0) MeshObject(name + "_BasaltColumns", columns, art, new[] { cliffBlend }, true);
         }
         MeshObject(r.source.name + (side < 0 ? "_SmoothLeft" : "_SmoothRight"), wall, collision, null, true);
+    }
+    static Vector3 GreenEntranceVertex(int path, float station, Vector3 vertex)
+    {
+        if (path != 3 || station >= 90) return vertex;
+        float buried = Mathf.Min(vertex.y, terrain.SampleHeight(vertex) + terrain.transform.position.y - .2f);
+        vertex.y = Mathf.Lerp(buried, vertex.y, Blend(72, 90, station));
+        return vertex;
     }
     static Material CliffMaterial(string name, Material secondary)
     {

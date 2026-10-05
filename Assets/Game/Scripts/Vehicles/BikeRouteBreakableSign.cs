@@ -8,6 +8,7 @@ public sealed class BikeRouteBreakableSign : MonoBehaviour, IRunStateParticipant
 {
     public Rigidbody signBody;
     public BoxCollider approach;
+    public AlienBikeController playerBike;
     [Range(.1f, 1)] public float speedFraction = .6f;
     [Range(0, .2f)] public float speedLoss = .08f;
     public bool Broken { get; private set; }
@@ -22,10 +23,23 @@ public sealed class BikeRouteBreakableSign : MonoBehaviour, IRunStateParticipant
         intactPosition = signBody.transform.localPosition; intactRotation = signBody.transform.localRotation;
         solid = signBody.GetComponent<Collider>();
     }
-    private void OnTriggerEnter(Collider other)
+    private void FixedUpdate()
     {
-        var bike = other.GetComponentInParent<AlienBikeController>();
-        if (bike != null) TryBreak(bike);
+        // CCD can stop a turbo bike before its trigger callback. Check the authored
+        // player's imminent hull contact before that physics step instead.
+        CheckApproach(playerBike);
+    }
+    private void OnTriggerEnter(Collider other) => CheckApproach(other.GetComponentInParent<AlienBikeController>());
+    private void CheckApproach(AlienBikeController bike)
+    {
+        if (bike == null || Broken || !approach.enabled || bike.Rider == null || !bike.Rider.IsDriving
+            || approach.bounds.SqrDistance(bike.Body.position) > 16) return;
+        Vector3 velocity = Vector3.ProjectOnPlane(bike.Body.linearVelocity, Vector3.up);
+        if (velocity.magnitude < bike.maxSpeed * speedFraction) return;
+        // The lead-in must beat speculative solid contact at turbo speed. Sweep the
+        // actual hull so a nearby parallel pass through that trigger is not a hit.
+        if (bike.Body.SweepTest(velocity.normalized, out var hit, 2, QueryTriggerInteraction.Ignore)
+            && hit.collider == solid) TryBreak(bike);
     }
     // A bike can cross the speed threshold between entering the small lead-in
     // trigger and reaching the post. Stay handles that without a second collision owner.
