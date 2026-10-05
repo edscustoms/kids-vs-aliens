@@ -8,6 +8,25 @@ using UnityEngine;
 public sealed class BikeRouteCorridorTests
 {
     [Test]
+    public void OpeningAsphaltJoinsMeetAtBothEdges()
+    {
+        EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);
+        try
+        {
+            var root = GameObject.Find("LevelGeometry/BakedAsphalt").transform;
+            foreach (var pair in new[] { ("01_LearnSpeed_Asphalt", "02_LongSweep_Asphalt"), ("02_LongSweep_Asphalt", "03_NarrowS_Asphalt") })
+            {
+                var a = root.Find(pair.Item1); var b = root.Find(pair.Item2);
+                var first = a.GetComponent<MeshFilter>().sharedMesh.vertices;
+                var next = b.GetComponent<MeshFilter>().sharedMesh.vertices;
+                for (int side = 0; side < 2; side++)
+                    Assert.That(Vector3.Distance(a.TransformPoint(first[first.Length-2+side]), b.TransformPoint(next[side])),
+                        Is.LessThan(.015f), pair + " has a gap, ledge or floating seam");
+            }
+        }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); }
+    }
+    [Test]
     public void CrossingShouldersStaySupportedInsideTheParapets()
     {
         var scene = EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);
@@ -94,12 +113,17 @@ public sealed class BikeRouteCorridorTests
                     {
                         var outside = p + right * (side * (half + 13));
                         // Fork openings into another authored route are intentional.
+                        // Check the whole side probe, not just its endpoint: the returning
+                        // shortcut can lie between the main road and the terrain bank.
                         if (roads.Any(other => other != road && other.splinePoints.Any(q =>
-                            Mathf.Abs(q.y - outside.y) < 5 && FlatDistance(q, outside) < HalfCorridor(other) + 2)))
+                            Mathf.Abs(q.y - outside.y) < 5 &&
+                            Vector3.Dot(q-p, right*side) > half && Vector3.Dot(q-p, right*side) < half+14 &&
+                            FlatDistance(q, p + right*side*Vector3.Dot(q-p, right*side)) < HalfCorridor(other) + 2)))
                             continue;
                         foreach (float height in new[] { 1.2f })
+                            // The open start's retaining wall ends into a wider terrain shoulder.
                             if (!Physics.SphereCast(p + Vector3.up * height, .3f, right * side,
-                                out _, half + 14, ~0, QueryTriggerInteraction.Ignore))
+                                out _, half + (road.name.StartsWith("01_") ? 17 : 14), ~0, QueryTriggerInteraction.Ignore))
                                 leaks.Add(road.name + " sample=" + i + " side=" + side + " height=" + height + " at=" + p);
                     }
                 }

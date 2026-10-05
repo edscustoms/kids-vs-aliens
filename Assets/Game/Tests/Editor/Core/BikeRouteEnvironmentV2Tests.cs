@@ -7,6 +7,33 @@ using UnityEngine;
 public sealed class BikeRouteEnvironmentV2Tests
 {
     [Test]
+    public void CleanedCutsUseTerrainWithoutDuplicateWallMeshes()
+    {
+        EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);
+        try
+        {
+            Physics.SyncTransforms();
+            var root = GameObject.Find("LevelGeometry").transform;
+            var terrain = Object.FindAnyObjectByType<Terrain>();
+            Assert.That(terrain.GetComponent<TerrainCollider>().terrainData, Is.SameAs(terrain.terrainData));
+            foreach (string prefix in new[] { "02_LongSweep_Asphalt", "03_NarrowS_Asphalt", "A_DirectWash_Shortcut_Dirt" })
+            {
+                Assert.That(root.Find("Environment Art").Cast<Transform>().Where(t => t.name.StartsWith(prefix+"_")), Is.Empty);
+                Assert.That(root.Find("Smooth Corridor Collision").Cast<Transform>().Where(t => t.name.StartsWith(prefix)), Is.Empty);
+            }
+            var guide = Object.FindAnyObjectByType<BikeRouteGuide>();
+            foreach (var spot in new[] { (0, 420f), (1, 220f), (2, 200f), (8, 150f) })
+            foreach (int side in new[] { -1, 1 })
+            {
+                var at = guide.At(spot.Item1, spot.Item2);
+                Assert.That(terrain.GetComponent<TerrainCollider>().Raycast(new Ray(at.position+Vector3.up*1.2f,at.Right*side),out _,30),
+                    Is.True, "Original visible terrain must remain physical at " + spot);
+            }
+        }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); }
+    }
+
+    [Test]
     public void VisibleCliffFeetShareTheirPhysicalBoundaryAcrossMaterialTransitions()
     {
         EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);

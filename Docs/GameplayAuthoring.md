@@ -504,19 +504,27 @@ checks do not replace manual acceptance.
 ## BikeRoute environment V2 and containment
 
 Road centerlines, markings, ramps, waves, towers, camera and saved player speed/boost
-remain separately owned. Environment authoring uses one sampled wall footprint and
-one opening decision for visual cliff feet and smooth, zero-bounce grounded collision.
-Upper cliff colliders follow the visible sculpted surface, including its terrain cap;
-material transitions cannot create separate collision gaps. Basalt outcrops and taller
-forest rocks have their own matching surfaces behind the smooth riding boundary.
+remain separately owned. The focused screenshot cleanup removes the later cliff skins,
+caps and basalt overlays from 01 Learn Speed after its open start, 02 Long Sweep,
+03 Narrow S and A Direct Wash. Their original Terrain silhouettes are retained.
+The open start keeps its low retaining walls through 288 m. Elsewhere in these cuts,
+TerrainCollider owns the exposed banks; both ground and upper collision belonging to
+the removed skins are removed. Three short lower right-bank toes are steepened locally
+to reduce their side-ramp effect, preserving the road floor and upper silhouettes.
+TerrainCollider uses the existing low-friction RoadsideSlide material. Four existing
+ledge trees are grounded.
+Other sections retain their authored cliff meshes and matching collision.
+The two opening asphalt seams match at both edges, with 24 m width tapers at the
+ends of 02 Long Sweep and regenerated markings. The asphalt update reapplies these
+joins from the editable source, so repeated updates do not compound the taper.
 The old overlapping bank colliders, tall bridge guards and scattered forest root are
 inactive `EditorOnly` authoring history.
 
 Quarry, dark rock and forest weights vary continuously across approximately 600-730 m
 bands. The same vertex-weight shader spans all cliff chunks, blending three PBR map
 sets (nine texture samples); there is no chunk-level material switch or runtime
-material instantiation. Curved wall feet, eroded ledges, varied crests and terrain-fitted
-caps replace the previous uniform extrusions. Groves and ledge vegetation follow the
+material instantiation. This shader applies to the retained cliff sections; the cleaned
+cuts use their existing painted Terrain. Groves and ledge vegetation follow the
 same broad climate bands. Mobile GPU cost still needs device profiling.
 
 `BikeRouteContainment`, explicitly wired on the chase root, owns only the local bridge
@@ -597,6 +605,21 @@ The bridge collision/safety probes begin airborne to isolate boundary behavior. 
 do not establish natural ramp launch feel: V1 jump charging remains slope-sensitive.
 Human full-route art/driving/difficulty acceptance and mobile GPU/touch checks remain
 manual gates. Automated traversal and controlled hit/dodge fixtures do not replace them.
+
+The later focused screenshot cleanup removes **120** overlay render objects and their
+associated collision, exposing the original banks. `BikeRouteCleanupAcceptance`
+passed **12/13** checks: all eight forward/backward drives through roads 01/02/03 and
+shortcut A, both opening asphalt joins in both directions, markings, ground boundaries
+and retained cliff/collision alignment. Review includes **46 gameplay-camera** and
+**26 Scene-view** captures under `Logs/BikeRouteCleanup/review.html`. No duplicate
+panels, floating wedges or one-sided cliff sheets remained in those reviewed views.
+The turbo side-impact check is **not cleared**: forward travel was 19.88 m on 01 and
+3.75 m on 02 against a 20 m minimum; two other samples did not register contact.
+Measured vertical rise stayed below its 8 m/s threshold, but these results do not
+establish acceptable wall sliding. The three local toe repairs change 376 of the
+2049-square Terrain height samples; gameplay component records and runtime sources
+are unchanged. Unity compilation and `git diff --check` passed. No full regression or
+human driving acceptance is claimed.
 
 ## BikeRoute chase V4.2
 

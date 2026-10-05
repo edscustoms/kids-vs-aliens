@@ -221,6 +221,7 @@ public static partial class BikeRouteEnvironmentSetup
                 rock.gameObject.AddComponent<MeshCollider>().sharedMesh = mesh;
                 rock.gameObject.isStatic = true; // Lower relief stays behind the smooth collision strip.
                 p += r.Right(s) * (side * -.6f); p.y = r.At(s).y + 2.1f;
+                if (r.index == 2) p.y = terrain.SampleHeight(p) + terrain.transform.position.y - .1f;
                 Place("Assets/Forst/Conifers [BOTD]/Render Pipeline Support/URP/Prefabs/PF Conifer Medium BOTD URP.prefab",
                     p, Quaternion.Euler(0, random.Next(360), 0), cluster, .22f + (float)random.NextDouble() * .09f);
             }

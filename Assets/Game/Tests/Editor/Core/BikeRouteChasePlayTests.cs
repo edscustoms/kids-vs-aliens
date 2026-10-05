@@ -21,15 +21,18 @@ public sealed class ChaseContactProbe : MonoBehaviour
     public readonly List<string> ContactEvents = new List<string>();
     public int WallContacts;
     public float MaximumWallNormalY;
+    public readonly HashSet<string> Surfaces = new HashSet<string>();
     private void OnCollisionStay(Collision collision) => RecordWall(collision);
     private void RecordWall(Collision collision)
     {
-        if (collision.collider.transform.parent == null || collision.collider.transform.parent.name != "Smooth Corridor Collision") return;
+        bool terrainWall = collision.collider is TerrainCollider && collision.contacts.Any(c => Mathf.Abs(c.normal.y) < .65f);
+        if (!terrainWall && (collision.collider.transform.parent == null || collision.collider.transform.parent.name != "Smooth Corridor Collision")) return;
         WallContacts++;
         foreach (var contact in collision.contacts) MaximumWallNormalY = Mathf.Max(MaximumWallNormalY, Mathf.Abs(contact.normal.y));
     }
     private void OnCollisionEnter(Collision collision)
     {
+        Surfaces.Add(collision.collider.name);
         RecordWall(collision);
         if (collision.collider.GetComponentInParent<AlienBikeController>()?.Rider == null) return;
         PlayerContacts++; ContactImpulse += collision.impulse.magnitude;

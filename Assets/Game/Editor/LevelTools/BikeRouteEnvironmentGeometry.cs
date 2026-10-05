@@ -187,6 +187,7 @@ public static partial class BikeRouteEnvironmentSetup
         cliffBlend = CliffMaterial("QuarryToBasalt", stone[1]);
         slide = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(Content + "/RoadsideSlide.physicMaterial");
         if (slide == null) { slide = new PhysicsMaterial("RoadsideSlide") { dynamicFriction = .08f, staticFriction = .08f, bounciness = 0, frictionCombine = PhysicsMaterialCombine.Minimum, bounceCombine = PhysicsMaterialCombine.Minimum }; AssetDatabase.CreateAsset(slide, Content + "/RoadsideSlide.physicMaterial"); }
+        terrain.GetComponent<TerrainCollider>().sharedMaterial = slide;
         var geometry = GameObject.Find("LevelGeometry").transform;
         foreach (var name in new[] { "Environment Art", "Smooth Corridor Collision" })
             if (geometry.Find(name) != null) Object.DestroyImmediate(geometry.Find(name).gameObject);
@@ -202,6 +203,7 @@ public static partial class BikeRouteEnvironmentSetup
             EditorUtility.SetDirty(mat); AssetDatabase.SaveAssetIfDirty(mat);
         }
         PaintGround();
+        SharpenLocalTerrainToes();
         AssetDatabase.StartAssetEditing();
         try { foreach (var r in routes) foreach (int side in new[] { -1, 1 }) BuildSide(r, side, art, collision); }
         finally { AssetDatabase.StopAssetEditing(); }
@@ -213,14 +215,20 @@ public static partial class BikeRouteEnvironmentSetup
 
     static void BuildSide(Route r, int side, Transform art, Transform collision)
     {
+        // These cuts already have continuous authored Terrain walls and its matching
+        // TerrainCollider. Adding cliff skins here creates ledges, crossing caps and
+        // a second hidden collision boundary. Keep the original corridor exposed.
+        if (r.index == 1 || r.index == 2 || r.index == 8)
+            return;
+        float wallEnd = r.index == 0 ? 288 : r.Length; // Retain the open start area's low retaining wall.
         // The same vertices/open-face decision feed both meshes. Chunks share their end row.
         var wall = new MeshBuilder();
         var upperRoot = Group(r.source.name + (side < 0 ? " Left upper surfaces" : " Right upper surfaces"), collision);
-        for (float start = 0; start < r.Length; start += 72)
+        for (float start = 0; start < wallEnd; start += 72)
         {
             var mesh = new MeshBuilder(); var upper = new MeshBuilder(); var columns = new MeshBuilder();
             int last = -1, previousWall = -1; Vector3 prior = default;
-            float end = Mathf.Min(start + 72, r.Length);
+            float end = Mathf.Min(start + 72, wallEnd);
             int steps = Mathf.CeilToInt((end - start) / 1.5f);
             for (int step = 0; step <= steps; step++)
             {

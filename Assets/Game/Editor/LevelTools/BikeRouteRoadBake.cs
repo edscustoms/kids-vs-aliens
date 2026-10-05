@@ -54,6 +54,10 @@ public static class BikeRouteRoadBake
             copies.Add((source.sharedMesh, target, collider));
         }
         Require(copies.Count > 0, "BikeRoute has no baked asphalt meshes to update.");
+        Require(new[] { "01_LearnSpeed_Asphalt", "02_LongSweep_Asphalt", "03_NarrowS_Asphalt" }.All(names.Contains),
+            "BikeRoute opening asphalt sections are required to preserve their joins.");
+        var middle = sources.Single(f => f.name == "02_LongSweep_Asphalt").sharedMesh;
+        Require(middle.vertexCount >= 4 && middle.vertexCount % 2 == 0, "Expected alternating native asphalt edges.");
         var edgePaint = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Materials/RoadEdge.mat");
         var centerPaint = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Materials/RoadCenter.mat");
         Require(edgePaint != null && centerPaint != null, "BikeRoute road-paint materials are missing.");
@@ -70,6 +74,7 @@ public static class BikeRouteRoadBake
             copy.collider.sharedMesh = null;
             copy.collider.sharedMesh = copy.target;
         }
+        FitRoadJoins(bakedRoots[0], sources);
         foreach (Transform road in bakedRoots[0])
             UpdateMarkings(road, edgePaint, centerPaint);
         Undo.RecordObject(authoring, "Hide BikeRoute Road Authoring");
@@ -80,6 +85,43 @@ public static class BikeRouteRoadBake
         Debug.LogWarning($"Updated {copies.Count} BikeRoute asphalt meshes and hid _RoadAuthoring. "
             + "Terrain heights were not changed: conform the isolated BikeRoute Terrain with Unity Terrain tools "
             + "where markers moved, then check boundaries, dressing, road edges and drive the changed sections. Save the scene when ready.", authoring);
+    }
+
+    private static Transform FitRoadJoins(Transform baked, MeshFilter[] sources)
+    {
+        var road = baked.Find("02_LongSweep_Asphalt");
+        var before = baked.Find("01_LearnSpeed_Asphalt");
+        var after = baked.Find("03_NarrowS_Asphalt");
+        Require(road != null && before != null && after != null, "Missing BikeRoute opening asphalt sections.");
+        var source = sources.Single(f => f.name == road.name);
+        Require(source.transform.localToWorldMatrix == road.localToWorldMatrix, "Road join source and baked transforms differ.");
+        var target = road.GetComponent<MeshFilter>().sharedMesh;
+        Require(AssetDatabase.GetAssetPath(target) == MeshFolder + road.name + ".asset"
+            && road.GetComponent<MeshCollider>().sharedMesh == target, "Unexpected BikeRoute join mesh ownership.");
+        // Always start from the editable strip: repeated baking must not compound a taper.
+        var vertices = source.sharedMesh.vertices;
+        Require(vertices.Length == target.vertexCount && vertices.Length >= 4 && vertices.Length % 2 == 0,
+            "Expected matching native and baked alternating asphalt edges.");
+        var first = before.GetComponent<MeshFilter>().sharedMesh.vertices;
+        var last = after.GetComponent<MeshFilter>().sharedMesh.vertices;
+        Vector3 startLeft = road.InverseTransformPoint(before.TransformPoint(first[first.Length-2]));
+        Vector3 startRight = road.InverseTransformPoint(before.TransformPoint(first[first.Length-1]));
+        Vector3 endLeft = road.InverseTransformPoint(after.TransformPoint(last[0]));
+        Vector3 endRight = road.InverseTransformPoint(after.TransformPoint(last[1]));
+        Vector3 a = vertices[0], b = vertices[1], c = vertices[vertices.Length-2], d = vertices[vertices.Length-1];
+        for (int i = 0; i < vertices.Length; i += 2)
+        {
+            var center = (vertices[i] + vertices[i+1]) * .5f;
+            float start = 1 - Mathf.SmoothStep(0, 1, Vector3.Distance(center, (a+b)*.5f) / 24);
+            float end = 1 - Mathf.SmoothStep(0, 1, Vector3.Distance(center, (c+d)*.5f) / 24);
+            vertices[i] += (startLeft-a)*start + (endLeft-c)*end;
+            vertices[i+1] += (startRight-b)*start + (endRight-d)*end;
+        }
+        Undo.RecordObject(target, "Clean BikeRoute asphalt joins");
+        target.vertices = vertices; target.RecalculateNormals(); target.RecalculateTangents(); target.RecalculateBounds();
+        EditorUtility.SetDirty(target); AssetDatabase.SaveAssetIfDirty(target);
+        var collider = road.GetComponent<MeshCollider>(); collider.sharedMesh = null; collider.sharedMesh = target;
+        return road;
     }
 
     // BikeRoute's native strips use alternating left/right vertices. Paint follows those

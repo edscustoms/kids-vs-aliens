@@ -35,21 +35,36 @@ public sealed partial class BikeRouteChasePlayTests
         yield return Mount(); var probe = Bike.gameObject.AddComponent<ChaseContactProbe>();
         Directory.CreateDirectory("Logs/BikeRouteEnvironment");
         using var log = new StreamWriter("Logs/BikeRouteEnvironment/wall-impacts.txt");
+        var results = new System.Collections.Generic.List<(int path, int contacts, float rise, float speed, float travel)>();
         foreach (var spot in new[] { (0, 420f), (1, 220f), (2, 200f), (5, 200f), (6, 330f) })
         {
             var sample = Director.Guide.At(spot.Item1, spot.Item2);
-            float half = 0;
-            var walls = GameObject.Find("LevelGeometry/Smooth Corridor Collision").GetComponentsInChildren<MeshCollider>();
+            var walls = GameObject.Find("LevelGeometry/Smooth Corridor Collision").GetComponentsInChildren<Collider>()
+                .Concat(Object.FindObjectsByType<TerrainCollider>()).ToArray();
             float nearest = float.PositiveInfinity;
+            Vector3 contactPoint = default, contactNormal = default;
             foreach (var wall in walls)
-                if (wall.Raycast(new Ray(sample.position + Vector3.up * .86f, sample.Right), out var hit, 30)) nearest = Mathf.Min(nearest, hit.distance);
-            Assert.That(nearest, Is.LessThan(30), "Authored roadside contact surface"); half = nearest;
-            var forward = Vector3.ProjectOnPlane(sample.forward, Vector3.up).normalized;
-            Bike.Body.position = sample.position + sample.Right * (half - 1.3f) + Vector3.up * .86f;
-            Bike.Body.rotation = Quaternion.LookRotation(forward); Bike.Body.linearVelocity = Vector3.zero; Bike.Body.angularVelocity = Vector3.zero;
-            Physics.SyncTransforms(); yield return Seconds(.15f);
-            Bike.Body.linearVelocity = forward * (Bike.turboMaxSpeed * .97f) + sample.Right * (Bike.turboMaxSpeed * .24f);
-            Input.MoveInput(Vector2.up); int contacts = probe.WallContacts; float maximumRise = 0, maximumSpeed = 0;
+                if (wall.Raycast(new Ray(sample.position + Vector3.up * .86f, sample.Right), out var hit, 30) && hit.distance < nearest)
+                { nearest = hit.distance; contactPoint = hit.point; contactNormal = hit.normal; }
+            Assert.That(nearest, Is.LessThan(30), "Authored roadside contact surface");
+            // The bank need not be parallel to the road. Seed the requested glancing
+            // side impact against its actual face, with the same speed and angle.
+            var inward = Vector3.ProjectOnPlane(contactNormal, Vector3.up).normalized;
+            var forward = Vector3.Cross(Vector3.up, inward).normalized;
+            if (Vector3.Dot(forward,sample.forward) < 0) forward = -forward;
+            var approach = forward * .97f - inward * .24f;
+            Input.MoveInput(Vector2.zero);
+            Bike.Body.position = contactPoint + inward * 2.8f;
+            Bike.Body.rotation = Quaternion.LookRotation(approach); Bike.Body.linearVelocity = Vector3.zero; Bike.Body.angularVelocity = Vector3.zero;
+            // Each contact is an independent sample. Let suspension settle after the
+            // fixture warp, with throttle released, rather than carrying the previous
+            // wall's attitude and acceleration into the next measured collision.
+            int stagingContacts = probe.WallContacts;
+            Physics.SyncTransforms(); yield return Seconds(.65f);
+            Assert.That(probe.WallContacts, Is.EqualTo(stagingContacts), "Start clear of the wall before the measured impact");
+            Bike.Body.linearVelocity = approach * Bike.turboMaxSpeed;
+            Input.MoveInput(Vector2.up); probe.Surfaces.Clear(); probe.MaximumWallNormalY = 0;
+            int contacts = probe.WallContacts; float maximumRise = 0, maximumSpeed = 0;
             float began = Time.time; var start = Bike.Body.position;
             while (Time.time - began < .65f)
             {
@@ -57,11 +72,16 @@ public sealed partial class BikeRouteChasePlayTests
                 maximumSpeed = Mathf.Max(maximumSpeed, Bike.Body.linearVelocity.magnitude);
                 yield return EditorTestFrame.Next(); Foreground();
             }
-            log.WriteLine($"path={spot.Item1} contacts={probe.WallContacts - contacts} rise={maximumRise:F2} peak={maximumSpeed:F2} forward={Vector3.Dot(Bike.Body.position-start,forward):F2}"); log.Flush();
-            Assert.That(probe.WallContacts, Is.GreaterThan(contacts), "Actual high-speed side collision " + spot.Item1);
-            Assert.That(maximumRise, Is.LessThan(8), "No catapult at " + spot.Item1);
-            Assert.That(maximumSpeed, Is.LessThan(Bike.turboMaxSpeed * 1.15f));
-            Assert.That(Vector3.Dot(Bike.Body.position - start, forward), Is.GreaterThan(20), "Retain useful forward travel");
+            log.WriteLine($"path={spot.Item1} contacts={probe.WallContacts - contacts} rise={maximumRise:F2} peak={maximumSpeed:F2} forward={Vector3.Dot(Bike.Body.position-start,forward):F2} bankRoadAngle={Vector3.Angle(forward,Vector3.ProjectOnPlane(sample.forward,Vector3.up)):F1} normalY={probe.MaximumWallNormalY:F2} end={Bike.Body.position} surfaces={string.Join(",",probe.Surfaces)}"); log.Flush();
+            results.Add((spot.Item1, probe.WallContacts - contacts, maximumRise, maximumSpeed,
+                Vector3.Dot(Bike.Body.position - start, forward)));
+        }
+        foreach (var result in results)
+        {
+            Assert.That(result.contacts, Is.GreaterThan(0), "Actual high-speed side collision " + result.path);
+            Assert.That(result.rise, Is.LessThan(8), "No catapult at " + result.path);
+            Assert.That(result.speed, Is.LessThan(Bike.turboMaxSpeed * 1.15f), "No speed spike at " + result.path);
+            Assert.That(result.travel, Is.GreaterThan(20), "Retain useful forward travel at " + result.path);
         }
         // Edge/landing contacts can have vertical normals; the authored face normals are
         // checked separately. This probe asserts actual launch/speed/forward-travel outcomes.
