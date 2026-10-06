@@ -519,8 +519,10 @@ meshes, tall bridge guards and the old forest root remain inactive EditorOnly hi
 Quarry, dark-rock and forest Terrain paint and existing vegetation use broad,
 overlapping transition bands; material changes do not introduce separate wall geometry.
 
-The visual foundation sculpts upper Terrain banks only; the driving floor, lower
-contact band and bridge/underpass footprint remain fixed. `Environment/Foundation`
+The cliff geometry pass reshapes the original Terrain with uneven crests, recessed
+upper cuts and broken erosion ledges. It adds no separate wall meshes. The driving
+floor, lower contact band and ground beneath existing props stay fixed; the bridge
+and underpass retain their driving surfaces and clearance. `Environment/Foundation`
 owns BikeRoute's material overrides and `BikeRoute Dusk` volume profile. The four-layer
 `BikeRoute Terrain` shader projects the existing Poly Haven maps onto steep faces,
 retains painted transitions and uses their normal/AO/smoothness maps. Its material's
