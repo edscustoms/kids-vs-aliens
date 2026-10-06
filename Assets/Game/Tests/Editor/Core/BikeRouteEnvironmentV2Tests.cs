@@ -63,43 +63,33 @@ public sealed class BikeRouteEnvironmentV2Tests
     }
 
     [Test]
-    public void VisibleCliffFeetShareTheirPhysicalBoundaryAcrossMaterialTransitions()
+    public void FullRouteBanksUseOneVisiblePhysicalTerrainSurface()
     {
         EditorSceneManager.OpenScene(BikeRouteGrayboxTests.ScenePath);
         try
         {
             Physics.SyncTransforms();
-            var root = GameObject.Find("LevelGeometry").transform;
-            var walls = root.Find("Smooth Corridor Collision").GetComponentsInChildren<MeshCollider>();
-            int checkedFaces = 0;
-            foreach (Transform cliff in root.Find("Environment Art"))
+            var root=GameObject.Find("LevelGeometry").transform;
+            var terrain=Object.FindAnyObjectByType<Terrain>();
+            var collider=terrain.GetComponent<TerrainCollider>();
+            Assert.That(collider.terrainData,Is.SameAs(terrain.terrainData));
+            Assert.That(root.Find("Smooth Corridor Collision").GetComponentsInChildren<Collider>(),Is.Empty);
+            Assert.That(root.Find("Environment Art").Cast<Transform>().Where(t=>t.GetComponent<MeshFilter>()!=null),Is.Empty,
+                "No generated facade/column layers over the original Terrain");
+            var guide=Object.FindAnyObjectByType<BikeRouteGuide>();
+            for(int path=0;path<guide.paths.Length;path++)
+            for(float s=12;s<guide.paths[path].Length-12;s+=12)
+            foreach(int side in new[]{-1,1})
             {
-                var filter = cliff.GetComponent<MeshFilter>();
-                if (filter == null || cliff.name.Contains("BasaltColumns")) continue;
-                var mesh = filter.sharedMesh; var vertices = mesh.vertices; var triangles = mesh.triangles;
-                if (!cliff.name.Contains("_Left_") && !cliff.name.Contains("_Right_")) continue;
-                Assert.That(cliff.GetComponent<Renderer>().sharedMaterial.shader.name, Is.EqualTo("Environment/Cliff Blend"));
-                // First quad of each ten-vertex row is the grounded collision face.
-                for (int i = 0; i < triangles.Length; i += 54)
-                {
-                    var a = vertices[triangles[i]]; var b = vertices[triangles[i+1]]; var c = vertices[triangles[i+2]];
-                    var normal = Vector3.Cross(b-a,c-a).normalized;
-                    var point = (a+b+c)/3;
-                    bool matched = walls.Any(w => w.Raycast(new Ray(point + normal * 2, -normal), out var hit, 2.08f)
-                        && Mathf.Abs(hit.distance - 2) < .08f);
-                    Assert.That(matched, Is.True, cliff.name + " facade has no matching physical foot at " + point);
-                    checkedFaces++;
-                }
-                var colors = mesh.colors;
-                for (int i = 10; i < colors.Length; i++)
-                {
-                    Assert.That(Mathf.Abs(colors[i].r-colors[i-10].r), Is.LessThan(.07f));
-                    Assert.That(Mathf.Abs(colors[i].g-colors[i-10].g), Is.LessThan(.07f));
-                }
+                var at=guide.At(path,s);
+                var p=at.position+at.Right*side*(at.halfWidth+8);
+                float y=terrain.SampleHeight(p)+terrain.transform.position.y;
+                Assert.That(collider.Raycast(new Ray(new Vector3(p.x,y+10,p.z),Vector3.down),out var hit,12),Is.True,
+                    "No terrain collision hole at "+path+":"+s);
+                Assert.That(hit.point.y,Is.EqualTo(y).Within(.08f),"Visible and physical bank must agree");
             }
-            Assert.That(checkedFaces, Is.GreaterThan(100), "Sample actual rendered lower faces across the route");
         }
-        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single); }
     }
 
     [Test]

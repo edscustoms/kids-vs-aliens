@@ -503,33 +503,48 @@ checks do not replace manual acceptance.
 
 ## BikeRoute environment V2 and containment
 
-Road centerlines, markings, ramps, waves, towers, camera and saved player speed/boost
-remain separately owned. The focused screenshot cleanup removes the later cliff skins,
-caps and basalt overlays from 01 Learn Speed after its open start, 02 Long Sweep,
-03 Narrow S and A Direct Wash. Their original Terrain silhouettes are retained.
-The open start keeps its low retaining walls through 288 m. Elsewhere in these cuts,
-TerrainCollider owns the exposed banks; both ground and upper collision belonging to
-the removed skins are removed. Three short lower right-bank toes are steepened locally
-to reduce their side-ramp effect, preserving the road floor and upper silhouettes.
-TerrainCollider uses the existing low-friction RoadsideSlide material. Four existing
-ledge trees are grounded.
-Other sections retain their authored cliff meshes and matching collision.
-At the marked entrance to 04 Wash, the first 72 m of added wall skins, columns and
-their collision are removed. The original Terrain stays unchanged; the retained
-skin meets it over the next 18 m without an exposed hanging edge. Two existing
-ledge trees are grounded. Content farther into the Wash and other sections is preserved.
-The two opening asphalt seams match at both edges, with 24 m width tapers at the
-ends of 02 Long Sweep and regenerated markings. The asphalt update reapplies these
-joins from the editable source, so repeated updates do not compound the taper.
-The old overlapping bank colliders, tall bridge guards and scattered forest root are
-inactive `EditorOnly` authoring history.
+The original Terrain and its TerrainCollider own the full canyon, including both
+shortcuts. The full-route cleanup removes the remaining generated cliff skins, caps,
+basalt columns and their separate ground/upper collision. No facade is layered over
+the Terrain. Existing floating ledge trees are grounded; deliberately embedded rocks
+retain their placement. The explicit environment authoring tool no longer regenerates
+these overlays. Road centerlines, markings, ramps, bridge deck/piers, end boundaries,
+containment, waves, towers, camera and saved player speed/boost remain separately owned.
 
-Quarry, dark rock and forest weights vary continuously across approximately 600-730 m
-bands. The same vertex-weight shader spans all cliff chunks, blending three PBR map
-sets (nine texture samples); there is no chunk-level material switch or runtime
-material instantiation. This shader applies to the retained cliff sections; the cleaned
-cuts use their existing painted Terrain. Groves and ledge vegetation follow the
-same broad climate bands. Mobile GPU cost still needs device profiling.
+The two opening asphalt seams match at both edges, with 24 m width tapers at the
+ends of 02 Long Sweep. The asphalt update reapplies those joins from the editable
+source, so repeated updates do not compound the taper. Three earlier local lower-bank
+toe repairs and the TerrainCollider's RoadsideSlide material remain. Retired bank
+meshes, tall bridge guards and the old forest root remain inactive EditorOnly history.
+Quarry, dark-rock and forest Terrain paint and existing vegetation use broad,
+overlapping transition bands; material changes do not introduce separate wall geometry.
+
+The visual foundation sculpts upper Terrain banks only; the driving floor, lower
+contact band and bridge/underpass footprint remain fixed. `Environment/Foundation`
+owns BikeRoute's material overrides and `BikeRoute Dusk` volume profile. The four-layer
+`BikeRoute Terrain` shader projects the existing Poly Haven maps onto steep faces,
+retains painted transitions and uses their normal/AO/smoothness maps. Its material's
+**Project rock onto steep faces** toggle provides cheaper planar sampling when needed.
+The original imported materials and other scenes are unchanged.
+
+`BikeRoute Visual Foundation` contains the global ACES/grade/bloom volume, five
+shadowless amber practical lights and four sparse dust systems (96 particles maximum
+in total). The atmosphere child can be disabled for lower quality. The dusk key and
+cool ambient fill preserve shaded road detail; linear distance haze supplies depth.
+Existing building windows have scene-only warm emission overrides. This adds no
+runtime gameplay owner. Profile, lights and material changes remain Inspector edits;
+the broad environment rebuild below can overwrite their geometry/material inputs.
+
+Foundation validation: `BikeRouteFoundationTraversal` passed **7/7**, including all
+ten guide paths in both directions, moving laser hit/dodge and finish defense.
+`BikeRouteFoundationFinalHdr` passed **2/2** for twelve fixed comparison views and
+normal/turbo chase captures. Reverse drives use the existing shoulders around the
+two tall one-way ramps. HDR before/after views, route captures and the unchanged
+gameplay/content comparison are in `Logs/BikeRouteFoundation/review.html`; XML/logs
+are under `Logs/RepositoryAuditRemediation`. The review helper has an opt-in HDR
+capture path so emissive values reach bloom before PNG conversion. No full regression
+or device GPU validation was run; terrain projection, local lights and dust still
+need mobile profiling.
 
 `BikeRouteContainment`, explicitly wired on the chase root, owns only the local bridge
 flight lane and the last-resort route defense. Amber beacons mark the lane. Outside

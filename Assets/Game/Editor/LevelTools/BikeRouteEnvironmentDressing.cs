@@ -217,12 +217,14 @@ public static partial class BikeRouteEnvironmentSetup
                 p.y = r.At(s).y + 1.1f;
                 var rock = Group("Mossy rock", cluster); rock.position = p;
                 rock.rotation = Quaternion.Euler(0, random.Next(360), 0); rock.localScale = new Vector3(.9f, 1.8f + (float)random.NextDouble() * 2.3f, 1.6f);
+                float ground = terrain.SampleHeight(p) + terrain.transform.position.y;
+                if (rock.position.y - rock.localScale.y > ground)
+                    rock.position = new Vector3(p.x, ground + rock.localScale.y - .15f, p.z);
                 rock.gameObject.AddComponent<MeshFilter>().sharedMesh = mesh; rock.gameObject.AddComponent<MeshRenderer>().sharedMaterial = material;
                 rock.gameObject.AddComponent<MeshCollider>().sharedMesh = mesh;
-                rock.gameObject.isStatic = true; // Lower relief stays behind the smooth collision strip.
-                p += r.Right(s) * (side * -.6f); p.y = r.At(s).y + 2.1f;
-                if (r.index == 2 || r.index == 3 && s < 90)
-                    p.y = terrain.SampleHeight(p) + terrain.transform.position.y - .1f;
+                rock.gameObject.isStatic = true;
+                p += r.Right(s) * (side * -.6f);
+                p.y = terrain.SampleHeight(p) + terrain.transform.position.y - .1f;
                 Place("Assets/Forst/Conifers [BOTD]/Render Pipeline Support/URP/Prefabs/PF Conifer Medium BOTD URP.prefab",
                     p, Quaternion.Euler(0, random.Next(360), 0), cluster, .22f + (float)random.NextDouble() * .09f);
             }

@@ -77,13 +77,15 @@ public static class ProceduralUIReview
     {
         var image=Rect(parent,"Icon",min,max).gameObject.AddComponent<Image>();image.sprite=sprite;image.preserveAspect=true;image.raycastTarget=false;
     }
-    public static void Capture(string name,int width,int height)
+    public static void Capture(string name,int width,int height,bool preserveHdr=false)
     {
         Directory.CreateDirectory("Logs/ProceduralUI");
         var camera=Camera.main;
         var temporary=camera==null?new GameObject("UI Capture Camera",typeof(Camera)):null;
         if(camera==null){camera=temporary.GetComponent<Camera>();camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=Color.black;}
-        var target=new RenderTexture(width,height,24);target.Create();
+        // URP uses an explicit target's format for its intermediate color buffer.
+        // HDR world reviews must preserve emissive values until bloom/tonemapping.
+        var target=new RenderTexture(width,height,24,preserveHdr?RenderTextureFormat.DefaultHDR:RenderTextureFormat.Default);target.Create();
         var previous=camera.targetTexture;var mask=camera.cullingMask;camera.cullingMask|=1<<5;camera.targetTexture=target;
         var canvases=Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude).Where(c=>c.isRootCanvas&&c.renderMode==RenderMode.ScreenSpaceOverlay).ToArray();
         var cameras=canvases.Select(c=>c.worldCamera).ToArray();var planes=canvases.Select(c=>c.planeDistance).ToArray();
@@ -95,7 +97,16 @@ public static class ProceduralUIReview
             }
             Canvas.ForceUpdateCanvases();camera.Render();
             var active=RenderTexture.active;RenderTexture.active=target;
-            var texture=new Texture2D(width,height,TextureFormat.RGB24,false);texture.ReadPixels(new UnityEngine.Rect(0,0,width,height),0,0);texture.Apply();
+            var texture=new Texture2D(width,height,preserveHdr?TextureFormat.RGBAFloat:TextureFormat.RGB24,false);texture.ReadPixels(new UnityEngine.Rect(0,0,width,height),0,0);texture.Apply();
+            if(preserveHdr)
+            {
+                var pixels=texture.GetPixels();
+                if(QualitySettings.activeColorSpace==ColorSpace.Linear)
+                    for(int i=0;i<pixels.Length;i++) pixels[i]=pixels[i].gamma;
+                Object.DestroyImmediate(texture);
+                texture=new Texture2D(width,height,TextureFormat.RGB24,false);
+                texture.SetPixels(pixels);texture.Apply();
+            }
             File.WriteAllBytes("Logs/ProceduralUI/"+name+".png",texture.EncodeToPNG());Object.DestroyImmediate(texture);RenderTexture.active=active;
         } finally {
             for(int i=0;i<canvases.Length;i++){canvases[i].renderMode=RenderMode.ScreenSpaceOverlay;canvases[i].worldCamera=cameras[i];canvases[i].planeDistance=planes[i];}

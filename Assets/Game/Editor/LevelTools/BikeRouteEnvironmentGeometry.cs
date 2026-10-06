@@ -18,7 +18,6 @@ public static partial class BikeRouteEnvironmentSetup
     static Terrain terrain;
     static Route[] routes;
     static Material[] stone;
-    static Material cliffBlend;
     static PhysicsMaterial slide;
 
     sealed class Route
@@ -184,7 +183,6 @@ public static partial class BikeRouteEnvironmentSetup
         var asphalt = LoadMaterial("Ground", "Asphalt_01");
         LoadMaterial("Wall", "Sandstone_Blocks_05"); LoadMaterial("Wall", "Sandstone_Blocks_08"); LoadMaterial("Ground", "Forrest_Ground_01");
         Directory.CreateDirectory(Content); AssetDatabase.Refresh();
-        cliffBlend = CliffMaterial("QuarryToBasalt", stone[1]);
         slide = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(Content + "/RoadsideSlide.physicMaterial");
         if (slide == null) { slide = new PhysicsMaterial("RoadsideSlide") { dynamicFriction = .08f, staticFriction = .08f, bounciness = 0, frictionCombine = PhysicsMaterialCombine.Minimum, bounceCombine = PhysicsMaterialCombine.Minimum }; AssetDatabase.CreateAsset(slide, Content + "/RoadsideSlide.physicMaterial"); }
         terrain.GetComponent<TerrainCollider>().sharedMaterial = slide;
@@ -204,116 +202,11 @@ public static partial class BikeRouteEnvironmentSetup
         }
         PaintGround();
         SharpenLocalTerrainToes();
-        AssetDatabase.StartAssetEditing();
-        try { foreach (var r in routes) foreach (int side in new[] { -1, 1 }) BuildSide(r, side, art, collision); }
-        finally { AssetDatabase.StopAssetEditing(); }
+        // Terrain and its TerrainCollider own the canyon. Never rebuild facade strips over it.
         BuildDressing(art); BuildBuildings(geometry, art); AuthorContainmentAndPressure(geometry, art);
         Physics.SyncTransforms();
         EditorSceneManager.MarkSceneDirty(terrain.gameObject.scene); EditorSceneManager.SaveScene(terrain.gameObject.scene);
         Debug.Log("BikeRoute environment authored; road, bike, chase and finish owners retained.");
-    }
-
-    static void BuildSide(Route r, int side, Transform art, Transform collision)
-    {
-        // These cuts already have continuous authored Terrain walls and its matching
-        // TerrainCollider. Adding cliff skins here creates ledges, crossing caps and
-        // a second hidden collision boundary. Keep the original corridor exposed.
-        if (r.index == 1 || r.index == 2 || r.index == 8)
-            return;
-        float wallEnd = r.index == 0 ? 288 : r.Length; // Retain the open start area's low retaining wall.
-        // The same vertices/open-face decision feed both meshes. Chunks share their end row.
-        var wall = new MeshBuilder();
-        var upperRoot = Group(r.source.name + (side < 0 ? " Left upper surfaces" : " Right upper surfaces"), collision);
-        // The Wash entrance uses its original Terrain wall. Start its retained skin
-        // one chunk later, buried into Terrain at the join rather than an exposed cap.
-        for (float start = r.index == 3 ? 72 : 0; start < wallEnd; start += 72)
-        {
-            var mesh = new MeshBuilder(); var upper = new MeshBuilder(); var columns = new MeshBuilder();
-            int last = -1, previousWall = -1; Vector3 prior = default;
-            float end = Mathf.Min(start + 72, wallEnd);
-            int steps = Mathf.CeilToInt((end - start) / 1.5f);
-            for (int step = 0; step <= steps; step++)
-            {
-                float s = Mathf.Lerp(start, end, step / (float)steps);
-                var p = r.At(s); var outward = r.Right(s) * side;
-                Vector3 foot = p + outward * WallOffset(r, s, side);
-                float height = WallHeight(r, s, foot);
-                Vector2 climate = Climate(r.Progress(s));
-                bool open = last >= 0 && Opening(r, (foot + prior) * .5f);
-                int n = wall.Vertex(GreenEntranceVertex(r.index, s, foot - Vector3.up * 3), new Vector2(s, 0));
-                wall.Vertex(GreenEntranceVertex(r.index, s, foot + Vector3.up * Mathf.Min(2.6f, height * .7f)), new Vector2(s, height));
-                if (previousWall >= 0 && !open) wall.Quad(previousWall, n, previousWall + 1, n + 1, 0, side < 0);
-                previousWall = n;
-                int first = mesh.vertices.Count;
-                for (int row = 0; row < 10; row++)
-                {
-                    float y = row == 0 ? -1.5f : row == 1 ? Mathf.Min(2.6f, height * .7f)
-                        : Mathf.Lerp(Mathf.Min(2.6f, height * .7f), height, (row - 1) / 7f);
-                    if (row == 9) y = height;
-                    float t = Mathf.Clamp01((row - 1) / 7f);
-                    float erosion = Mathf.Sin(s * .087f + row * .7f + side) * 1.1f + Mathf.Sin(s * .19f + row * 1.2f) * .5f;
-                    float relief = row < 2 ? 0 : Mathf.Max(.05f, t * (2.8f + climate.y * 3) + erosion);
-                    if (r.Bridge(s)) relief = 0;
-                    if (row == 9) relief = 11;
-                    var v = foot + outward * relief + Vector3.up * y;
-                    if (row == 9 && !r.Bridge(s)) v.y = terrain.SampleHeight(v) + terrain.transform.position.y + .12f;
-                    v = GreenEntranceVertex(r.index, s, v);
-                    int vertex = mesh.Vertex(v, new Vector2(s * .25f, v.y * .25f + (row == 9 ? 2 : 0)));
-                    float mottling = .9f + .1f * Mathf.PerlinNoise(s * .021f, row * .4f);
-                    mesh.colors[vertex] = new Color(climate.x * (1 - climate.y * .65f) * mottling, climate.y * .83f * mottling, 0, 1);
-                    upper.Vertex(v, Vector2.zero);
-                }
-                if (last >= 0 && !open)
-                    for (int row = 0; row < 9; row++)
-                    {
-                        mesh.Quad(last + row, first + row, last + row + 1, first + row + 1, 0, side < 0);
-                        if (row > 0) upper.Quad(last + row, first + row, last + row + 1, first + row + 1, 0, side < 0);
-                    }
-                last = first; prior = foot;
-                // Small weathered columns appear first, then build into a dramatic jointed outcrop.
-                if (step % 3 == 0 && !r.Bridge(s) && !(r.index == 3 && s < 90) && climate.x > .025f && !Opening(r, foot, 2))
-                {
-                    int from = columns.vertices.Count;
-                    Vector3 along = Vector3.Cross(outward, Vector3.up);
-                    for (int column = -1; column <= 1; column++)
-                        Column(columns, foot + outward * (1.2f + column * .08f) + along * column * 1.25f,
-                            Mathf.Lerp(.12f, .72f, climate.x), Mathf.Lerp(1.3f, height + 2 + 2 * Mathf.Sin(s * .23f + column), climate.x), 0);
-                    for (int v = from; v < columns.vertices.Count; v++) columns.colors[v] = new Color(climate.x, climate.y * .65f, 0, 1);
-                }
-            }
-            string name = r.source.name + (side < 0 ? "_Left" : "_Right") + "_" + Mathf.RoundToInt(start);
-            MeshObject(name, mesh, art, new[] { cliffBlend }, false);
-            MeshObject(name + "_UpperCollision", upper, upperRoot, null, true);
-            if (columns.vertices.Count > 0) MeshObject(name + "_BasaltColumns", columns, art, new[] { cliffBlend }, true);
-        }
-        MeshObject(r.source.name + (side < 0 ? "_SmoothLeft" : "_SmoothRight"), wall, collision, null, true);
-    }
-    static Vector3 GreenEntranceVertex(int path, float station, Vector3 vertex)
-    {
-        if (path != 3 || station >= 90) return vertex;
-        float buried = Mathf.Min(vertex.y, terrain.SampleHeight(vertex) + terrain.transform.position.y - .2f);
-        vertex.y = Mathf.Lerp(buried, vertex.y, Blend(72, 90, station));
-        return vertex;
-    }
-    static Material CliffMaterial(string name, Material secondary)
-    {
-        string path = Content + "/" + name + ".mat";
-        var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-        bool create = material == null;
-        if (create) material = new Material(Shader.Find("Environment/Cliff Blend"));
-        material.SetTexture("_BaseMap", stone[0].GetTexture("_BaseMap"));
-        material.SetTexture("_BumpMap", stone[0].GetTexture("_BumpMap"));
-        material.SetTexture("_MaskMap", stone[0].GetTexture("_MetallicGlossMap"));
-        material.SetTexture("_BlendMap", secondary.GetTexture("_BaseMap"));
-        material.SetTexture("_BlendNormal", secondary.GetTexture("_BumpMap"));
-        material.SetTexture("_BlendMask", secondary.GetTexture("_MetallicGlossMap"));
-        var forest = LoadMaterial("Ground", "Forrest_Ground_01");
-        material.SetTexture("_ForestMap", forest.GetTexture("_BaseMap"));
-        material.SetTexture("_ForestNormal", forest.GetTexture("_BumpMap"));
-        material.SetTexture("_ForestMask", forest.GetTexture("_MetallicGlossMap"));
-        material.enableInstancing = true;
-        if (create) AssetDatabase.CreateAsset(material, path); else { EditorUtility.SetDirty(material); AssetDatabase.SaveAssetIfDirty(material); }
-        return material;
     }
 
     static void Column(MeshBuilder mesh, Vector3 p, float radius, float height, int material)
