@@ -527,6 +527,13 @@ owns BikeRoute's material overrides and `BikeRoute Dusk` volume profile. The fou
 `BikeRoute Terrain` shader projects the existing Poly Haven maps onto steep faces,
 retains painted transitions and uses their normal/AO/smoothness maps. Its material's
 **Project rock onto steep faces** toggle provides cheaper planar sampling when needed.
+Cliff sampling blends two noise-selected offsets, scales and slight rotations of the rock maps;
+albedo, normal and packed AO/smoothness stay aligned. Slow world-space mineral beds
+break up large faces within the painted quarry/dark-rock regions. **Cliff detail scale**,
+**Cliff mineral variation** and **Cliff normal strength** tune steep faces only; Terrain
+layers and shallow ground sampling remain unchanged. This adds one extra sample of
+each map per projected cliff axis (two in the slope transition), without new textures
+or geometry; mobile GPU cost still needs device profiling.
 The original imported materials and other scenes are unchanged.
 
 `BikeRoute Visual Foundation` contains the global ACES/grade/bloom volume, five
