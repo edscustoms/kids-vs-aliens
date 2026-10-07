@@ -580,6 +580,15 @@ these groups with the historical environment generator: it restores the overlapp
 placements. The parapet color-only menu changes triangle material assignment without
 recreating barriers or shortcut markers.
 
+`Environment Art/Forest Road Showcase 180m` is a separate, manually reviewable vegetation
+composition on guide path 2 (`03_NarrowS_Asphalt`), stations 260?440 m. Its pines reuse
+BOTD prefabs/LODs and the same trunk-collision contract. Nonblocking fern/shrub/grass
+prefabs live in `BikeRoute/Environment/ForestShowcase`; selected Unity Terrain Sample
+meshes/textures were copied from the temporary donor library into durable assets,
+with three instanced URP cutout materials, 1K texture limits and distance culling.
+Edit this scene group directly; there is no runtime scatterer or vegetation framework.
+Do not extend the showcase or replace its sparse conifers without a separate art review.
+
 `BikeRoute Visual Foundation` contains the global ACES/grade/bloom volume, five
 shadowless amber practical lights and four sparse dust systems (96 particles maximum
 in total). The atmosphere child can be disabled for lower quality. The dusk key and

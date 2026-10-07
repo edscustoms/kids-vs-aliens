@@ -1,0 +1,14 @@
+Forest showcase understory assets
+
+Source: the existing local Unity Terrain Tools Sample Asset Pack donor library
+at Assets/TerrainSampleAssets. Its ThirdPartyNotices.txt states that the art
+assets are governed by the standard Unity Asset Store EULA.
+
+Reused meshes: Fern_A/B/C, Bush_A/B, Grass_A.
+Reused textures: each family's BaseColor, Normal and MaskMap.
+Meshes are copied without reshaping. Texture copies retain source pixels, use
+new GUIDs and 1024px import limits. Mask G supplies URP ambient occlusion.
+The three URP/Lit cutout materials and collider-free LOD prefabs are local
+showcase assets; no dependency on the ignored donor folder remains.
+
+Conifer trees separately reuse the project's existing BOTD URP assets.
