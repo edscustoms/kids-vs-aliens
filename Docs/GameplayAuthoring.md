@@ -557,6 +557,29 @@ Paint** rebuilds only the existing collider-free paint meshes, preserving lane/e
 lines and adding sparse forward chevrons at the authored beats in `BikeRouteRoadBake`.
 It does not rebake road geometry or modify the Terrain/cliff shader.
 
+`LevelGeometry/Readable boundaries` owns the two upper-crossing parapets and sparse
+shortcut delineators. Each parapet shares one closed mesh between rendering and
+collision, with vertical contact faces, rounded terminals, alternating 12 m white/yellow
+sections and the existing `RoadsideSlide` physics material. The airborne lane stays open.
+Each shortcut marker uses `BikeRouteBreakableSign`, its slim solid collider and early
+approach trigger, with the existing speed threshold/loss and stable RunWorldObject ID.
+**Tools > Level Authoring > Refresh BikeRoute Boundary Readability** replaces only this
+group and its mesh assets and leaves the scene dirty for review/save. Marker IDs are
+stable across refreshes. **Repair BikeRoute Bridge Surface** corrects the crossing
+deck's metric UVs and closes that same mesh with a soffit/sides; its original drivable
+top stays fixed. These explicit tools write their mesh assets immediately (not scene
+Undo), and do not rebuild terrain, roads, ramps or gameplay. Existing terrain collision
+remains authoritative elsewhere; retired tall bridge blockers stay inactive.
+
+BikeRoute vegetation is authored as scene overrides on the existing conifer prefabs
+under `Transitional forest groves` and `Forest ledge dressing`. Keep only one tree at
+shared grove/ledge positions. Preserve the prefab LOD/billboard setup and materials.
+Saplings below 5 m have no active collider; larger trees use one narrow vertical trunk
+capsule with `RoadsideSlide`, clear of the main road and both shortcuts. Do not rebuild
+these groups with the historical environment generator: it restores the overlapping
+placements. The parapet color-only menu changes triangle material assignment without
+recreating barriers or shortcut markers.
+
 `BikeRoute Visual Foundation` contains the global ACES/grade/bloom volume, five
 shadowless amber practical lights and four sparse dust systems (96 particles maximum
 in total). The atmosphere child can be disabled for lower quality. The dusk key and
