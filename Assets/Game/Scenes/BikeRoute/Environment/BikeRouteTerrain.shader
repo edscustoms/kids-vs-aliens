@@ -8,6 +8,12 @@ Shader "Environment/BikeRoute Terrain"
         _CliffScale("Cliff detail scale", Range(.25,2)) = .7
         _CliffVariation("Cliff mineral variation", Range(0,1)) = .65
         _CliffNormalStrength("Cliff normal strength", Range(0,2)) = 1.25
+        _GroundStrength("Ground treatment", Range(0,1)) = 0
+        _GroundNormalStrength("Ground relief strength", Range(0,3)) = 1.8
+        [NoScaleOffset] _GroundColors("Ground families: color / AO", 2DArray) = "" {}
+        [NoScaleOffset] _GroundRelief("Ground families: normal XY / smoothness", 2DArray) = "" {}
+        [NoScaleOffset] _GroundRoadDistance("Baked asphalt distance (32m)", 2D) = "white" {}
+        [HideInInspector] _GroundField("Ground field origin / size", Vector) = (0,0,2048,2048)
         [HideInInspector] _Control("Control", 2D) = "red" {}
         [HideInInspector] _Splat0("Quarry", 2D) = "grey" {}
         [HideInInspector] _Splat1("Dark rock", 2D) = "grey" {}
@@ -158,6 +164,7 @@ Shader "Environment/BikeRoute Terrain"
                 }
                 return result;
             }
+            #include "Surfaces/BikeRouteGround.hlsl"
             half4 Frag(Varyings i):SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
@@ -177,6 +184,9 @@ Shader "Environment/BikeRoute Terrain"
                 axes=max(0,axes-.025h);axes/=max(.001h,dot(axes,half3(1,1,1)));
                 #endif
                 float3 dx=ddx(i.positionWS),dy=ddy(i.positionWS);
+                // Only shallow ground changes. All accepted cliff pixels (steep > 0)
+                // retain the original projection, layers, minerals and normal response.
+                half groundBlend=_GroundStrength*smoothstep(.80h,.94h,normal.y);
                 Layer blended=(Layer)0;
                 #define MIX_LAYER(N,WEIGHT) if(WEIGHT>0) { \
                     Layer l=ProjectLayer(TEXTURE2D_ARGS(_Splat##N,sampler_Splat0), \
@@ -184,7 +194,10 @@ Shader "Environment/BikeRoute Terrain"
                         i.positionWS,dx,dy,_Splat##N##_ST,axes,_NormalScale##N,steep); \
                     blended.albedo+=l.albedo*_DiffuseRemapScale##N.rgb*WEIGHT; \
                     blended.perturbation+=l.perturbation*WEIGHT; blended.mask+=l.mask*WEIGHT; }
-                MIX_LAYER(0,weights.x) MIX_LAYER(1,weights.y) MIX_LAYER(2,weights.z) MIX_LAYER(3,weights.w)
+                if(groundBlend<1)
+                {
+                    MIX_LAYER(0,weights.x) MIX_LAYER(1,weights.y) MIX_LAYER(2,weights.z) MIX_LAYER(3,weights.w)
+                }
                 half luminance=dot(blended.albedo,half3(.2126,.7152,.0722));
                 half strata=1+steep*.055h*sin(i.positionWS.y*.82+sin(i.positionWS.x*.031+i.positionWS.z*.019)*1.3);
                 half variation=.96h+.04h*sin(i.positionWS.x*.043+sin(i.positionWS.z*.029));
@@ -213,6 +226,8 @@ Shader "Environment/BikeRoute Terrain"
                 // Keep the projected slope perturbation tangent to the actual cliff face.
                 bump-=normal*dot(bump,normal)*steep;
                 input.normalWS=normalize(normal+bump*lerp(.65h,_CliffNormalStrength,steep));
+                if(groundBlend>0)
+                    ApplyGround(i.positionWS,dx,dy,normal,soil,groundBlend,surface,input.normalWS);
                 input.viewDirectionWS=GetWorldSpaceNormalizeViewDir(i.positionWS);
                 input.shadowCoord=TransformWorldToShadowCoord(i.positionWS);
                 input.bakedGI=SampleSH(input.normalWS);input.shadowMask=half4(1,1,1,1);

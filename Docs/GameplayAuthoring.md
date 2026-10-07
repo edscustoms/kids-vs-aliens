@@ -531,10 +531,23 @@ Cliff sampling blends two noise-selected offsets, scales and slight rotations of
 albedo, normal and packed AO/smoothness stay aligned. Slow world-space mineral beds
 break up large faces within the painted quarry/dark-rock regions. **Cliff detail scale**,
 **Cliff mineral variation** and **Cliff normal strength** tune steep faces only; Terrain
-layers and shallow ground sampling remain unchanged. This adds one extra sample of
+layer assets remain unchanged. This adds one extra sample of
 each map per projected cliff axis (two in the slope transition), without new textures
 or geometry; mobile GPU cost still needs device profiling.
 The original imported materials and other scenes are unchanged.
+
+Shallow ground has its own branch in `Environment/Surfaces/BikeRouteGround.hlsl`.
+It fades out above the ground slopes, before accepted cliff projection begins.
+Two 512px texture arrays pack existing Poly Haven gravel/dirt/stones/forest soil,
+with aligned rotated detail, normal/AO/smoothness and slower deposit variation.
+The baked asphalt-distance field widens gravel shoulders irregularly; elevated
+crossings are excluded. **Tools > Level Authoring > Refresh BikeRoute Ground
+Materials** refreshes only these ground assets and ground material properties after
+road edits; it does not save the scene or modify road meshes, TerrainData, source
+texture importers, cliff settings or gameplay. **Ground treatment** and **Ground
+relief strength** live on `Terrain Rock Projection`. Packed textures use about 15 MB
+including mipmaps and the distance field, with no runtime bake or parallax; device
+GPU profiling remains pending.
 
 BikeRoute asphalt uses world-space PBR sampling with offset/rotated detail, broad
 discoloration and an irregular aggregate/dust edge. `Environment/Surfaces` owns its
