@@ -536,6 +536,14 @@ each map per projected cliff axis (two in the slope transition), without new tex
 or geometry; mobile GPU cost still needs device profiling.
 The original imported materials and other scenes are unchanged.
 
+BikeRoute asphalt uses world-space PBR sampling with offset/rotated detail, broad
+discoloration and an irregular aggregate/dust edge. `Environment/Surfaces` owns its
+shader and the worn paint shader; `Asphalt Dusk`, `RoadEdge` and `RoadCenter` retain
+their existing material references. **Tools > Level Authoring > Refresh BikeRoute Road
+Paint** rebuilds only the existing collider-free paint meshes, preserving lane/edge
+lines and adding sparse forward chevrons at the authored beats in `BikeRouteRoadBake`.
+It does not rebake road geometry or modify the Terrain/cliff shader.
+
 `BikeRoute Visual Foundation` contains the global ACES/grade/bloom volume, five
 shadowless amber practical lights and four sparse dust systems (96 particles maximum
 in total). The atmosphere child can be disabled for lower quality. The dusk key and

@@ -11,6 +11,24 @@ public static class BikeRouteRoadBake
 {
     private const string MeshFolder = "Assets/Game/Scenes/BikeRoute/Meshes/";
 
+    [MenuItem("Tools/Level Authoring/Refresh BikeRoute Road Paint")]
+    public static void RefreshRoadPaint()
+    {
+        Require(!EditorApplication.isPlayingOrWillChangePlaymode && SceneManager.GetActiveScene().name == "BikeRoute",
+            "Open BikeRoute outside Play Mode before refreshing paint.");
+        var baked = GameObject.Find("LevelGeometry/BakedAsphalt");
+        Require(baked != null, "Missing baked BikeRoute road.");
+        var edge = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Materials/RoadEdge.mat");
+        var center = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Materials/RoadCenter.mat");
+        Require(edge != null && center != null, "Missing road paint materials.");
+        foreach (Transform road in baked.transform)
+            Require(road.GetComponent<MeshFilter>()?.sharedMesh != null
+                && road.Find("Road markings") != null
+                && road.Find("Road markings").GetComponent<Collider>() == null,
+                "Expected an existing collider-free paint surface on " + road.name);
+        foreach (Transform road in baked.transform) UpdateMarkings(road, edge, center);
+    }
+
     [MenuItem("Tools/Level Authoring/Update BikeRoute Asphalt Meshes")]
     public static void UpdateAsphaltMeshes()
     {
@@ -164,6 +182,7 @@ public static class BikeRouteRoadBake
                 triangles.AddRange(new[] { v, v + 2, v + 1, v + 1, v + 2, v + 3 });
             }
         }
+        AddGuidancePaint(road.name, strip, vertices, centerTriangles);
         string path = MeshFolder + road.name + "_Markings.asset";
         var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
         bool create = mesh == null;
@@ -192,5 +211,48 @@ public static class BikeRouteRoadBake
     {
         if (!condition)
             throw new InvalidOperationException(message);
+    }
+
+    // Sparse authored beats, measured in metres along each existing asphalt strip.
+    // These are paint-only chevrons in the forward lane, never physical road geometry.
+    private static void AddGuidancePaint(string road, Vector3[] strip, List<Vector3> vertices, List<int> triangles)
+    {
+        float first = road switch {
+            "01_LearnSpeed_Asphalt" => 140,
+            "02_LongSweep_Asphalt" => 255,
+            "03_NarrowS_Asphalt" => 150,
+            "05_TurboBowl_Asphalt" => 195,
+            "06_UpperCrossing_Asphalt" => 330,
+            "08_Finish_Asphalt" => 180,
+            _ => -1
+        };
+        if (first < 0) return;
+        var stations = new float[strip.Length / 2];
+        for (int i = 1; i < stations.Length; i++)
+            stations[i] = stations[i - 1] + Vector3.Distance((strip[i*2]+strip[i*2+1])*.5f,
+                (strip[i*2-2]+strip[i*2-1])*.5f);
+        for (int mark = 0; mark < 3; mark++)
+        {
+            float at = first + mark * 12;
+            AddArm(.5f, 1.35f, at, at + 1.7f);
+            AddArm(1.35f, 2.2f, at + 1.7f, at);
+        }
+        void AddArm(float x0, float x1, float s0, float s1)
+        {
+            int v = vertices.Count;
+            vertices.Add(Surface(x0,s0));vertices.Add(Surface(x1,s1));
+            vertices.Add(Surface(x0,s0+.32f));vertices.Add(Surface(x1,s1+.32f));
+            triangles.AddRange(new[]{v,v+2,v+1,v+1,v+2,v+3});
+        }
+        Vector3 Surface(float lateral, float distance)
+        {
+            int segment = Array.BinarySearch(stations, distance);
+            if(segment<0) segment=~segment-1;
+            segment=Mathf.Clamp(segment,0,stations.Length-2);
+            float t=Mathf.InverseLerp(stations[segment],stations[segment+1],distance);
+            Vector3 left=Vector3.Lerp(strip[segment*2],strip[segment*2+2],t);
+            Vector3 right=Vector3.Lerp(strip[segment*2+1],strip[segment*2+3],t);
+            return Vector3.Lerp(left,right,.5f+lateral/Vector3.Distance(left,right))+Vector3.up*.027f;
+        }
     }
 }
