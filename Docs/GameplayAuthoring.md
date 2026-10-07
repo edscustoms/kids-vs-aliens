@@ -589,6 +589,16 @@ with three instanced URP cutout materials, 1K texture limits and distance cullin
 Edit this scene group directly; there is no runtime scatterer or vegetation framework.
 Do not extend the showcase or replace its sparse conifers without a separate art review.
 
+Showcase cliff moss is a material-only extension in `BikeRouteForestMoss.hlsl`, gated
+by `_FOREST_MOSS` and `Forest Moss Region.png` on `Terrain Rock Projection`. The baked
+mask covers path 2, stations 261?439 m with 16 m end fades and a 36 m lateral limit;
+`_MossField` maps its world-space bounds. Only steep cliff pixels enter this branch.
+The original ground include, Terrain layers and all base cliff parameters stay intact.
+Poly Haven `mossy_rock` maps use the existing importer. The blend keeps the rock normal
+and adds larger fracture relief, AO and roughness through moss/exposed-rock patches.
+`_MossCoverage` and `_MossRelief` tune this region only; do not broaden the region mask
+without a separately approved material pass.
+
 `BikeRoute Visual Foundation` contains the global ACES/grade/bloom volume, five
 shadowless amber practical lights and four sparse dust systems (96 particles maximum
 in total). The atmosphere child can be disabled for lower quality. The dusk key and

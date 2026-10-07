@@ -8,6 +8,14 @@ Shader "Environment/BikeRoute Terrain"
         _CliffScale("Cliff detail scale", Range(.25,2)) = .7
         _CliffVariation("Cliff mineral variation", Range(0,1)) = .65
         _CliffNormalStrength("Cliff normal strength", Range(0,2)) = 1.25
+        [Toggle(_FOREST_MOSS)] _ForestMoss("Localized forest cliff moss", Float) = 0
+        [NoScaleOffset] _MossRegion("Showcase coverage / shelter / aspect", 2D) = "black" {}
+        [NoScaleOffset] _MossAlbedo("Mossy rock color", 2D) = "grey" {}
+        [NoScaleOffset] _MossNormal("Mossy rock relief", 2D) = "bump" {}
+        [NoScaleOffset] _MossMask("Mossy rock AO / smoothness", 2D) = "white" {}
+        _MossField("Moss region origin / size", Vector) = (0,0,1,1)
+        _MossCoverage("Moss patch coverage", Range(0,1)) = .88
+        _MossRelief("Additional moss relief", Range(0,2)) = 1.8
         _GroundStrength("Ground treatment", Range(0,1)) = 0
         _GroundNormalStrength("Ground relief strength", Range(0,3)) = 1.8
         [NoScaleOffset] _GroundColors("Ground families: color / AO", 2DArray) = "" {}
@@ -49,6 +57,7 @@ Shader "Environment/BikeRoute Terrain"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _ALPHATEST_ON
             #pragma shader_feature_local _CLIFF_PROJECTION
+            #pragma shader_feature_local _FOREST_MOSS
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -165,6 +174,9 @@ Shader "Environment/BikeRoute Terrain"
                 return result;
             }
             #include "Surfaces/BikeRouteGround.hlsl"
+            #ifdef _FOREST_MOSS
+            #include "Surfaces/BikeRouteForestMoss.hlsl"
+            #endif
             half4 Frag(Varyings i):SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
@@ -184,8 +196,8 @@ Shader "Environment/BikeRoute Terrain"
                 axes=max(0,axes-.025h);axes/=max(.001h,dot(axes,half3(1,1,1)));
                 #endif
                 float3 dx=ddx(i.positionWS),dy=ddy(i.positionWS);
-                // Only shallow ground changes. All accepted cliff pixels (steep > 0)
-                // retain the original projection, layers, minerals and normal response.
+                // Ground treatment only changes shallow surfaces. Base cliff projection,
+                // layers and minerals stay intact; regional moss is applied separately.
                 half groundBlend=_GroundStrength*smoothstep(.80h,.94h,normal.y);
                 Layer blended=(Layer)0;
                 #define MIX_LAYER(N,WEIGHT) if(WEIGHT>0) { \
@@ -228,6 +240,12 @@ Shader "Environment/BikeRoute Terrain"
                 input.normalWS=normalize(normal+bump*lerp(.65h,_CliffNormalStrength,steep));
                 if(groundBlend>0)
                     ApplyGround(i.positionWS,dx,dy,normal,soil,groundBlend,surface,input.normalWS);
+                #ifdef _FOREST_MOSS
+                // The accepted ground branch above and every pixel outside the baked
+                // showcase remain unchanged. Moss is an additional cliff-only response.
+                if(steep>0)
+                    ApplyForestMoss(i.positionWS,dx,dy,normal,axes,steep,blended.mask.g,surface,input.normalWS);
+                #endif
                 input.viewDirectionWS=GetWorldSpaceNormalizeViewDir(i.positionWS);
                 input.shadowCoord=TransformWorldToShadowCoord(i.positionWS);
                 input.bakedGI=SampleSH(input.normalWS);input.shadowMask=half4(1,1,1,1);
