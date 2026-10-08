@@ -1,0 +1,207 @@
+[
+  {
+    "original": "DuneStepHouse",
+    "name": "RidgeHouse",
+    "width": 6.6,
+    "depth": 8,
+    "height": 8.0,
+    "triangles": {
+      "lod0": 1762,
+      "lod1": 882,
+      "collision": 214
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "OasisShop",
+    "name": "TrailSupplyShop",
+    "width": 8.5,
+    "depth": 7,
+    "height": 5.7,
+    "triangles": {
+      "lod0": 2248,
+      "lod1": 1488,
+      "collision": 216
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "RedClayTownhouse",
+    "name": "BoardingHouse",
+    "width": 6,
+    "depth": 8.5,
+    "height": 8.2,
+    "triangles": {
+      "lod0": 1794,
+      "lod1": 882,
+      "collision": 214
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "ShadePorchHouse",
+    "name": "PorchCabin",
+    "width": 8,
+    "depth": 7,
+    "height": 5.45,
+    "triangles": {
+      "lod0": 1596,
+      "lod1": 836,
+      "collision": 216
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "BlueShutterHouse",
+    "name": "CaretakerCottage",
+    "width": 7.5,
+    "depth": 8,
+    "height": 5.9,
+    "triangles": {
+      "lod0": 1644,
+      "lod1": 836,
+      "collision": 216
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "RouteServiceHall",
+    "name": "MaintenanceHall",
+    "width": 13,
+    "depth": 10,
+    "height": 7.1,
+    "triangles": {
+      "lod0": 3180,
+      "lod1": 1264,
+      "collision": 244
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "CornerMarket",
+    "name": "GeneralStore",
+    "width": 10,
+    "depth": 8,
+    "height": 6.3,
+    "triangles": {
+      "lod0": 2332,
+      "lod1": 1524,
+      "collision": 216
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "original": "ArchedWorkshop",
+    "name": "MountainGarage",
+    "width": 11,
+    "depth": 9,
+    "height": 6.8,
+    "triangles": {
+      "lod0": 3104,
+      "lod1": 1464,
+      "collision": 268
+    },
+    "materials": [
+      "Concrete",
+      "DarkRecess",
+      "GalvanizedMetal",
+      "PaintedTrim",
+      "SignIvory",
+      "WeatheredTimber"
+    ]
+  },
+  {
+    "name": "UtilityShed",
+    "original": null,
+    "triangles": {
+      "lod0": 988,
+      "lod1": 264,
+      "collision": 112
+    }
+  },
+  {
+    "name": "StorageContainer",
+    "original": null,
+    "triangles": {
+      "lod0": 764,
+      "lod1": 132,
+      "collision": 12
+    }
+  },
+  {
+    "name": "YardBarrel",
+    "original": null,
+    "triangles": {
+      "lod0": 328,
+      "lod1": 60,
+      "collision": 60
+    }
+  },
+  {
+    "name": "ServiceGenerator",
+    "original": null,
+    "triangles": {
+      "lod0": 184,
+      "lod1": 108,
+      "collision": 12
+    }
+  },
+  {
+    "name": "TimberCrate",
+    "original": null,
+    "triangles": {
+      "lod0": 84,
+      "lod1": 84,
+      "collision": 12
+    }
+  }
+]

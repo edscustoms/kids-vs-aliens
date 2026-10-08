@@ -667,15 +667,29 @@ Pipes, excavator, barriers, cable reels, timber/cement pallets, portable toilets
 road signs and conifers reuse existing prefabs. Eight original reusable buildings are
 under `Art/Environment/Buildings/BikeRoute`: DuneStepHouse, OasisShop, RedClayTownhouse,
 ShadePorchHouse, BlueShutterHouse, RouteServiceHall, CornerMarket and ArchedWorkshop.
-They use solid opaque windows, simple colliders, shared masonry/paint materials and
-fewer than 1,800 triangles each. Seventeen instances form the open-section settlement
-and smaller start/finish service clusters. The editable source is outside Unity Assets:
-`D:/assets/Kids VS Aliens/BikeRoute/BikeRoute_DesertSettlement.blend`.
+The five start/finish instances retain their original assets. In the broad area of
+`05_TurboBowl_Asphalt`, the twelve former settlement instances are inactive; their
+replacements live under `Environment Art/Mountain roadside settlement` (174?434m).
+This group contains eight upgraded building variants, a utility shed, terrain-seated
+local foundations and grouped yard storage, incorporating the existing excavator.
+No terrain, road or gameplay authoring is owned by this group.
+
+Reusable models, prefabs, foundation meshes and six shared URP/Lit materials are in
+`Art/Environment/Buildings/MountainSettlement`. Buildings use 988?3,180 LOD0 triangles,
+native two-level LODs and separate coarse structural collision meshes; the garage and
+shed colliders preserve their visible recessed bays. Materials reuse the existing wood
+planks, corrugated iron and rough concrete texture sets without changing those sources.
+The editable source is `SourceArt/BikeRoute/Settlement/MountainSettlement.blend`;
+`Originals/BikeRoute_DesertSettlement.blend` is an unchanged copy of the external source.
+`Tools/Art/BikeRouteSettlement/build_settlement.py` regenerates only the new Blender
+source/FBX variants; it does not place Unity objects or rewrite original assets.
+Edit settlement prefab instances directly for layout; foundations are local mesh assets.
 
 **Tools > Level Authoring > Author BikeRoute Environment Art and Collision** is an
 explicit rebuild: it replaces its two generated roots, reshapes outer terrain/paint
 and reapplies these art choices. Manual edits under those roots are replaced.
-**Update BikeRoute Desert Settlement** refreshes only the building prefabs/placements.
+**Update BikeRoute Desert Settlement** is the historical desert-layout rebuild; it
+recreates the retired placements and must not be run over the mountain settlement.
 Neither command rewrites player tuning, chase reservations, waves or finish defenses.
 The existing Poly Haven importer supplies the material workflow; V2 reuses the seven
 previously downloaded 2K sets, rather than downloading duplicate copies.
