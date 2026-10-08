@@ -589,6 +589,14 @@ with three instanced URP cutout materials, 1K texture limits and distance cullin
 Edit this scene group directly; there is no runtime scatterer or vegetation framework.
 Do not extend the showcase or replace its sparse conifers without a separate art review.
 
+`Environment Art/Forest Showcase Transitions` extends vegetation only along path 2,
+stations 180-260 m and 440 m to its end, then path 3 (`04_Wash_Dirt`) stations 0-65 m.
+It reuses the showcase foliage and conifer LODs, with the same narrow trunk capsules.
+Small loose-rock pockets also accent the showcase; these reuse `ForestBoulder` and
+`M_Rock_Wall_17` without changing their assets. Understory and loose stones are
+nonblocking and sit beyond the riding corridor. This is an editable scene composition,
+not a runtime placement system. Keep further expansion subject to visual approval.
+
 Showcase cliff moss is a material-only extension in `BikeRouteForestMoss.hlsl`, gated
 by `_FOREST_MOSS` and `Forest Moss Region.png` on `Terrain Rock Projection`. The baked
 mask covers path 2, stations 261?439 m with 16 m end fades and a 36 m lateral limit;
