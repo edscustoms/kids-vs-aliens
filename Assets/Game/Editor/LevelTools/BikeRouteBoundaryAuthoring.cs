@@ -14,6 +14,7 @@ public static class BikeRouteBoundaryAuthoring
     const string RootName = "Readable boundaries";
     public const float CrossingStart = 278, CrossingEnd = 514, ParapetOffset = 7.5f;
     public const float ParapetHeight = 1.3f, ParapetThickness = .4f;
+    const int ColorSpanSegments = 3; // Three 2 m mesh spans per white/yellow section.
 
     [MenuItem("Tools/Level Authoring/Refresh BikeRoute Boundary Readability")]
     public static void Refresh()
@@ -146,8 +147,8 @@ public static class BikeRouteBoundaryAuthoring
             for (int i = 0; i < indices.Length; i += 3)
             {
                 int first = Mathf.Min(indices[i], Mathf.Min(indices[i+1], indices[i+2]));
-                int section = first < segments * 24 ? (first / 24) / 6
-                    : first < segments * 24 + 96 ? 0 : (segments - 1) / 6;
+                int section = first < segments * 24 ? (first / 24) / ColorSpanSegments
+                    : first < segments * 24 + 96 ? 0 : (segments - 1) / ColorSpanSegments;
                 colors[section % 2].AddRange(new[] { indices[i], indices[i+1], indices[i+2] });
             }
             mesh.SetTriangles(colors[0], 0);
@@ -186,7 +187,7 @@ public static class BikeRouteBoundaryAuthoring
             rights[i] = Vector3.Cross(Vector3.up, points[Mathf.Min(i+1,points.Length-1)]-points[Mathf.Max(i-1,0)]).normalized;
         for (int i = 0; i < points.Length - 1; i++)
         {
-            surface.material = (i / 6) % 2; // 12 m sections, synchronized on both sides.
+            surface.material = (i / ColorSpanSegments) % 2; // 6 m sections, synchronized on both sides.
             var a = points[i]; var b = points[i+1]; var ra = rights[i]*ParapetThickness*.5f; var rb = rights[i+1]*ParapetThickness*.5f;
             var up = Vector3.up*ParapetHeight;
             surface.Face(a+ra,b+rb,b+rb+up,a+ra+up,rights[i]);
@@ -197,7 +198,7 @@ public static class BikeRouteBoundaryAuthoring
         // Round the terminal in plan rather than lowering it into a launch ramp.
         foreach (int end in new[] { 0, points.Length - 1 })
         {
-            surface.material = end == 0 ? 0 : ((points.Length - 2) / 6) % 2;
+            surface.material = end == 0 ? 0 : ((points.Length - 2) / ColorSpanSegments) % 2;
             var center = points[end]; var right = rights[end];
             var outward = Vector3.Cross(right,Vector3.up)*(end==0?-1:1);
             for (int i = 0; i < 8; i++)

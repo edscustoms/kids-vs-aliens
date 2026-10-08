@@ -21,6 +21,7 @@ Shader "Environment/BikeRoute Terrain"
         [NoScaleOffset] _GroundColors("Ground families: color / AO", 2DArray) = "" {}
         [NoScaleOffset] _GroundRelief("Ground families: normal XY / smoothness", 2DArray) = "" {}
         [NoScaleOffset] _GroundRoadDistance("Baked asphalt distance (32m)", 2D) = "white" {}
+        [NoScaleOffset] _GroundCorrectionRegion("Local wash / ridge gravel coverage", 2D) = "black" {}
         [HideInInspector] _GroundField("Ground field origin / size", Vector) = (0,0,2048,2048)
         [HideInInspector] _Control("Control", 2D) = "red" {}
         [HideInInspector] _Splat0("Quarry", 2D) = "grey" {}

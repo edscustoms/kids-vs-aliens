@@ -572,7 +572,7 @@ It does not rebake road geometry or modify the Terrain/cliff shader.
 
 `LevelGeometry/Readable boundaries` owns the two upper-crossing parapets and sparse
 shortcut delineators. Each parapet shares one closed mesh between rendering and
-collision, with vertical contact faces, rounded terminals, alternating 12 m white/yellow
+collision, with vertical contact faces, rounded terminals, alternating 6 m white/yellow
 sections and the existing `RoadsideSlide` physics material. The airborne lane stays open.
 Each shortcut marker uses `BikeRouteBreakableSign`, its slim solid collider and early
 approach trigger, with the existing speed threshold/loss and stable RunWorldObject ID.
@@ -592,6 +592,18 @@ capsule with `RoadsideSlide`, clear of the main road and both shortcuts. Do not 
 these groups with the historical environment generator: it restores the overlapping
 placements. The parapet color-only menu changes triangle material assignment without
 recreating barriers or shortcut markers.
+
+The wash/ridge floor correction uses `_GroundCorrectionRegion` on the BikeRoute-only
+Terrain material. Its coverage asset in `Environment/LocalCorrections` fades within
+those two off-road corridors; zero coverage retains the accepted ground treatment.
+The four `JumpTests` roots retain their original MeshCollider assets and exact riding
+surfaces. Their separate deck/retaining meshes use metric UVs and timber sides; do not
+replace their colliders with the decorative retaining structure.
+
+`Mountain roadside settlement/Settlement infill` contains four existing building
+prefabs with their original LODs and individual terrain-seated concrete footings.
+Keep their open road setbacks and edit these instances directly. Original buildings,
+their attached lighting composition and the maintenance yard remain in place.
 
 `Environment Art/Forest Road Showcase 180m` is a separate, manually reviewable vegetation
 composition on guide path 2 (`03_NarrowS_Asphalt`), stations 260?440 m. Its pines reuse

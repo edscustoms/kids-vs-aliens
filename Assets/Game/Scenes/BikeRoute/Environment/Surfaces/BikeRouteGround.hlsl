@@ -2,6 +2,7 @@
 TEXTURE2D_ARRAY(_GroundColors); SAMPLER(sampler_GroundColors);
 TEXTURE2D_ARRAY(_GroundRelief);
 TEXTURE2D(_GroundRoadDistance); SAMPLER(sampler_GroundRoadDistance);
+TEXTURE2D(_GroundCorrectionRegion); SAMPLER(sampler_GroundCorrectionRegion);
 float4 _GroundField;
 half _GroundStrength, _GroundNormalStrength;
 
@@ -42,20 +43,25 @@ void ApplyGround(float3 p,float3 dx,float3 dy,half3 normal,half soil,half weight
 {
     float broad=RockNoise(p.xz*.018);
     float deposits=RockNoise(p.xz*.085+27);
+    // Authored floor corridors only; zero coverage preserves the accepted ground.
+    half correction=SAMPLE_TEXTURE2D_LOD(_GroundCorrectionRegion,sampler_GroundCorrectionRegion,
+        (p.xz-_GroundField.xy)/_GroundField.zw,0).r;
     float distance=SAMPLE_TEXTURE2D_LOD(_GroundRoadDistance,sampler_GroundRoadDistance,
         (p.xz-_GroundField.xy)/_GroundField.zw,0).r*32;
     float width=lerp(2.8,7.5,RockNoise(p.xz*.037+11));
     float brokenEdge=(RockNoise(p.xz*.67)-.5)*1.2;
     half shoulder=1-smoothstep(.25,width,distance+brokenEdge);
-    half forest=smoothstep(.12,.88,soil);
-    GroundSample gravel=GroundFamily(p.xz,dx.xz,dy.xz,0,3.4);
+    half forest=smoothstep(.12,.88,soil)*(1-correction*.98);
+    GroundSample gravel=GroundFamily(p.xz,dx.xz,dy.xz,0,lerp(3.4,2.2,correction));
     GroundSample earth=GroundFamily(p.xz,dx.xz,dy.xz,1,3.0);
     if(forest>.001)
         earth=MixGround(earth,GroundFamily(p.xz,dx.xz,dy.xz,3,3.8),forest*.85);
     half aggregate=saturate(shoulder*.85+(1-shoulder)*lerp(.16,.53,deposits));
+    aggregate=lerp(aggregate,lerp(.72,.88,deposits),correction);
     GroundSample ground=MixGround(earth,gravel,aggregate);
     half stones=smoothstep(.43,.78,deposits)*lerp(.55,.2,forest);
     stones=max(stones,shoulder*.68);
+    stones*=1-correction*.7;
     if(stones>.001)
         ground=MixGround(ground,GroundFamily(p.xz,dx.xz,dy.xz,2,7.2),stones);
 
@@ -66,11 +72,12 @@ void ApplyGround(float3 p,float3 dx,float3 dy,half3 normal,half soil,half weight
     half edge=1-smoothstep(0,2.2,distance);
     half3 tint=lerp(regional,half3(.66,.59,.47),edge*.7);
     half macro=lerp(.8,1.17,smoothstep(.15,.85,broad));
+    macro=lerp(macro,lerp(.95,1.04,broad),correction);
     half cavity=lerp(.78,1,smoothstep(.25,.9,ground.ao));
     surface.albedo=lerp(surface.albedo,ground.color*tint*macro*cavity,weight);
     surface.occlusion=lerp(surface.occlusion,lerp(.3,1,ground.ao),weight);
     surface.smoothness=lerp(surface.smoothness,ground.smoothness*lerp(.34,.62,broad),weight);
     half3 bump=half3(ground.bump.x,0,ground.bump.y);
     bump-=normal*dot(bump,normal);
-    normalWS=normalize(lerp(normalWS,normalize(normal+bump*_GroundNormalStrength),weight));
+    normalWS=normalize(lerp(normalWS,normalize(normal+bump*(_GroundNormalStrength+correction*.4)),weight));
 }
