@@ -680,7 +680,7 @@ Pipes, excavator, barriers, cable reels, timber/cement pallets, portable toilets
 road signs and conifers reuse existing prefabs. Eight original reusable buildings are
 under `Art/Environment/Buildings/BikeRoute`: DuneStepHouse, OasisShop, RedClayTownhouse,
 ShadePorchHouse, BlueShutterHouse, RouteServiceHall, CornerMarket and ArchedWorkshop.
-The five start/finish instances retain their original assets. In the broad area of
+The five start/finish instances retain their original prefab roots. In the broad area of
 `05_TurboBowl_Asphalt`, the twelve former settlement instances are inactive; their
 replacements live under `Environment Art/Mountain roadside settlement` (174?434m).
 This group contains eight upgraded building variants, a utility shed, terrain-seated
@@ -697,6 +697,25 @@ The editable source is `SourceArt/BikeRoute/Settlement/MountainSettlement.blend`
 `Tools/Art/BikeRouteSettlement/build_settlement.py` regenerates only the new Blender
 source/FBX variants; it does not place Unity objects or rewrite original assets.
 Edit settlement prefab instances directly for layout; foundations are local mesh assets.
+
+The start-area ArchedWorkshop and ShadePorchHouse have local presentation children
+from `Art/Environment/Buildings/BikeRoutePolish`; their original renderers are disabled,
+while original transforms and colliders remain authoritative. The finish towers use
+the same material family and a two-level DefenseTower presentation prefab. Only their
+concrete support/roof renderers are disabled: rifle rigs, structure roots and colliders
+remain unchanged. Tower bases are below grade; the visible service door is raised to
+the actual surrounding ground. Editable sources are in `SourceArt/BikeRoute/Polish`;
+`Tools/Art/BikeRoutePolish/prepare_assets.py` exports the three presentation FBXs without
+replacing the preserved original sources or placing scene objects.
+
+The BikeRoute excavator instance has a local LODGroup: the original 109,460-triangle
+model remains LOD0, with 34,999/11,088-triangle distance meshes in
+`Scenes/BikeRoute/Environment/ExcavatorLODs`. The reduced levels share the original
+materials, use nine renderers each, and disable CPU mesh readability. Their editable
+mesh source is `SourceArt/BikeRoute/Polish/ExcavatorDistanceLODs.blend`; its two groups
+are laid out separately for inspection. These meshes represent this static scene pose;
+do not reuse them on an articulated excavator. The shared excavator prefab and its
+ConstructionSite use are unchanged. Editor rendering counts are not device profiling.
 
 **Tools > Level Authoring > Author BikeRoute Environment Art and Collision** is an
 explicit rebuild: it replaces its two generated roots, reshapes outer terrain/paint

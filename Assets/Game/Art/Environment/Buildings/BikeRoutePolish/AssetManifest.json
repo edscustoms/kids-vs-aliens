@@ -1,0 +1,17 @@
+[
+  {
+    "name": "ArchedWorkshopRefined",
+    "lod0_triangles": 2402,
+    "lod1_triangles": 1406
+  },
+  {
+    "name": "ShadePorchHouseRefined",
+    "lod0_triangles": 2142,
+    "lod1_triangles": 1518
+  },
+  {
+    "name": "DefenseTower",
+    "lod0_triangles": 1128,
+    "lod1_triangles": 396
+  }
+]
