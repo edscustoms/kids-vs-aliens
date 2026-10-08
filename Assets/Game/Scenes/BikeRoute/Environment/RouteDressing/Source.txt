@@ -1,0 +1,5 @@
+Dry roadside vegetation
+
+Existing local Unity Terrain Tools Sample Asset Pack meshes BushDry_A/B and GrassDry_A/B, copied without reshaping. Source textures: BushDry and GrassDry BaseColor, Normal, MaskMap. Source art uses the standard Unity Asset Store EULA (donor ThirdPartyNotices.txt).
+
+Durable local copies have independent GUIDs, 1K texture import caps with cleared platform overrides, URP cutout materials, instancing and collider-free LOD prefabs. No ignored TerrainSampleAssets dependency. Green plants reuse ForestShowcase assets; conifers retain their existing BOTD assets.

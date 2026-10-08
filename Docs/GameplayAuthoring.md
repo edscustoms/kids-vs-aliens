@@ -597,6 +597,16 @@ Small loose-rock pockets also accent the showcase; these reuse `ForestBoulder` a
 nonblocking and sit beyond the riding corridor. This is an editable scene composition,
 not a runtime placement system. Keep further expansion subject to visual approval.
 
+`Environment Art/Route Vegetation and Dressing` adds individually editable pockets
+across all eight main paths and both shortcuts. Dry scrub gives way to mixed woodland
+and fern-rich wash/ridge pockets; settlement additions stay peripheral. The existing
+showcase and its transitions are excluded, as are jump approaches/landings and the
+bridge flight lane. `Environment/RouteDressing` holds copied dry shrub/grass assets
+with two instanced URP cutout materials and 1K import caps. Other foliage, rocks,
+pipes, pallets and timber reuse existing assets. Small dressing is nonblocking;
+new trees retain the established trunk-only collision contract. No runtime scatterer
+or rebuild command owns these scene placements. Device performance remains unverified.
+
 Showcase cliff moss is a material-only extension in `BikeRouteForestMoss.hlsl`, gated
 by `_FOREST_MOSS` and `Forest Moss Region.png` on `Terrain Rock Projection`. The baked
 mask covers path 2, stations 261?439 m with 16 m end fades and a 36 m lateral limit;
