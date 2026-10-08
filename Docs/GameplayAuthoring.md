@@ -523,7 +523,7 @@ The cliff geometry pass reshapes the original Terrain with uneven crests, recess
 upper cuts and broken erosion ledges. It adds no separate wall meshes. The driving
 floor, lower contact band and ground beneath existing props stay fixed; the bridge
 and underpass retain their driving surfaces and clearance. `Environment/Foundation`
-owns BikeRoute's material overrides and `BikeRoute Dusk` volume profile. The four-layer
+owns BikeRoute's material overrides and the original dusk profile. The four-layer
 `BikeRoute Terrain` shader projects the existing Poly Haven maps onto steep faces,
 retains painted transitions and uses their normal/AO/smoothness maps. Its material's
 **Project rock onto steep faces** toggle provides cheaper planar sampling when needed.
@@ -535,6 +535,19 @@ layer assets remain unchanged. This adds one extra sample of
 each map per projected cliff axis (two in the slope transition), without new textures
 or geometry; mobile GPU cost still needs device profiling.
 The original imported materials and other scenes are unchanged.
+
+BikeRoute's current lighting is authored in the scene's RenderSettings, the
+`Canyon Dusk Key` light and `BikeRoute Visual Foundation` volume. Its private profile
+is `BikeRoute/Lighting/BlueHour.asset`, with `BlueHourSky.mat` for the sky.
+Cool trilight ambient preserves shaded
+road detail; linear distance haze starts at 110m and reaches full density at 560m.
+`CameraFillLight` retains the existing bike/enemy illumination. Three existing
+shadowless frontage lights serve the garage, shop and maintenance hall; the two
+combined meshes under `Blue hour practical lights` supply small emissive windows and
+lamp strips without changing building materials. Four existing `Drift` particle
+systems supply sparse local dust/woodland motes. Edit these serialized scene objects
+and private lighting assets directly; no runtime atmosphere controller or shared URP
+asset changes are required. The HUD canvases remain screen-space overlays.
 
 Shallow ground has its own branch in `Environment/Surfaces/BikeRouteGround.hlsl`.
 It fades out above the ground slopes, before accepted cliff projection begins.
