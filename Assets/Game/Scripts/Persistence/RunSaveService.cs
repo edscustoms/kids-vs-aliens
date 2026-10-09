@@ -50,6 +50,7 @@ public static class RunSaveService
             if (!Application.CanStreamedLevelBeLoaded(saved.sceneName)) throw new InvalidOperationException("Saved level is not included in this build.");
             PendingRestore = saved; EntryMode = RunEntryMode.Resume;
             PlayerLoadoutState.Initialize(catalog.Resolve<CharacterVisual>(saved.player.character), catalog.Resolve<WeaponItemData>(saved.player.equipped));
+            ActiveRunController.Instance?.PrepareToLeave();
             SceneManager.LoadScene(saved.sceneName); return true;
         }
         catch (Exception error) { LastError = error.Message; PendingRestore = null; EntryMode = RunEntryMode.Fresh; return false; }

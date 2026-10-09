@@ -17,6 +17,13 @@ using UnityEngine;
     public double elapsedSeconds;
     public SavedPlayer player = new();
     public List<SavedWorldObject> world = new();
+    // Completed scenes are retained without mixing their identities into the live registry.
+    public List<SavedRunScene> previousScenes = new();
+}
+[Serializable] public sealed class SavedRunScene
+{
+    public string sceneName;
+    public List<SavedWorldObject> world = new();
 }
 [Serializable] public sealed class SavedPlayer
 {

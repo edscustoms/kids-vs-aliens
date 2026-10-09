@@ -38,7 +38,8 @@ public sealed class RunWorldObject : MonoBehaviour
     public void MarkRemoved()
     {
         removed = true;
-        ActiveRunController.Instance?.Record(Capture());
+        var run = ActiveRunController.Instance;
+        if (run != null && run.gameObject.scene == gameObject.scene) run.Record(Capture());
         ActiveRunController.Instance?.MarkDirty();
     }
     public SavedWorldObject Capture()

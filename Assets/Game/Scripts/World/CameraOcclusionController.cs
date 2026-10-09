@@ -1,10 +1,20 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 [DisallowMultipleComponent]
 public sealed class CameraOcclusionController : MonoBehaviour
 {
+    private bool deferredStartup;
+    public void PrepareSceneArrival(Transform arrivingPlayer, Camera camera)
+    {
+        player = arrivingPlayer; gameplayCamera = camera;
+        playerController = player.GetComponent<CharacterController>();
+        bikeRider = player.GetComponent<PlayerBikeRider>();
+        deferredStartup = true; enabled = false;
+    }
+    public IEnumerator PrewarmSceneCache() => BuildLevelCache(true);
     private const int ContextSampleCount = 10;
     private const int AmySampleCount = 5;
     private const int HitBufferSize = 64;
@@ -211,7 +221,11 @@ public sealed class CameraOcclusionController : MonoBehaviour
             bikeRider = player.GetComponent<PlayerBikeRider>();
         }
 
-        BuildLevelCache();
+        if (!deferredStartup)
+        {
+            var cache = BuildLevelCache(false);
+            while (cache.MoveNext()) { }
+        }
     }
 
     private void OnDisable()
@@ -231,7 +245,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
     // CACHE
     // =====================================================
 
-    private void BuildLevelCache()
+    private IEnumerator BuildLevelCache(bool staged)
     {
         colliderToTarget.Clear();
         targetByRoot.Clear();
@@ -241,6 +255,7 @@ public sealed class CameraOcclusionController : MonoBehaviour
 
         for (int i = 0; i < colliders.Length; i++)
         {
+            if (staged && i > 0 && i % 32 == 0) yield return null;
             Collider collider = colliders[i];
 
             if (collider == null)

@@ -139,6 +139,7 @@ public sealed class EnemyBikeDriver : MonoBehaviour, IRunStateParticipant
         chase?.ReleaseContact(this); attack.Cancel(); SetCatchUpAdvantage(false); Bike.Detach();
     }
     public void BindChase(BikeRouteChaseDirector owner, int index) { chase = owner; stagingIndex = index; }
+    public void BindPlayer(PlayerBikeRider arrivingPlayer) => player = arrivingPlayer;
     private void EndContact()
     {
         if (attackEnds <= 0) return;

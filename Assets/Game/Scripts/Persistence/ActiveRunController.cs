@@ -15,6 +15,7 @@ public sealed class ActiveRunController : MonoBehaviour
     public static ActiveRunController Instance { get; private set; }
     private readonly Dictionary<string, RunWorldObject> objects = new();
     private readonly Dictionary<string, SavedWorldObject> snapshots = new();
+    private List<SavedRunScene> previousScenes = new();
     private GameplaySuspensionController suspension;
     private GameplaySuspensionController.Lease restoreLease, lifecycleLease;
     private PlayerInventory inventory;
@@ -73,6 +74,8 @@ public sealed class ActiveRunController : MonoBehaviour
     }
     public void Register(RunWorldObject entity)
     {
+        // An additively preloaded scene is not part of this attempt's live world yet.
+        if (entity == null || entity.gameObject.scene != gameObject.scene) return;
         if (string.IsNullOrEmpty(entity.Id)) throw new InvalidOperationException("Missing run identity on " + entity.name + ". Run scene setup/repair.");
         if (objects.TryGetValue(entity.Id, out var existing) && existing != null && existing != entity)
             throw new InvalidOperationException("Duplicate run identity: " + entity.Id);
@@ -81,6 +84,34 @@ public sealed class ActiveRunController : MonoBehaviour
     public void Record(SavedWorldObject snapshot) => snapshots[snapshot.id] = snapshot;
     public RunWorldObject FindWorldObject(string id) => objects.TryGetValue(id, out var entity) ? entity : null;
     public void MarkDirty() { if (ready) nextSave = Mathf.Min(nextSave, Time.unscaledTime + .35f); }
+
+    public void HandoffToScene(Scene destination, GameObject[] carriedRoots)
+    {
+        if (!IsReady || !destination.isLoaded || playerSavePointOwner != null)
+            throw new InvalidOperationException("The run is not ready for a scene handoff.");
+        var source = gameObject.scene;
+        var roots = new HashSet<GameObject>(carriedRoots);
+        if (!roots.Contains(transform.root.gameObject)) throw new InvalidOperationException("The player rig must be carried.");
+        foreach (var root in roots)
+            if (root == null || root.transform.parent != null || root.scene != source)
+                throw new InvalidOperationException("Crossover roots must belong to the outgoing scene.");
+        var incoming = new Dictionary<string, RunWorldObject>();
+        foreach (var root in destination.GetRootGameObjects().Concat(roots))
+            foreach (var entity in root.GetComponentsInChildren<RunWorldObject>(true))
+                if (string.IsNullOrEmpty(entity.Id) || !incoming.TryAdd(entity.Id, entity))
+                    throw new InvalidOperationException("Invalid or duplicate destination run identity: " + entity.Id);
+        foreach (var entity in objects.Values) if (entity != null) Record(entity.Capture());
+        var outgoing = snapshots.Values.Where(s => !incoming.ContainsKey(s.id)).ToList();
+        previousScenes.RemoveAll(s => s.sceneName == source.name);
+        previousScenes.Add(new SavedRunScene { sceneName = source.name, world = outgoing });
+        foreach (var root in roots) SceneManager.MoveGameObjectToScene(root, destination);
+        SceneManager.SetActiveScene(destination);
+        objects.Clear(); snapshots.Clear();
+        foreach (var entity in incoming.Values) Register(entity);
+        // Normal Save/backgrounding observes the new scene atomically. The last durable
+        // source snapshot remains valid until the existing autosave writes the destination.
+        MarkDirty();
+    }
 
     // Short interactions supply a safe endpoint without moving the live player on Save.
     // The caller validates it and clears only its own reservation on completion/abort.
@@ -133,7 +164,7 @@ public sealed class ActiveRunController : MonoBehaviour
                     ammo = GetComponent<PlayerShooter>().CurrentAmmo, weapons = inventory.CaptureWeaponStates(),
                     plasmaCapsules = inventory.PlasmaCapsules, armorCapsules = inventory.ArmorCapsules,
                     items = inventory.Items.Select(item => catalog.Id(item)).ToList(), itemCounts = inventory.CaptureCounts(), quickSlots = inventory.CaptureQuickSlots()
-                }, world = snapshots.Values.ToList()
+                }, world = snapshots.Values.ToList(), previousScenes = previousScenes
             };
             RunSaveService.ActiveStore.Write(save);
             if (!PermanentProgress.Flush()) return false;
@@ -146,6 +177,7 @@ public sealed class ActiveRunController : MonoBehaviour
     {
         var catalog = RunContentCatalog.Instance;
         runId = saved.runId; elapsed = saved.elapsedSeconds;
+        previousScenes = saved.previousScenes ?? new List<SavedRunScene>();
         startingCharacter = saved.startingCharacter; startingWeapon = saved.startingWeapon;
         foreach (var snapshot in saved.world)
         {
@@ -191,7 +223,7 @@ public sealed class ActiveRunController : MonoBehaviour
         PlayerLoadoutState.Initialize(catalog.Resolve<CharacterVisual>(startingCharacter), catalog.Resolve<WeaponItemData>(startingWeapon));
         return RunSaveService.StartFresh(gameObject.scene.name, true);
     }
-    public void PrepareToLeave() { leaving = true; PermanentProgress.Flush(); }
+    public void PrepareToLeave() { leaving = true; SceneCrossover.CancelPending(this); PermanentProgress.Flush(); }
     public bool QuitToMenu()
     {
         if (!Save(true)) return false;

@@ -56,13 +56,21 @@ public sealed class BikeRouteChaseDirector : MonoBehaviour, IRunStateParticipant
     [Serializable] private sealed class Saved { public int wave; public bool finished, loadout; public float age, nextFrontAge; }
     private void Awake()
     {
-        continuing = RunSaveService.IsRestoringScene(gameObject.scene.name);
+        continuing |= RunSaveService.IsRestoringScene(gameObject.scene.name);
         BindRiders(waveOne); BindRiders(waveTwo);
     }
     private void BindRiders(RiderSlot[] slots)
     {
         for (int i = 0; i < slots.Length; i++)
             if (slots[i].rider != null) slots[i].rider.BindChase(this, i);
+    }
+    // Entry wiring only: retain the authored bike, waves and driving logic. A travelling
+    // inventory must not receive the standalone scene's fresh-run capsule/loadout reset.
+    public void BindSceneArrival(PlayerBikeRider arrivingPlayer, Camera camera)
+    {
+        player = arrivingPlayer; gameplayCamera = camera; continuing = true;
+        foreach (var slot in waveOne) slot.rider?.BindPlayer(arrivingPlayer);
+        foreach (var slot in waveTwo) slot.rider?.BindPlayer(arrivingPlayer);
     }
     public bool TryReserveContact(EnemyBikeDriver rider)
     {
