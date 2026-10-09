@@ -8,6 +8,8 @@ using UnityEngine.Rendering;
 public sealed class GameplaySceneEntry : MonoBehaviour
 {
     public GameObject[] carriedRoots = Array.Empty<GameObject>();
+    [Tooltip("Level-owned children of carried roots; retain them in the outgoing scene.")]
+    public GameObject[] sceneOwnedChildren = Array.Empty<GameObject>();
     public PlayerBikeRider player;
     public Camera gameplayCamera;
     public GameplayCameraController cameraController;
@@ -17,13 +19,17 @@ public sealed class GameplaySceneEntry : MonoBehaviour
     public SceneLightingState lighting;
     [Tooltip("Active authored groups, prepared over several frames during additive entry.")]
     public GameObject[] warmupRoots = Array.Empty<GameObject>();
-    public GameObject connector;
+    [Tooltip("Incoming environment stays inactive until the loading screen covers preparation.")]
+    public GameObject[] stagedRoots = Array.Empty<GameObject>();
+    public Transform arrivalPoint;
     public GameObject[] entryGameplay = Array.Empty<GameObject>();
     public BikeRouteChaseDirector bikeChase;
     public AlienBikeLaserWeapon[] bikeCameraBindings = Array.Empty<AlienBikeLaserWeapon>();
     public bool IsPrepared { get; private set; }
+    public float PreparationProgress { get; private set; }
     public bool IsIncoming { get; private set; }
-    public ActiveRunController Run => player.GetComponent<ActiveRunController>();
+    public ActiveRunController Run => player != null ? player.GetComponent<ActiveRunController>() : null;
+    private GameObject arrivalGameplayGate;
 
     private void Awake()
     {
@@ -33,9 +39,18 @@ public sealed class GameplaySceneEntry : MonoBehaviour
         // Execution order precedes player/input/audio Awake. Never initialize a duplicate
         // rig and then try to undo its subscriptions or its global ownership assignments.
         foreach (var root in carriedRoots) root.SetActive(false);
-        foreach (var root in entryGameplay) root.SetActive(false);
+        // Gate hierarchy activation, not each saved object's activeSelf. A save made
+        // during Beam In must restore the authored active bike/chase on Continue.
+        arrivalGameplayGate = new GameObject("Arrival gameplay gate");
+        arrivalGameplayGate.SetActive(false);
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(arrivalGameplayGate, gameObject.scene);
+        foreach (var root in entryGameplay)
+        {
+            if (bikeChase != null && root == bikeChase.PlayerBike.gameObject) root.SetActive(false);
+            else root.transform.SetParent(arrivalGameplayGate.transform, true);
+        }
         foreach (var root in warmupRoots) root.SetActive(false);
-        if (connector != null) connector.SetActive(false);
+        foreach (var root in stagedRoots) root.SetActive(false);
         keyLight.enabled = false;
         foreach (var volume in volumes) volume.weight = 0;
         var source = crossover.Source;
@@ -58,19 +73,22 @@ public sealed class GameplaySceneEntry : MonoBehaviour
     {
         // Inactive duplicate roots must be destroyed before the run registry is assembled.
         yield return null;
+        foreach (var root in stagedRoots) root.SetActive(true);
         var budget = System.Diagnostics.Stopwatch.StartNew();
+        int completedGroups = 0;
         foreach (var root in warmupRoots)
         {
             root.SetActive(true);
+            PreparationProgress = (float)++completedGroups / (warmupRoots.Length + 1);
             if (budget.Elapsed.TotalMilliseconds < 2) continue;
             yield return null; budget.Restart();
         }
         yield return occlusion.PrewarmSceneCache();
         yield return null;
-        IsPrepared = true;
+        IsPrepared = true; PreparationProgress = 1;
     }
 
-    public void Enter(GameplaySceneEntry source)
+    public void Enter(GameplaySceneEntry source, bool startGameplay = true)
     {
         if (!IsPrepared) throw new InvalidOperationException("Destination preparation is incomplete.");
         source.occlusion.enabled = false;
@@ -80,9 +98,19 @@ public sealed class GameplaySceneEntry : MonoBehaviour
         lighting.Apply();
         RenderSettings.sun = keyLight;
         foreach (var volume in volumes) volume.weight = 1;
-        if (source.connector != null) source.connector.SetActive(false);
-        if (connector != null) connector.SetActive(true);
-        foreach (var root in entryGameplay) root.SetActive(true);
+
+        // Reveal the unoccupied native bike behind the loading artwork, so it is
+        // already beside Amy during Beam In. Chase/containment wait for landing.
+        if (bikeChase != null) bikeChase.PlayerBike.gameObject.SetActive(true);
+
+        IsIncoming = false;
+        if (startGameplay) ActivateEntryGameplay();
+    }
+
+    public void ActivateEntryGameplay()
+    {
+        if (arrivalGameplayGate != null) arrivalGameplayGate.SetActive(true);
+        bikeChase?.GetComponent<BikeRouteContainment>()?.ClearArrivalWarning();
         IsIncoming = false;
     }
 }

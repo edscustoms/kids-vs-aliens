@@ -85,7 +85,7 @@ public sealed class ActiveRunController : MonoBehaviour
     public RunWorldObject FindWorldObject(string id) => objects.TryGetValue(id, out var entity) ? entity : null;
     public void MarkDirty() { if (ready) nextSave = Mathf.Min(nextSave, Time.unscaledTime + .35f); }
 
-    public void HandoffToScene(Scene destination, GameObject[] carriedRoots)
+    public void HandoffToScene(Scene destination, GameObject[] carriedRoots, GameObject[] sceneOwnedChildren)
     {
         if (!IsReady || !destination.isLoaded || playerSavePointOwner != null)
             throw new InvalidOperationException("The run is not ready for a scene handoff.");
@@ -95,15 +95,24 @@ public sealed class ActiveRunController : MonoBehaviour
         foreach (var root in roots)
             if (root == null || root.transform.parent != null || root.scene != source)
                 throw new InvalidOperationException("Crossover roots must belong to the outgoing scene.");
+        foreach (var child in sceneOwnedChildren)
+            if (child == null || child.scene != source || child.transform.parent == null
+                || !roots.Contains(child.transform.root.gameObject))
+                throw new InvalidOperationException("Level-owned exclusions must be children of a carried root.");
         var incoming = new Dictionary<string, RunWorldObject>();
         foreach (var root in destination.GetRootGameObjects().Concat(roots))
             foreach (var entity in root.GetComponentsInChildren<RunWorldObject>(true))
+            {
+                if (sceneOwnedChildren.Any(child => entity.transform.IsChildOf(child.transform))) continue;
                 if (string.IsNullOrEmpty(entity.Id) || !incoming.TryAdd(entity.Id, entity))
                     throw new InvalidOperationException("Invalid or duplicate destination run identity: " + entity.Id);
+            }
         foreach (var entity in objects.Values) if (entity != null) Record(entity.Capture());
         var outgoing = snapshots.Values.Where(s => !incoming.ContainsKey(s.id)).ToList();
         previousScenes.RemoveAll(s => s.sceneName == source.name);
         previousScenes.Add(new SavedRunScene { sceneName = source.name, world = outgoing });
+        // Preserve world poses and IDs. Only the input owner travels, not its level spawners.
+        foreach (var child in sceneOwnedChildren) child.transform.SetParent(null, true);
         foreach (var root in roots) SceneManager.MoveGameObjectToScene(root, destination);
         SceneManager.SetActiveScene(destination);
         objects.Clear(); snapshots.Clear();

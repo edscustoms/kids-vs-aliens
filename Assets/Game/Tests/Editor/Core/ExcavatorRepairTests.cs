@@ -200,6 +200,10 @@ public sealed class ExcavatorRepairPlayTests
         Assert.That(completionEvents,Is.Zero); Assert.That(Mission.OwnedPartCount,Is.Zero);
         yield return Continue(); Assert.That(Motion.IsExitClear,Is.True);
         Resume(); yield return Seconds(.1f);
+        // This fixture verifies the original finale/exit collision independently.
+        // Gate handoff and its exit guard have their own SceneCrossoverPlayTests.
+        var gate = Object.FindAnyObjectByType<SceneCrossover>();
+        if (gate != null) gate.gameObject.SetActive(false);
         // Existing locomotion crosses the restored central exit; solid rubble remains to its sides.
         Place(new Vector3(31.425f,.08f,47.3f));
         yield return Walk(new Vector3(31.425f,0,51.9f),4);

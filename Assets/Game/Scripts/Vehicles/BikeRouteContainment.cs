@@ -20,6 +20,8 @@ public sealed class BikeRouteContainment : MonoBehaviour
 
     private void Awake() { if (chase != null) health = chase.Player.GetComponent<PlayerHealth>(); }
     private void OnDisable() => Clear();
+    // Arrival is on the authored road; only transient warnings reset, never protection.
+    public void ClearArrivalWarning() => Clear();
     private void Clear() { Redirecting = OutsideRoute = false; OutsideSeconds = 0; nextPulse = nextSample = 0; }
     private bool Ready => chase != null && health != null && !health.IsDead && !chase.Finished
         && Time.timeScale > 0 && ActiveRunController.Instance != null && ActiveRunController.Instance.IsReady;

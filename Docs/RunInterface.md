@@ -4,6 +4,20 @@ Historical validation results and changed-file lists below describe their origin
 
 The interface uses the existing uGUI/TMP, inventory, tutorial and suspension systems. Gameplay movement, Beam Hoist paths, camera modes and action bindings retain their existing owners.
 
+## Gate handoff ownership
+
+`ActiveRunController.HandoffToScene` validates destination identities, archives the
+outgoing scene's world records in `previousScenes`, and transfers the existing rig.
+Level-owned exclusions stay behind at their original world poses. The transport
+reserves a supported source recovery point before Beam Out. Once destination
+preparation succeeds, it transfers ownership, starts Beam In and saves its reserved
+ground endpoint without yielding between those operations. Interruption therefore
+has a valid source or destination snapshot, never a suspended midair pose. Transient
+Beam/loading presentation is not replayed on Continue. Existing world/player
+coordinate formats are unchanged. Continue remains paused and Hard Restart restarts
+the current level.
+BikeRoute's standalone communication prefab reconstructs the carried objective state.
+
 ## Player flow
 
 - The existing character carousel, preview, background and text-only menu buttons remain. Play starts a fresh run when no snapshot exists; otherwise it opens Active Run Found.

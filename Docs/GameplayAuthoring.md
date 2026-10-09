@@ -4,6 +4,43 @@ ConstructionSite uses reusable prefabs under `Assets/Game/Prefabs/Environment`.
 Gameplay state remains with its existing owners; neither prefab owns combat, input,
 camera or a second save system.
 
+## ConstructionSite exit gate
+
+`SceneCrossover` on ConstructionSite's **Gameplay Scene Entry** preloads BikeRoute
+and the existing Loading scene additively. Two open 10m fence runs extend the existing
+gate perimeter over unchanged ground; there is no closing fence or passage pad.
+The endpoint uses a standard
+one-shot `GameplayTrigger` action; the crossover requires the excavator mission to
+be Completed and Amy to be on foot. `rememberOneShot` is false because transport is
+transient: interrupted departure must remain available on Continue.
+
+The existing `BeamTransportController` locks controls for Beam Out and Beam In.
+Between them, `LoadingSceneController` presents its original artwork and bar in
+presentation-only mode, suppressing its extra camera/input and normal target loading.
+Progress combines actual scene loading and completed preparation work; it has no
+timer-generated progress. The crossover's title, loading text, optional artwork,
+minimum display duration (2.5 seconds) and fade-out duration (0.35 seconds) are
+serialized configuration. A completed real bar stays full until the minimum expires;
+the existing canvas then fades over Beam In. Ordinary game-start Loading behavior is unchanged.
+BikeRoute's environment and unoccupied native bike are revealed behind this screen;
+chase/containment wait until Beam In completes. A transient parent gates their
+hierarchy without changing saved objects' authored `activeSelf`, so Continue during
+arrival cannot leave the chase inactive. The arrival `DialogueMessage` uses
+nonblocking CC.
+
+`GameplaySceneEntry` explicitly lists the carried player, camera, input, HUD, audio
+and communication roots. `sceneOwnedChildren` keeps ConstructionSite's spawners and
+GameManager behind when their input-owner parent travels. Do not carry level content
+that the destination cannot reconstruct on Continue. Destination `arrivalPoint` must
+be on the authored road, within mounting range of its existing bike. Neither scene
+is offset; no baked coordinates are rewritten. Containment clears only transient
+arrival warnings and retains its normal road/flight rules.
+
+The obsolete physical corridor is removed. **Tools > Level Authoring > Configure
+ConstructionSite Beam Exit** authors only this local passage, action and dialogue,
+not routine scene repair. Inspect the entry references when adding future transitions;
+Level 3 loading is not implemented. Focused tests: `SceneCrossoverPlayTests`.
+
 ## Encounters
 
 Drag `PF_AuthoredEncounter` into a gameplay scene. Select its BoxCollider and use
