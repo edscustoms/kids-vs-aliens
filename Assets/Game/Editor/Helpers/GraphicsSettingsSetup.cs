@@ -43,7 +43,8 @@ public static class GraphicsSettingsSetup
             var existing = AssetDatabase.LoadAssetAtPath<Material>(lowPath);
             if (existing != null) Object.DestroyImmediate(low); else { AssetDatabase.CreateAsset(low, lowPath); existing = low; }
             config.terrainMaterials = new[] { new GraphicsQualityConfiguration.TerrainMaterials {
-                original = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Environment/Foundation/Terrain Rock Projection.mat"), low = existing } };
+                original = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Environment/Foundation/Terrain Rock Projection.mat"), low = existing,
+                medium = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Scenes/BikeRoute/Environment/Medium/Terrain Medium.mat") } };
             AssetDatabase.CreateAsset(config, ConfigurationPath);
         }
         foreach (var name in new[] { "ConstructionSite", "BikeRoute" })
@@ -65,8 +66,14 @@ public static class GraphicsSettingsSetup
 /// <summary>Fail clearly if build stripping is later re-enabled against runtime graphics switches.</summary>
 public sealed class GraphicsSettingsBuildCheck : IPreprocessBuildWithReport
 {
-    public int callbackOrder => -100;
-    public void OnPreprocessBuild(BuildReport report) => Validate();
+    // Must precede CorePreprocessBuild (MinValue + 50) and URP (MinValue + 100).
+    public int callbackOrder => int.MinValue;
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        if (GraphicsSettingsController.Instance != null) GraphicsSettingsController.Instance.RestoreOriginalPipeline();
+        UnityEditor.Rendering.CoreBuildData.instance.Dispose();
+        Validate();
+    }
     public static void Validate()
     {
         if (AssetDatabase.LoadAssetAtPath<GraphicsQualityConfiguration>(GraphicsSettingsSetup.ConfigurationPath) == null)

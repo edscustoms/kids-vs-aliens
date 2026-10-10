@@ -13,6 +13,8 @@ public sealed class GraphicsSettingsController : MonoBehaviour
     private UniversalRenderPipelineAsset sourcePipeline, runtimePipeline;
     private RenderPipelineAsset previousQualityPipeline;
     private float originalLodBias;
+    private int pipelineQualityLevel;
+    private bool initialized;
     private readonly Dictionary<Camera, CameraState> renderingCameras = new();
     private sealed class CameraState
     {
@@ -24,7 +26,16 @@ public sealed class GraphicsSettingsController : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void Reset() => Instance = null;
+    private static void Reset()
+    {
+        if (Instance != null) Instance.RestoreOriginalPipeline();
+        Instance = null;
+    }
+    private void OnEnable()
+    {
+        // OnEnable also runs after a script reload while playing.
+        if (Application.isPlaying) Initialize(Resources.Load<GraphicsQualityConfiguration>("GraphicsQuality"));
+    }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     public static void Ensure()
     {
@@ -37,9 +48,11 @@ public sealed class GraphicsSettingsController : MonoBehaviour
     public void Initialize(GraphicsQualityConfiguration configuration)
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        if (runtimePipeline != null) return;
+        if (initialized || configuration == null) return;
+        initialized = true;
         Instance = this; Configuration = configuration;
         DontDestroyOnLoad(gameObject);
+        pipelineQualityLevel = QualitySettings.GetQualityLevel();
         previousQualityPipeline = QualitySettings.renderPipeline;
         sourcePipeline = (previousQualityPipeline != null ? previousQualityPipeline : GraphicsSettings.defaultRenderPipeline) as UniversalRenderPipelineAsset;
         originalLodBias = QualitySettings.lodBias;
@@ -56,12 +69,16 @@ public sealed class GraphicsSettingsController : MonoBehaviour
         SceneManager.sceneUnloaded += RemoveDestroyedCameras;
         Apply();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        gameObject.AddComponent<DeveloperFpsHud>();
+        if (GetComponent<DeveloperFpsHud>() == null) gameObject.AddComponent<DeveloperFpsHud>();
+#endif
+#if UNITY_EDITOR
+        UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += RestoreOriginalPipeline;
+        UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeChanged;
 #endif
     }
     public void Apply()
     {
-        if (Configuration == null) return;
+        if (!initialized || Configuration == null) return;
         var preset = Configuration.Get(GraphicsPreferences.Quality);
         if (runtimePipeline != null)
         {
@@ -117,17 +134,56 @@ public sealed class GraphicsSettingsController : MonoBehaviour
         if (state.distances != null) camera.layerCullDistances = state.distances;
         if (state.data != null) state.data.renderPostProcessing = state.post;
     }
-    private void OnDestroy()
+    private void OnDisable() => RestoreOriginalPipeline();
+    private void OnDestroy() => RestoreOriginalPipeline();
+#if UNITY_EDITOR
+    private void OnPlayModeChanged(UnityEditor.PlayModeStateChange state)
     {
-        if (Instance != this) return;
+        if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode) RestoreOriginalPipeline();
+    }
+#endif
+    /// <summary>Release owned rendering state before play exit, reload or build preprocessing.</summary>
+    public void RestoreOriginalPipeline()
+    {
+        // Instance is reset on domain reload; cleanup must depend on this owner's state.
+        if (!initialized) return;
+        initialized = false;
+#if UNITY_EDITOR
+        UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= RestoreOriginalPipeline;
+        UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+#endif
         GraphicsPreferences.Changed -= Apply;
         RenderPipelineManager.beginCameraRendering -= BeginCamera;
         RenderPipelineManager.endCameraRendering -= EndCamera;
         SceneManager.sceneUnloaded -= RemoveDestroyedCameras;
         foreach (var item in renderingCameras) if (item.Value.rendering) RestoreCamera(item.Key, item.Value);
-        if (QualitySettings.renderPipeline == runtimePipeline) QualitySettings.renderPipeline = previousQualityPipeline;
-        QualitySettings.lodBias = originalLodBias;
-        if (runtimePipeline != null) Destroy(runtimePipeline);
-        Instance = null;
+        renderingCameras.Clear();
+        int activeQuality = QualitySettings.GetQualityLevel();
+        try
+        {
+            // The Editor can change the active quality before teardown. Restore the
+            // slot we actually changed, without overwriting another owner's pipeline.
+            if (pipelineQualityLevel != activeQuality) QualitySettings.SetQualityLevel(pipelineQualityLevel, false);
+            if (QualitySettings.renderPipeline == runtimePipeline) QualitySettings.renderPipeline = previousQualityPipeline;
+            QualitySettings.lodBias = originalLodBias;
+        }
+        finally
+        {
+            if (pipelineQualityLevel != activeQuality) QualitySettings.SetQualityLevel(activeQuality, false);
+        }
+#if UNITY_EDITOR
+        // SRP build-data collection can run while this clone is assigned. Restoring
+        // QualitySettings alone does not invalidate its cached asset references.
+        UnityEditor.Rendering.CoreBuildData.instance.Dispose();
+#endif
+        if (runtimePipeline != null)
+        {
+            if (Application.isPlaying) Destroy(runtimePipeline);
+            else DestroyImmediate(runtimePipeline);
+        }
+        runtimePipeline = null;
+        sourcePipeline = null;
+        previousQualityPipeline = null;
+        if (Instance == this) Instance = null;
     }
 }

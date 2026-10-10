@@ -51,4 +51,4 @@ MonoBehaviour:
   terrainMaterials:
   - original: {fileID: 2100000, guid: 04d7a6f338bdbd0449b7b76af092d0ba, type: 2}
     low: {fileID: 2100000, guid: c1fd2b95f0840fe42a9abaa2927149b3, type: 2}
-    medium: {fileID: 0}
+    medium: {fileID: 2100000, guid: 10b21b954edc4f83bd8c50fd6a3ddb44, type: 2}

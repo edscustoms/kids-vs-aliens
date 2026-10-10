@@ -24,7 +24,14 @@ Material slots map an original Terrain material to optional Low/Medium materials
 High always uses the original. Missing/unsupported replacements fall back to it.
 BikeRoute Low uses the existing URP Terrain/Lit shader with the Terrain's authored
 layers; it deliberately omits custom ground treatment, cliff projection and moss.
-No cheaper Medium shader is available. ConstructionSite already uses the standard
+Medium uses an independent, initially identical copy of the custom terrain shader:
+`Assets/Game/Scenes/BikeRoute/Environment/Medium/BikeRouteTerrainMedium.shader`,
+with `BikeRouteGroundMedium.hlsl` and `BikeRouteForestMossMedium.hlsl` in that same
+folder. `Terrain Medium.mat` preserves the original property and texture references.
+Edit these Medium files for future optimization; High still uses the original files.
+No Medium shader optimization has been applied. The Medium preset's other reductions
+(render scale, geometry, LOD and post) still apply, so compare shader appearance with
+those settings held constant. ConstructionSite already uses the standard
 Terrain material and has no separate shader tiers. No new shader was implemented.
 Layer-specific object draw distances are configurable but opt-in: the shipped
 layer mask is empty to avoid hiding gameplay objects sharing Default. Camera far
@@ -36,6 +43,12 @@ mutate shared assets. Shadow distance zero gates both URP shadow-caster passes;
 mixed/baked lighting remains enabled. Camera limits apply only during Game-camera
 rendering and are restored afterward, preserving Cinemachine's authored lens.
 RenderTexture preview cameras and Scene View are excluded.
+
+The controller restores its original quality slot before releasing the temporary
+pipeline on disable, Play Mode exit or assembly reload. Editor cleanup also clears
+SRP's cached build-asset list, which can otherwise retain the destroyed clone.
+Build preflight repeats this before Core/URP preprocessing. Script reload recreates
+the runtime override without adding another FPS HUD.
 
 `SceneGraphicsSettings` owns explicit Terrain/Volume references and reversible
 instance overrides. Medium owns a cloned volume profile with bloom disabled.
