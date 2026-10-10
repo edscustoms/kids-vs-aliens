@@ -37,6 +37,16 @@ public sealed class GraphicsSettingsTests
             Assert.That(slot.low.shader.isSupported, Is.True);
         }
         GraphicsSettingsBuildCheck.Validate();
+        Assert.That(GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>().stripUnusedVariants, Is.True,
+            "Runtime presets must not retain all unused renderer feature combinations.");
+        foreach (var path in new[] { "Assets/Game/Settings/Rendering/Mobile_Renderer.asset", "Assets/Game/Settings/Rendering/PC_Renderer.asset" })
+        {
+            var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path);
+            Assert.That(renderer.rendererFeatures.OfType<PostProcessingAlphaVariants>().Count(f => f.isActive), Is.EqualTo(1));
+            var before = EditorJsonUtility.ToJson(renderer);
+            GraphicsSettingsSetup.EnsureAlphaOutputVariants(renderer);
+            Assert.That(EditorJsonUtility.ToJson(renderer), Is.EqualTo(before), "Retention setup must be idempotent.");
+        }
         Assert.That(DeveloperFpsHud.ColorFor(60), Is.EqualTo(Color.green));
         Assert.That(DeveloperFpsHud.ColorFor(59), Is.EqualTo(Color.yellow));
         Assert.That(DeveloperFpsHud.ColorFor(30), Is.EqualTo(Color.yellow));

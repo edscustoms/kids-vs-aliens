@@ -56,11 +56,27 @@ Disabling/unloading restores references and destroys only owned clones. Gameplay
 scene repair wires this component for future levels; no scene-name branching or
 per-frame world scans are used. For newly added terrain/volumes, rerun repair.
 
-URP **Strip Unused Variants** is disabled so build-time inference cannot strip
-runtime shadow ON/OFF variants. `GraphicsSettingsBuildCheck` fails a build if this
-guard is removed. This conservative policy can increase build time/size; replacing
-it with selective retention requires build/device verification. Original pipeline
-shadow capabilities, lights, shaders and lightmap settings are unchanged.
+URP **Strip Unused Variants** stays enabled. Presets change render scale and
+shadow distance, not pipeline feature support. With distance zero, URP renders no
+shadow casters and binds an empty shadow map using its retained shadow variant;
+normal lighting and mixed/baked masks remain supported. Do not disable pipeline
+shadow capabilities at runtime without revisiting build retention.
+
+Resources/GraphicsQuality directly references all runtime terrain materials, retaining
+High/Medium/Low shaders and their material keywords. No broad Always Included Shader
+entry or variant collection is needed. Build preflight validates these references and
+enabled stripping. Enable Player > Shader Settings > Strict shader variant matching
+for Development validation, then restore the prior flag for normal builds.
+`PostProcessingAlphaVariants` is a metadata-only renderer feature on the Mobile
+and PC renderers; it adds no render passes. Unity 6000.5's alpha-output capability
+filter otherwise retains only alpha ON, while opaque Android displays request
+OFF (including Bloom/UberPost). Its narrow keyword override retains both states
+without disabling alpha output or unused-feature stripping. Build preflight checks
+this when a pipeline supports alpha output. Use
+`GraphicsSettingsSetup.EnsureAlphaOutputVariants` when authoring such a renderer.
+All-shader variant logging and JSON export are enabled; inspect Editor.log and
+Temp/shader-stripping.json after building. New renderer features must be
+represented by the platform's build-time URP assets, then checked in a strict player.
 
 `DeveloperFpsHud` is compiled/created only in Editor or Development Builds, on the
 persistent graphics owner. It samples real elapsed time at 0.5-second intervals,
@@ -70,3 +86,8 @@ neither this counter implementation nor its UI.
 Focused tests: `GraphicsSettingsTests`, `InGameMenuTests`, `SceneCrossoverPlayTests`.
 Run through the isolated test runner described in `Assets/Game/Tests/README.md`.
 Editor tests do not establish Android shader stripping, visual or performance parity.
+Strict Android validation passes on Nord 3 Vulkan. Its OpenGL ES driver rejects
+current terrain variants at link time (17–23 fragment samplers versus its limit of
+16), even when the exact variants are retained. GLES terrain compatibility remains
+unresolved; disabling strict matching or retaining more variants does not establish
+a fix. Resolve sampler usage in a separately reviewed shader compatibility change.

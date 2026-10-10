@@ -53,17 +53,32 @@ public static class GraphicsSettingsSetup
             ConfigureScene(scene);
             EditorSceneManager.SaveScene(scene);
         }
-        // URP 17 strips variants from build-time features; a runtime toggle is not discovered.
-        // Retain its supported ON/OFF variants rather than risking missing Android shaders.
+        // Presets change scale/distance, not pipeline capabilities. URP keeps the
+        // supported shadow variant and uses an empty map when shadow distance is zero.
         var stripping = GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>();
-        stripping.stripUnusedVariants = false;
+        stripping.stripUnusedVariants = true;
+        foreach (var path in new[] { "Assets/Game/Settings/Rendering/Mobile_Renderer.asset", "Assets/Game/Settings/Rendering/PC_Renderer.asset" })
+            EnsureAlphaOutputVariants(AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path));
         var global = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Game/Settings/Rendering/UniversalRenderPipelineGlobalSettings.asset");
         EditorUtility.SetDirty(global); AssetDatabase.SaveAssetIfDirty(global);
         AssetDatabase.SaveAssetIfDirty(config);
     }
+
+    public static void EnsureAlphaOutputVariants(UniversalRendererData renderer)
+    {
+        if (renderer == null || !EditorUtility.IsPersistent(renderer))
+            throw new System.InvalidOperationException("Alpha variant retention requires a saved renderer asset.");
+        if (renderer.rendererFeatures.OfType<PostProcessingAlphaVariants>().Any()) return;
+        var feature = ScriptableObject.CreateInstance<PostProcessingAlphaVariants>();
+        feature.name = "Post-processing alpha variants";
+        AssetDatabase.AddObjectToAsset(feature, renderer);
+        renderer.rendererFeatures.Add(feature);
+        EditorUtility.SetDirty(renderer);
+        AssetDatabase.SaveAssetIfDirty(renderer);
+    }
 }
 
-/// <summary>Fail clearly if build stripping is later re-enabled against runtime graphics switches.</summary>
+/// <summary>Validate runtime material inclusion without retaining unused URP features.</summary>
 public sealed class GraphicsSettingsBuildCheck : IPreprocessBuildWithReport
 {
     // Must precede CorePreprocessBuild (MinValue + 50) and URP (MinValue + 100).
@@ -76,9 +91,38 @@ public sealed class GraphicsSettingsBuildCheck : IPreprocessBuildWithReport
     }
     public static void Validate()
     {
-        if (AssetDatabase.LoadAssetAtPath<GraphicsQualityConfiguration>(GraphicsSettingsSetup.ConfigurationPath) == null)
+        var configuration = AssetDatabase.LoadAssetAtPath<GraphicsQualityConfiguration>(GraphicsSettingsSetup.ConfigurationPath);
+        if (configuration == null)
             throw new BuildFailedException("Missing GraphicsQuality configuration.");
-        if (GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>().stripUnusedVariants)
-            throw new BuildFailedException("Graphics settings require URP Strip Unused Variants OFF to preserve runtime shadow variants.");
+        if (!GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>().stripUnusedVariants)
+            throw new BuildFailedException("Enable URP Strip Unused Variants. Graphics presets retain pipeline capabilities; disabling stripping compiles unused renderer features.");
+        foreach (var pipeline in UnityEditor.Rendering.CoreBuildData.instance.renderPipelineAssets.OfType<UniversalRenderPipelineAsset>())
+        {
+            if (!pipeline.allowPostProcessAlphaOutput) continue;
+            var renderers = new SerializedObject(pipeline).FindProperty("m_RendererDataList");
+            bool retained = false;
+            for (int i = 0; i < renderers.arraySize; i++)
+            {
+                var renderer = renderers.GetArrayElementAtIndex(i).objectReferenceValue as UniversalRendererData;
+                retained |= renderer != null && renderer.rendererFeatures.OfType<PostProcessingAlphaVariants>().Any(f => f.isActive);
+            }
+            if (!retained)
+                throw new BuildFailedException($"{pipeline.name}: add PostProcessingAlphaVariants to a renderer to retain opaque-display and alpha-target post-processing variants.");
+        }
+        // Resources/GraphicsQuality explicitly references every runtime terrain tier,
+        // preserving their shader features and textures without Always Included Shaders.
+        foreach (var slot in configuration.terrainMaterials)
+        {
+            if (slot == null) continue;
+            ValidateMaterial(slot.original);
+            if (slot.medium != null) ValidateMaterial(slot.medium);
+            if (slot.low != null) ValidateMaterial(slot.low);
+        }
+    }
+
+    private static void ValidateMaterial(Material material)
+    {
+        if (material == null || material.shader == null || !EditorUtility.IsPersistent(material))
+            throw new BuildFailedException("Graphics terrain tiers must reference persistent materials with valid shaders.");
     }
 }
