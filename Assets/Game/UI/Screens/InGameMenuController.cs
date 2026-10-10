@@ -48,6 +48,7 @@ public sealed class InGameMenuController : MonoBehaviour
         {
             HapticsOptionView.Ensure(optionsScreen.transform, true);
             CameraShakeOptionView.Ensure(optionsScreen.transform, true);
+            GraphicsOptionsView.Ensure(optionsScreen.transform, true);
         }
     }
 

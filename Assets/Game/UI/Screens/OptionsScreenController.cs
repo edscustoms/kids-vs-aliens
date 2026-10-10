@@ -18,6 +18,7 @@ public sealed class OptionsScreenController : MonoBehaviour
     {
         HapticsOptionView.Ensure(transform, false);
         CameraShakeOptionView.Ensure(transform, false);
+        GraphicsOptionsView.Ensure(transform, false);
         if (resetConfirmation != null) resetConfirmation.SetActive(false);
         else ProgressResetView.Build(transform,new(.34f,.24f),new(.66f,.31f));
     }
