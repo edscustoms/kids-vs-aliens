@@ -1328,3 +1328,23 @@ XML/logs are under `Logs/RepositoryAuditRemediation`; reviewed UI captures are i
 `Logs/GameplayAuthoringV1/communication-*.png`. Scene review preserved 2,487 existing
 records verbatim; changes were limited to the encounter prefab connection and new
 communication wiring. `git diff --check` passed. No device deployment was performed.
+
+### BikeRoute rendering optimization helper
+
+Open BikeRoute alone and use **Tools > BikeRoute > Optimize Scene**. The Editor-only
+`BikeRouteOptimizationSettings` asset owns the measured terrain render-LOD choice.
+Dry Run writes proposed changes; Apply records Undo and leaves scene saving explicit.
+Apply changes only `Terrain.heightmapPixelError`, never TerrainData, colliders, shared
+render-pipeline assets or gameplay. Verify reports pending changes and lightmap memory
+under `Logs/BikeRouteOptimization`. A second Apply must make no changes.
+
+Bake Lighting runs an asynchronous Unity bake only after receiver/UV/probe/settings
+preflight. Current terrain, cliff and asphalt shaders ignore baked GI/shadowmask;
+static baking is therefore blocked, and realtime shadows remain intact. No automatic
+static-flag, importer or shadow conversion is performed. A future reviewed BikeRoute
+LightingSettings asset and compatible receiver authoring are prerequisites; successful
+bakes must meet the configured lightmap budget before the helper saves the scene.
+
+Focused contract tests: `BikeRouteOptimizationTests`. Undo, or restore the previous
+scene/configuration values, to reverse an applied terrain render-LOD setting. Profiler
+A/B captures and visual comparisons are review artifacts, not permanent test oracles.
