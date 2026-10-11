@@ -108,31 +108,3 @@ current terrain variants at link time (17–23 fragment samplers versus its limi
 16), even when the exact variants are retained. GLES terrain compatibility remains
 unresolved; disabling strict matching or retaining more variants does not establish
 a fix. Resolve sampler usage in a separately reviewed shader compatibility change.
-
-## Developer terrain comparison
-
-Editor and Development Builds expose **Terrain Rendering** in the existing Options
-menu. Select **Graphics: Medium**, then click **Original Medium** (default) or
-**Experimental Distance V2**. The developer preference persists independently of
-Active Run (`developer.graphics.distanceTerrain`). Release always uses the approved
-material and omits the control. High/Low ignore this preference. ConstructionSite
-has no experimental mapping and is unaffected.
-
-`GraphicsQuality.asset` maps BikeRoute's original material to the optional experiment;
-`SceneGraphicsSettings` owns its application/restoration. Both comparison modes use
-identical Medium resolution, geometry, shadow and post settings. A material/distance
-change marks the native basemap dirty and flushes Terrain; no scene reload or runtime
-cache producer is required. Unload/disable and High/Low restore authored distance.
-
-The archived shaders/material/512-square color map are under
-`Assets/Game/Scenes/BikeRoute/Environment/DistanceV2/`. The near pass uses the existing
-Medium shader unchanged. Native basemap distance is 150 m; only the canyon has the
-archived color correction, so distant cliffs elsewhere remain pale/flat and boundaries
-can be visible. This is a manual gameplay comparison, not approved art or a new bake.
-The unchanged DXT5 map retains the prototype's mobile-memory limitation.
-
-The configuration also references `Basemap Mask Variants.mat`, which retains the
-custom generator's `_MASKMAP` keyword. Build preflight validates this reference and
-the dependency. Keep unused-variant stripping enabled. Current integration validation
-is Editor only; the prior isolated Nord 3 experiment does not validate a new player
-build. For manual Android comparison, use a Development Build and Vulkan.

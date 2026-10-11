@@ -8,7 +8,6 @@ public static class GraphicsPreferences
 {
     public const string QualityKey = "settings.graphics.quality";
     public const string ShadowsKey = "settings.graphics.shadows";
-    public const string ExperimentalTerrainKey = "developer.graphics.distanceTerrain";
     public static event Action Changed;
     public static GraphicsQuality Quality
     {
@@ -19,16 +18,6 @@ public static class GraphicsPreferences
     {
         get => PlayerPrefs.GetInt(ShadowsKey, 1) != 0;
         set { PlayerPrefs.SetInt(ShadowsKey, value ? 1 : 0); Save(); }
-    }
-    // Developer comparison only; release players always use the approved Medium material.
-    public static bool ExperimentalTerrain
-    {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        get => PlayerPrefs.GetInt(ExperimentalTerrainKey, 0) != 0;
-        set { PlayerPrefs.SetInt(ExperimentalTerrainKey, value ? 1 : 0); Save(); }
-#else
-        get => false;
-#endif
     }
     private static void Save() { PlayerPrefs.Save(); Changed?.Invoke(); }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

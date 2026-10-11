@@ -27,11 +27,6 @@ public sealed class GraphicsQualityConfiguration : ScriptableObject
         public Material original;
         [Tooltip("Unassigned tiers preserve the original. Use only Terrain-compatible materials.")]
         public Material low, medium;
-        [Tooltip("Optional developer-only Medium comparison. Other tiers and unmapped terrains are unchanged.")]
-        public Material experimentalMedium;
-        [Min(0)] public float experimentalBasemapDistance = 150;
-        [Tooltip("Build reference retaining the basemap generator's runtime _MASKMAP variant.")]
-        public Material experimentalBasemapVariants;
     }
     public Preset low = new Preset { renderScaleMultiplier = .75f, terrainPixelErrorMultiplier = 4,
         lodBiasMultiplier = .5f, vegetationDistanceMultiplier = .5f, farClipLimit = 250,
@@ -53,13 +48,5 @@ public sealed class GraphicsQualityConfiguration : ScriptableObject
                 return replacement != null && replacement.shader != null && replacement.shader.isSupported ? replacement : original;
             }
         return original;
-    }
-    public TerrainMaterials GetExperimentalTerrain(Material original)
-    {
-        if (GraphicsPreferences.Quality != GraphicsQuality.Medium || !GraphicsPreferences.ExperimentalTerrain) return null;
-        foreach (var slot in terrainMaterials)
-            if (slot != null && slot.original == original && slot.experimentalMedium != null
-                && slot.experimentalMedium.shader != null && slot.experimentalMedium.shader.isSupported) return slot;
-        return null;
     }
 }
