@@ -117,6 +117,14 @@ public sealed class GraphicsSettingsBuildCheck : IPreprocessBuildWithReport
             ValidateMaterial(slot.original);
             if (slot.medium != null) ValidateMaterial(slot.medium);
             if (slot.low != null) ValidateMaterial(slot.low);
+            if (slot.experimentalMedium != null)
+            {
+                ValidateMaterial(slot.experimentalMedium);
+                ValidateMaterial(slot.experimentalBasemapVariants);
+                if (slot.experimentalBasemapVariants.shader != slot.experimentalMedium.shader.GetDependency("BaseMapGenShader")
+                    || !slot.experimentalBasemapVariants.IsKeywordEnabled("_MASKMAP"))
+                    throw new BuildFailedException("Experimental terrain must retain its basemap generator's _MASKMAP material variant.");
+            }
         }
     }
 

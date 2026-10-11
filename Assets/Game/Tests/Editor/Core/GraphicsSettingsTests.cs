@@ -16,6 +16,15 @@ using Object = UnityEngine.Object;
 [Category("GraphicsSettings")]
 public sealed class GraphicsSettingsTests
 {
+    [SetUp]
+    public void ResetTerrainComparison()
+    {
+        SessionState.SetInt("GraphicsTests.terrain", PlayerPrefs.GetInt(GraphicsPreferences.ExperimentalTerrainKey, 0));
+        GraphicsPreferences.ExperimentalTerrain = false;
+    }
+    [TearDown]
+    public void RestoreTerrainComparison() => GraphicsPreferences.ExperimentalTerrain = SessionState.GetInt("GraphicsTests.terrain", 0) != 0;
+
     [Test]
     public void DefaultsPreserveHighAndExposeCheaperTiersAndBuildVariants()
     {
@@ -37,6 +46,10 @@ public sealed class GraphicsSettingsTests
             Assert.That(slot.low.shader.isSupported, Is.True);
         }
         GraphicsSettingsBuildCheck.Validate();
+        var experiment = config.terrainMaterials.Single(s => s.experimentalMedium != null);
+        Assert.That(experiment.experimentalMedium.shader.name, Is.EqualTo("Environment/BikeRoute Terrain Distance V2"));
+        Assert.That(experiment.experimentalBasemapVariants.IsKeywordEnabled("_MASKMAP"), Is.True);
+        Assert.That(experiment.experimentalBasemapDistance, Is.EqualTo(150));
         Assert.That(GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>().stripUnusedVariants, Is.True,
             "Runtime presets must not retain all unused renderer feature combinations.");
         foreach (var path in new[] { "Assets/Game/Settings/Rendering/Mobile_Renderer.asset", "Assets/Game/Settings/Rendering/PC_Renderer.asset" })
@@ -172,6 +185,23 @@ public sealed class GraphicsSettingsTests
         var qualityButton = menuOptions.transform.Find("GraphicsOptions/GraphicsQuality").GetComponent<Button>();
         qualityButton.onClick.Invoke();
         Assert.That(GraphicsPreferences.Quality, Is.EqualTo(GraphicsQuality.Low));
+        qualityButton.onClick.Invoke();
+        var terrainButton = menuOptions.transform.Find("GraphicsOptions/TerrainRendering").GetComponent<Button>();
+        Assert.That(terrainButton.interactable, Is.True);
+        terrainButton.onClick.Invoke();
+        Assert.That(GraphicsPreferences.ExperimentalTerrain, Is.True);
+        Canvas.ForceUpdateCanvases();
+        var terrainCorners = new Vector3[4];
+        ((RectTransform)terrainButton.transform).GetWorldCorners(terrainCorners);
+        var terrainRect = new Rect(terrainCorners[0], terrainCorners[2] - terrainCorners[0]);
+        foreach (var button in menuOptions.GetComponentsInChildren<Button>())
+        {
+            if (button == terrainButton) continue;
+            var corners = new Vector3[4];
+            ((RectTransform)button.transform).GetWorldCorners(corners);
+            Assert.That(terrainRect.Overlaps(new Rect(corners[0], corners[2] - corners[0])), Is.False,
+                "Terrain rendering control overlaps " + button.name);
+        }
         yield return Frames(12);
         ScreenCapture.CaptureScreenshot("Logs/GraphicsSettings/Menu-options.png");
         yield return Frames(4);
@@ -187,6 +217,7 @@ public sealed class GraphicsSettingsTests
         var owner = GraphicsSettingsController.Instance;
         var terrain = Object.FindObjectsByType<Terrain>().First();
         var material = terrain.materialTemplate;
+        float basemapDistance = terrain.basemapDistance;
         float error = terrain.heightmapPixelError, scale = owner.RuntimePipeline.renderScale, shadows = owner.RuntimePipeline.shadowDistance;
         float originalBloom = VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value;
         var originalGrading = JsonUtility.ToJson(VolumeManager.instance.stack.GetComponent<ColorAdjustments>());
@@ -254,6 +285,45 @@ public sealed class GraphicsSettingsTests
             }
             Assert.That(terrain.materialTemplate, Is.SameAs(material));
             Assert.That(terrain.heightmapPixelError, Is.EqualTo(error));
+            // The developer switch changes only material representation, never the selected preset.
+            foreach (bool experimental in new[] { false, true, false, true })
+            {
+                GraphicsPreferences.Quality = GraphicsQuality.Medium;
+                menu.OpenMenu(); menu.ShowOptions();
+                var terrainButton = options.Find("TerrainRendering").GetComponent<Button>();
+                Assert.That(terrainButton.gameObject.activeInHierarchy && terrainButton.interactable, Is.True);
+                if (GraphicsPreferences.ExperimentalTerrain != experimental)
+                    terrainButton.onClick.Invoke();
+                Assert.That(GraphicsPreferences.ExperimentalTerrain, Is.EqualTo(experimental));
+                menu.ResumeGame();
+                foreach (var tier in new[] { GraphicsQuality.Medium, GraphicsQuality.High, GraphicsQuality.Low, GraphicsQuality.Medium })
+                {
+                    GraphicsPreferences.Quality = tier;
+                    foreach (bool shadow in new[] { false, true })
+                    {
+                        GraphicsPreferences.Shadows = shadow;
+                        yield return Frames(6);
+                        var slot = owner.Configuration.GetExperimentalTerrain(material);
+                        Assert.That(terrain.materialTemplate, Is.SameAs(slot != null ? slot.experimentalMedium : owner.Configuration.GetTerrainMaterial(material, tier)));
+                        Assert.That(terrain.basemapDistance, Is.EqualTo(slot != null ? slot.experimentalBasemapDistance : basemapDistance));
+                        var preset = owner.Configuration.Get(tier);
+                        Assert.That(terrain.heightmapPixelError, Is.EqualTo(error * preset.terrainPixelErrorMultiplier));
+                        Assert.That(owner.RuntimePipeline.renderScale, Is.EqualTo(scale * preset.renderScaleMultiplier).Within(.0001));
+                        Assert.That(owner.RuntimePipeline.shadowDistance, Is.EqualTo(shadow ? shadows * preset.shadowDistanceMultiplier : 0).Within(.0001));
+                        Assert.That(renderedPost, Is.EqualTo(tier != GraphicsQuality.Low));
+                        Assert.That(ShaderUtil.ShaderHasError(terrain.materialTemplate.shader), Is.False);
+                        if (tier == GraphicsQuality.Medium) Assert.That(VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value, Is.Zero);
+                        if (!shadow && counter.Valid) Assert.That(counter.LastValue, Is.Zero);
+                    }
+                }
+                ScreenCapture.CaptureScreenshot($"Logs/GraphicsSettings/{name}-Distance-{experimental}.png");
+                yield return Frames(4);
+            }
+            menu.OpenMenu(); menu.ShowOptions();
+            yield return Frames(8);
+            ScreenCapture.CaptureScreenshot($"Logs/GraphicsSettings/{name}-Distance-options.png");
+            yield return Frames(4);
+            menu.ResumeGame();
         }
         finally { RenderPipelineManager.beginCameraRendering -= Observe; lease.Dispose(); }
         // Graphics preferences must survive real Continue; inventory remains owned by Active Run.
@@ -270,12 +340,20 @@ public sealed class GraphicsSettingsTests
         yield return Frames(6);
         Assert.That(VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value, Is.Zero, "Continue must restore Medium's effective Bloom override.");
         Assert.That(owner.RuntimePipeline.shadowDistance, Is.Zero);
+        Assert.That(GraphicsPreferences.ExperimentalTerrain, Is.True);
+        var restoredTerrain = Object.FindAnyObjectByType<Terrain>();
+        var restoredSlot = owner.Configuration.GetExperimentalTerrain(material);
+        Assert.That(restoredTerrain.materialTemplate, Is.SameAs(restoredSlot != null ? restoredSlot.experimentalMedium : owner.Configuration.GetTerrainMaterial(material, GraphicsQuality.Medium)));
+        Assert.That(restoredTerrain.basemapDistance, Is.EqualTo(restoredSlot != null ? restoredSlot.experimentalBasemapDistance : basemapDistance));
         Assert.That(ActiveRunController.Instance.GetComponent<PlayerInventory>().PlasmaCapsules, Is.EqualTo(9));
         Assert.That(ActiveRunController.Instance.GetComponent<PlayerInventory>().ArmorCapsules, Is.EqualTo(3));
         Assert.That(Object.FindObjectsByType<GraphicsSettingsController>().Length, Is.EqualTo(1));
         Assert.That(Object.FindObjectsByType<ActiveRunController>().Length, Is.EqualTo(1));
         GraphicsPreferences.Quality = GraphicsQuality.High; GraphicsPreferences.Shadows = true;
         yield return Frames(4);
+        Assert.That(restoredTerrain.materialTemplate, Is.SameAs(material));
+        Assert.That(restoredTerrain.basemapDistance, Is.EqualTo(basemapDistance));
+        GraphicsPreferences.ExperimentalTerrain = false;
     }
     private static IEnumerator Frames(int count) { for (int i = 0; i < count; i++) yield return EditorTestFrame.Next(); }
     private static IEnumerator WaitReady()
