@@ -72,6 +72,73 @@ public sealed class GraphicsSettingsTests
     }
 
     [UnityTest]
+    public IEnumerator MediumOverridesFallbackBloomWithoutChangingAuthoredProfiles()
+    {
+        SessionState.SetBool("GraphicsTests.active", true);
+        SessionState.SetInt("GraphicsTests.quality", PlayerPrefs.GetInt(GraphicsPreferences.QualityKey, 2));
+        SessionState.SetInt("GraphicsTests.shadows", PlayerPrefs.GetInt(GraphicsPreferences.ShadowsKey, 1));
+        SessionState.SetString("GraphicsTests.saves", Environment.GetEnvironmentVariable("KIDS_TEST_SAVE_DIRECTORY") ?? "");
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        GraphicsPreferences.Quality = GraphicsQuality.High;
+        yield return new EnterPlayMode();
+        var fallbackObject = new GameObject("Fallback global volume");
+        var fallback = fallbackObject.AddComponent<Volume>();
+        fallback.isGlobal = true; fallback.priority = -100;
+        var fallbackProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+        fallbackProfile.Add<Bloom>().intensity.Override(.25f);
+        fallback.sharedProfile = fallbackProfile;
+        try
+        {
+            // A scene can either author Bloom or inherit it entirely from lower profiles.
+            foreach (bool authoredBloom in new[] { false, true })
+            {
+                var target = new GameObject("Scene volume");
+                target.SetActive(false);
+                var volume = target.AddComponent<Volume>();
+                volume.isGlobal = true; volume.priority = 100;
+                var original = ScriptableObject.CreateInstance<VolumeProfile>();
+                original.Add<ColorAdjustments>().postExposure.Override(.35f);
+                if (authoredBloom) original.Add<Bloom>().intensity.Override(.4f);
+                volume.sharedProfile = original;
+                var before = original.components.Select(component => EditorJsonUtility.ToJson(component)).ToArray();
+                var owner = target.AddComponent<SceneGraphicsSettings>();
+                owner.Configure(Array.Empty<Terrain>(), new[] { volume });
+                target.SetActive(true);
+                try
+                {
+                    foreach (var tier in new[] { GraphicsQuality.Low, GraphicsQuality.Medium, GraphicsQuality.High, GraphicsQuality.Medium })
+                    {
+                        GraphicsPreferences.Quality = tier;
+                        VolumeManager.instance.Update(target.transform, ~0);
+                        var stack = VolumeManager.instance.stack;
+                        Assert.That(stack.GetComponent<Bloom>().intensity.value,
+                            Is.EqualTo(tier == GraphicsQuality.Medium ? 0f : authoredBloom ? .4f : .25f).Within(.0001f));
+                        Assert.That(stack.GetComponent<ColorAdjustments>().postExposure.value, Is.EqualTo(.35f).Within(.0001f));
+                        Assert.That(volume.sharedProfile, Is.SameAs(original));
+                        Assert.That(original.components.Select(component => EditorJsonUtility.ToJson(component)), Is.EqualTo(before));
+                        if (tier != GraphicsQuality.Medium) Assert.That(volume.profile, Is.SameAs(original));
+                    }
+                    owner.enabled = false;
+                    Assert.That(volume.profile, Is.SameAs(original), "Disable must restore the original reference.");
+                }
+                finally
+                {
+                    Object.DestroyImmediate(target);
+                    foreach (var component in original.components) Object.DestroyImmediate(component);
+                    Object.DestroyImmediate(original);
+                }
+            }
+        }
+        finally
+        {
+            Object.DestroyImmediate(fallbackObject);
+            foreach (var component in fallbackProfile.components) Object.DestroyImmediate(component);
+            Object.DestroyImmediate(fallbackProfile);
+        }
+        yield return new ExitPlayMode();
+    }
+
+    [UnityTest]
     public IEnumerator BothLevelsAllCombinationsContinueAndPersistentOwner()
     {
         SessionState.SetBool("GraphicsTests.active", true);
@@ -121,6 +188,9 @@ public sealed class GraphicsSettingsTests
         var terrain = Object.FindObjectsByType<Terrain>().First();
         var material = terrain.materialTemplate;
         float error = terrain.heightmapPixelError, scale = owner.RuntimePipeline.renderScale, shadows = owner.RuntimePipeline.shadowDistance;
+        float originalBloom = VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value;
+        var originalGrading = JsonUtility.ToJson(VolumeManager.instance.stack.GetComponent<ColorAdjustments>());
+        var originalTonemapping = JsonUtility.ToJson(VolumeManager.instance.stack.GetComponent<Tonemapping>());
         var menu = Object.FindAnyObjectByType<InGameMenuController>();
         menu.OpenMenu(); menu.ShowOptions();
         Assert.That(menu.OptionsScreen.activeInHierarchy, Is.True);
@@ -168,6 +238,14 @@ public sealed class GraphicsSettingsTests
                     Assert.That(terrain.materialTemplate.shader.isSupported, Is.True);
                     if (preset.farClipLimit > 0) Assert.That(renderedFar, Is.LessThanOrEqualTo(preset.farClipLimit + .01));
                     if (quality == GraphicsQuality.Low) Assert.That(renderedPost, Is.False);
+                    else
+                    {
+                        Assert.That(renderedPost, Is.True);
+                        Assert.That(VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value,
+                            Is.EqualTo(quality == GraphicsQuality.Medium ? 0f : originalBloom).Within(.0001f));
+                        Assert.That(JsonUtility.ToJson(VolumeManager.instance.stack.GetComponent<ColorAdjustments>()), Is.EqualTo(originalGrading));
+                        Assert.That(JsonUtility.ToJson(VolumeManager.instance.stack.GetComponent<Tonemapping>()), Is.EqualTo(originalTonemapping));
+                    }
                     if (!enabled && counter.Valid) Assert.That(counter.LastValue, Is.Zero, "Realtime shadow casters must be absent with Shadows OFF.");
                     File.AppendAllText("Logs/GraphicsSettings/effective.csv", $"{name},{quality},{enabled},{owner.RuntimePipeline.renderScale},{terrain.heightmapPixelError},{renderedFar},{renderedPost},{(counter.Valid ? counter.LastValue : -1)},{terrain.materialTemplate.shader.name}\n");
                     ScreenCapture.CaptureScreenshot($"Logs/GraphicsSettings/{name}-{quality}-{enabled}.png");
@@ -187,6 +265,10 @@ public sealed class GraphicsSettingsTests
         yield return Frames(2); yield return WaitReady();
         Assert.That(GraphicsSettingsController.Instance, Is.SameAs(owner));
         Assert.That(GraphicsPreferences.Quality, Is.EqualTo(GraphicsQuality.Medium));
+        Assert.That(PlayerPrefs.GetInt(GraphicsPreferences.QualityKey), Is.EqualTo((int)GraphicsQuality.Medium));
+        Assert.That(PlayerPrefs.GetInt(GraphicsPreferences.ShadowsKey), Is.Zero);
+        yield return Frames(6);
+        Assert.That(VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value, Is.Zero, "Continue must restore Medium's effective Bloom override.");
         Assert.That(owner.RuntimePipeline.shadowDistance, Is.Zero);
         Assert.That(ActiveRunController.Instance.GetComponent<PlayerInventory>().PlasmaCapsules, Is.EqualTo(9));
         Assert.That(ActiveRunController.Instance.GetComponent<PlayerInventory>().ArmorCapsules, Is.EqualTo(3));

@@ -51,7 +51,9 @@ Build preflight repeats this before Core/URP preprocessing. Script reload recrea
 the runtime override without adding another FPS HUD.
 
 `SceneGraphicsSettings` owns explicit Terrain/Volume references and reversible
-instance overrides. Medium owns a cloned volume profile with bloom disabled.
+instance overrides. Medium's clone keeps Bloom active with an explicit zero-intensity
+override (adding the component if absent). Deactivating Bloom would expose the
+pipeline/global profile's fallback intensity and leave the pass running.
 Disabling/unloading restores references and destroys only owned clones. Gameplay
 scene repair wires this component for future levels; no scene-name branching or
 per-frame world scans are used. For newly added terrain/volumes, rerun repair.

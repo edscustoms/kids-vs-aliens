@@ -59,7 +59,11 @@ public sealed class SceneGraphicsSettings : MonoBehaviour
                 s.working = ScriptableObject.CreateInstance<VolumeProfile>();
                 s.working.hideFlags = HideFlags.DontSave;
                 foreach (var component in s.original.components) s.working.components.Add(Instantiate(component));
-                if (s.working.TryGet<Bloom>(out var bloom)) bloom.active = false;
+                // An inactive component falls back to pipeline/global Bloom defaults.
+                // Override intensity explicitly, including profiles without authored Bloom.
+                if (!s.working.TryGet<Bloom>(out var bloom)) bloom = s.working.Add<Bloom>();
+                bloom.active = true;
+                bloom.intensity.Override(0f);
             }
             s.volume.profile = s.working;
         }
