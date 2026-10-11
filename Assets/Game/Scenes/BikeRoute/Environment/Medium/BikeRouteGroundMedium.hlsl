@@ -29,42 +29,12 @@ GroundSample MixGround(GroundSample a,GroundSample b,half weight)
     return r;
 }
 GroundSample GroundFamily(float2 p, float2 dx, float2 dy,
-                          float layer, float metres)
+    float layer, float metres, float2 warp, float2 warpDx, float2 warpDy)
 {
-    float2 uv = p / metres;
-    float2 gx = dx / metres;
-    float2 gy = dy / metres;
-
-    float selection = RockNoise(uv * .36) * 11;
-    float cell = floor(selection);
-    float fraction = frac(selection);
-
-    // AO is assumed to be in [0,1].
-    // Therefore contrast is bounded by [-0.4, 0.4].
-    float margin = .4 * fraction * (1 - fraction);
-
-    // Final blend is guaranteed to select A.
-    if (fraction + margin <= .15)
-        return GroundPatch(uv, gx, gy, layer,
-            RockHash(float2(cell, layer + 19)));
-
-    // Final blend is guaranteed to select B.
-    if (fraction - margin >= .85)
-        return GroundPatch(uv, gx, gy, layer,
-            RockHash(float2(cell + 1, layer + 19)));
-
-    // Original blending for all remaining pixels.
-    GroundSample a = GroundPatch(uv, gx, gy, layer,
-        RockHash(float2(cell, layer + 19)));
-
-    GroundSample b = GroundPatch(uv, gx, gy, layer,
-        RockHash(float2(cell + 1, layer + 19)));
-
-    half contrast = (a.ao - b.ao) * .4;
-
-    return MixGround(a, b,
-        smoothstep(.15, .85,
-            fraction + contrast * fraction * (1 - fraction)));
+    // A continuous, gently warped projection replaces the two stochastic patches.
+    // Each family retains its own rotation, texture scale, color and relief maps.
+    return GroundPatch(p / metres + warp, dx / metres + warpDx, dy / metres + warpDy,
+        layer, RockHash(float2(0, layer + 19)));
 }
 void ApplyGround(float3 p,float3 dx,float3 dy,half3 normal,half soil,half weight,
     inout SurfaceData surface,inout half3 normalWS)
@@ -80,10 +50,14 @@ void ApplyGround(float3 p,float3 dx,float3 dy,half3 normal,half soil,half weight
     float brokenEdge=(RockNoise(p.xz*.67)-.5)*1.2;
     half shoulder=1-smoothstep(.25,width,distance+brokenEdge);
     half forest=smoothstep(.12,.88,soil)*(1-correction*.98);
-    GroundSample gravel=GroundFamily(p.xz,dx.xz,dy.xz,0,lerp(3.4,2.2,correction));
-    GroundSample earth=GroundFamily(p.xz,dx.xz,dy.xz,1,3.0);
+    // Reuse existing world-space variation. Explicit gradients include the warp,
+    // keeping mip selection stable while riding and across family branches.
+    float2 warp=(float2(broad,deposits)-.5)*.45;
+    float2 warpDx=ddx(warp),warpDy=ddy(warp);
+    GroundSample gravel=GroundFamily(p.xz,dx.xz,dy.xz,0,lerp(3.4,2.2,correction),warp,warpDx,warpDy);
+    GroundSample earth=GroundFamily(p.xz,dx.xz,dy.xz,1,3.0,warp,warpDx,warpDy);
     if(forest>.001)
-        earth=MixGround(earth,GroundFamily(p.xz,dx.xz,dy.xz,3,3.8),forest*.85);
+        earth=MixGround(earth,GroundFamily(p.xz,dx.xz,dy.xz,3,3.8,warp,warpDx,warpDy),forest*.85);
     half aggregate=saturate(shoulder*.85+(1-shoulder)*lerp(.16,.53,deposits));
     aggregate=lerp(aggregate,lerp(.72,.88,deposits),correction);
     GroundSample ground=MixGround(earth,gravel,aggregate);
@@ -91,7 +65,7 @@ void ApplyGround(float3 p,float3 dx,float3 dy,half3 normal,half soil,half weight
     stones=max(stones,shoulder*.68);
     stones*=1-correction*.7;
     if(stones>.001)
-        ground=MixGround(ground,GroundFamily(p.xz,dx.xz,dy.xz,2,7.2),stones);
+        ground=MixGround(ground,GroundFamily(p.xz,dx.xz,dy.xz,2,7.2,warp,warpDx,warpDy),stones);
 
     half luminance=dot(ground.color,half3(.2126,.7152,.0722));
     ground.color=lerp(luminance.xxx,ground.color,.65);
